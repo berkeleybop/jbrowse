@@ -33,10 +33,12 @@ function FeatureTrack(trackMeta, url, refSeq, browserParams) {
     this.load(this.baseUrl + url);
 
     var thisObj = this;
-    this.subfeatureCallback = function(i, val, param) {
-        thisObj.renderSubfeature(param.feature, param.featDiv, val,
+    /* GAH -- never used?
+      this.subfeatureCallback = function(i, val, param) {
+	 thisObj.renderSubfeature(param.feature, param.featDiv, val,
                                  param.displayStart, param.displayEnd);
-    };
+        };
+    */	
     this.featureClick = function(event) {thisObj.onFeatureClick(event);}
 }
 
@@ -48,6 +50,13 @@ FeatureTrack.prototype.loadSuccess = function(trackInfo) {
     this.fields = {};
     for (var i = 0; i < trackInfo.headers.length; i++) {
 	this.fields[trackInfo.headers[i]] = i;
+    }
+
+    this.uniqueIdField = trackInfo.uniqueIdField;
+    if (this.uniqueIdField)  {
+	console.log("track has uniqueIdField: " + this.uniqueIdField);
+	console.log(this);
+
     }
     this.subFields = {};
     if (trackInfo.subfeatureHeaders) {
@@ -345,7 +354,7 @@ FeatureTrack.prototype.fillFeatures = function(blockIndex, block,
 
     //determine the glyph height, arrowhead width, label text dimensions, etc.
     if (!this.haveMeasurements) {
-        this.measureStyles();
+        this.measureStyles(); 
         this.haveMeasurements = true;
     }
 
@@ -353,7 +362,11 @@ FeatureTrack.prototype.fillFeatures = function(blockIndex, block,
     var featCallback = function(feature, path) {
 	// refactored ID retrieval/construction into getId() function 
 	//    to allow easier FeatureTrack subclassing
-	var uniqueId = curTrack.getId(feature, path);
+	var uniqueId = feature.uid;
+	if (!uniqueId)  {  
+	    uniqueId = curTrack.getId(feature, path);
+	    // feature.uniqueId = uniqueId;  // should be set in getId(), but just making sure
+	}
         //console.log("ID " + uniqueId + (layouter.hasSeen(uniqueId) ? " (seen)" : " (new)"));
         if (layouter.hasSeen(uniqueId)) {
             //console.log("this layouter has seen " + uniqueId);
@@ -379,21 +392,50 @@ FeatureTrack.prototype.fillFeatures = function(blockIndex, block,
 
 // refactored ID retrieval/construction into getId() function 
 //    to allow easier FeatureTrack subclassing
+// 
+// Constructing ID from path means only unique within the track
+// Constructing ID from path is only guaranteed to be unique if feature NCList is true nested containment list -- 
+//      no duplication of entries within the nested lists
+// DAS tracks are _not_ guarenteed to be true nested containment lists 
+// But, DAS does guarantee uniqueness of DAS ID within the track
+// Therefore, DAS tracks _must_ have uniqueIdField and set to "id" to guarantee uniqueness
 FeatureTrack.prototype.getId = function(feature, path)  {
     // ID is a stringification of the path in the NCList where
     // the feature lives; it's unique across the top-level NCList
     // (the top-level NCList covers a track/chromosome combination)
-    var id;
-    if (path && path != null)  {
-	id = path.join(",");
+    var id = feature.uid;
+    if (!id)  {
+	if (this.uniqueIdField)  {  
+	    id = feature[this.fields[this.uniqueIdField]];
+	}
+	else if (path)  {
+	    id = path.join(",");
+	}
+	if (id)  { feature.uid = id; }
     }
-    else if (this.fields["id"])  {
-	    // no path, for now assume id is unique within track
-	    id = feature[this.fields["id"]];
-    }
-    // if no path and no id field, returns undefined 
-    return id; 
+    //  if uid not already set, 
+    //     && no unique id field indicator, 
+    //     && no path,
+    // returns undefined
+    // BUT this shouldn't happen!
+    return id;
 };
+
+/**
+*  This works for features that do not change.
+*  However, will need another approach for features that can be edited (annotations),
+*      since when number or order of subfeatures is changing, using index within
+*      parent's subfeature array is not guaranteed to give unique ID
+*/
+FeatureTrack.prototype.getSubfeatId = function(subfeat, index, parentId)  {
+
+    var id = subfeat.uid;
+    if (!id)  {
+	id = parentId + "." + index;
+	subfeat.uid = id;
+    }
+    return id;
+}
 
 FeatureTrack.prototype.measureStyles = function() {
     //determine dimensions of labels (height, per-character width)
@@ -442,6 +484,9 @@ FeatureTrack.prototype.measureStyles = function() {
 FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
                                                 containerStart, containerEnd) {
     var fields = this.fields;
+    if (!feature.uid)  {  // should have been set before in getId(), but just making sure
+	feature.uid = uniqueId;
+    }
     //featureStart and featureEnd indicate how far left or right
     //the feature extends in bp space, including labels
     //and arrowheads if applicable
@@ -578,7 +623,7 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 	// refactoring subfeature handling/loading into 
 	//   handleSubFeatures() method to allow for subclasses to 
 	//   handle differently
-	this.handleSubFeatures(feature, featDiv, displayStart, displayEnd);
+	this.handleSubFeatures(feature, featDiv, displayStart, displayEnd, uniqueId);
     }
 
     //ie6 doesn't respect the height style if the div is empty
@@ -592,18 +637,31 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 //   handle differently
 FeatureTrack.prototype.handleSubFeatures = function(feature, featDiv, 
 						    displayStart, displayEnd)  {
-    var fields = this.fields;
-        var featParam = {
-            feature: feature,
-            featDiv: featDiv,
-            displayStart: displayStart,
-            displayEnd: displayEnd
-        };
-        for (var i = 0; i < feature[fields["subfeatures"]].length; i++) {
-            this.renderSubfeature(feature, featDiv,
-                                  feature[fields["subfeatures"]][i],
-                                  displayStart, displayEnd);
-        }
+//    var fields = this.fields;
+/*
+    var featParam = {
+        feature: feature,
+        featDiv: featDiv,
+        displayStart: displayStart,
+        displayEnd: displayEnd
+    };
+*/
+
+    // only way to get here is via renderFeature(parent,...), 
+    //   so parent guaranteed to have unique ID set by now
+    var parentId = feature.uid;  
+    var subfeats = feature[this.fields["subfeatures"]];
+    var slength = subfeats.length;
+
+    for (var i = 0; i < slength; i++) {
+	var subfeat = subfeats[i];
+	var uid = subfeat.uid;
+	if (!uid)  {
+	    uid = this.getSubfeatId(subfeat, i, parentId);
+	    subfeat.uid= uid;
+	}
+        this.renderSubfeature(feature, featDiv, subfeat, displayStart, displayEnd);
+    }
 };
 
 FeatureTrack.prototype.featureUrl = function(feature) {
@@ -625,6 +683,8 @@ FeatureTrack.prototype.featureUrl = function(feature) {
 
 FeatureTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
                                                    displayStart, displayEnd) {
+
+    if (!subfeature.parent)  { subfeature.parent = feature; }
     var subStart = subfeature[this.subFields["start"]];
     var subEnd = subfeature[this.subFields["end"]];
     var featLength = displayEnd - displayStart;
