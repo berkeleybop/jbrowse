@@ -71,6 +71,27 @@ Util.findNearest = function(numArray, num) {
     return minIndex;
 }
 
+
+/* Util.object_id_counter = 0; */
+
+/**
+*  Warning: assumes uid property is never assigned by anything else
+*  Can only assign unique ID once per object, further attempts will fail with log message
+*/
+/*
+Util.assignUniqueId = function(obj)  {
+    if (obj.uid)  {
+	console.log("in Util.assignUniqueId(), obj already has uid property: " + obj.uid);
+	console.log(obj);
+    }
+    else  {
+	obj.uid = String(Util.object_id_counter);
+	Util.object_id_counter++;
+    }
+    return obj.uid;
+}
+*/
+
 if (!Array.prototype.reduce)
 {
   Array.prototype.reduce = function(fun /*, initial*/)
