@@ -14,7 +14,7 @@ JSONUtils.convertJsonToFeatureArray = function(jsonFeature) {
 
 // Create a JSON object
 JSONUtils.createJsonFeature = function(fmin, fmax, strand, cv, cvterm) {
-	var feature = { "location": { "fmin": fmin, "fmax": fmax, "strand": strand }, "type": { "cv": {"name": cv }, "name": cvterm }};
+	var feature = {"location": {"fmin": fmin, "fmax": fmax, "strand": strand}, "type": {"cv": {"name": cv}, "name": cvterm}};
 	return feature;
 }
 
@@ -31,17 +31,19 @@ JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
     jfeature[fields["start"]] = loc.fmin;
     jfeature[fields["end"]] = loc.fmax;
     jfeature[fields["strand"]] = loc.strand;
-    if (fields["id"])  { jfeature[fields["id"]] = afeature.uniquename; }
-    if (fields["name"])  { jfeature[fields["name"]] = afeature.uniquename; }
+    if (fields["id"])  {jfeature[fields["id"]] = afeature.uniquename;}
+    if (fields["name"])  {jfeature[fields["name"]] = afeature.uniquename;}
     if (fields["type"])  { 
 	var type = afeature.type.name;
-	if (type == "exon")  { type = "UTR"; }
+	if (type == "exon")  {type = "UTR";}
 	jfeature[fields["type"]] = type;
     }
-    if (fields["subfeatures"] && afeature.children)  {
+    var children = afeature.children;
+    if (fields["subfeatures"] && children)  {
 	jfeature[fields["subfeatures"]] = new Array();
-	for (var i in afeature.children)  {
-	    var achild = afeature.children[i];
+	var clength = children.length;
+	for (var i = 0; i<clength; i++)  {
+	    var achild = children[i];
 	    var jchild =  JSONUtils.createJBrowseFeature(achild, subfields, subfields);
 	    jfeature[fields["subfeatures"]][i] =jchild;
 	}
@@ -79,13 +81,13 @@ JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
 */
 JSONUtils.createApolloFeature = function(jfeature, fields, subfields, specified_type)   {
     var afeature = new Object();
-    afeature.location = { "fmin": jfeature[fields["start"]], "fmax": jfeature[fields["end"]], "strand": jfeature[fields["strand"]] };
+    afeature.location = {"fmin": jfeature[fields["start"]], "fmax": jfeature[fields["end"]], "strand": jfeature[fields["strand"]]};
 
     var typename;
-    if (specified_type)  { typename = specified_type; }
-    else if (fields["type"])  { typename = jfeature[fields["type"]]; }
+    if (specified_type)  {typename = specified_type;}
+    else if (fields["type"])  {typename = jfeature[fields["type"]];}
     if (typename)  {
-	afeature.type = { "cv": { "name": "SO" }};
+	afeature.type = {"cv": {"name": "SO"}};
 	afeature.type.name = typename;
     }
     if (fields["subfeatures"])  {
@@ -95,8 +97,8 @@ JSONUtils.createApolloFeature = function(jfeature, fields, subfields, specified_
 	//    currently detecting for this and bailing on children if no array found
 	if (subfeats && subfeats.length > 0 && (subfeats[0] instanceof Array))  {
 	    afeature.children = new Array();
-	    //	for (var i=0; i<subfeats.length; i++)  {
-	    for (i in subfeats) {
+	    var slength = subfeats.length;
+	    for (var i=0; i<slength; i++)  {
 		var subfeat = subfeats[i];
 		if (subfields)  {
 		    // afeature.children[i] = JSONUtils.createApolloFeature(subfeat, subfields); 
@@ -141,14 +143,15 @@ JSONUtils.convertToTrack = function(feat, is_subfeat, source_track, target_track
     newfeat[target_fields["start"]] = feat[source_fields["start"]];
     newfeat[target_fields["end"]] = feat[source_fields["end"]];
     newfeat[target_fields["strand"]] = feat[source_fields["strand"]];
-    if (target_fields["id"])  { newfeat[target_fields["id"]] = feat[source_fields["id"]]; }
-    if (target_fields["name"])  { newfeat[target_fields["name"]] = feat[source_fields["id"]]; } // assign ID to name
-    if (target_fields["type"])  { newfeat[target_fields["type"]] = feat[source_fields["type"]]; }
+    if (target_fields["id"])  {newfeat[target_fields["id"]] = feat[source_fields["id"]];}
+    if (target_fields["name"])  {newfeat[target_fields["name"]] = feat[source_fields["id"]];} // assign ID to name
+    if (target_fields["type"])  {newfeat[target_fields["type"]] = feat[source_fields["type"]];}
     if (target_fields["subfeatures"] && source_fields["subfeatures"])   { 
 	var newsubfeats = new Array();
 	var subfeats = feat[source_fields["subfeatures"]];
 	if (subfeats)  {
-	    for (var i in subfeats)  {
+	    var slength = subfeats.length;
+	    for (var i = 0; i<slength; i++)  {
 		var oldsub = subfeats[i];
 		var newsub = new Array();
 		newsub[target_subfields["start"]] = oldsub[source_subfields["start"]];
