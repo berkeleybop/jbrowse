@@ -173,10 +173,10 @@ AnnotTrack.annot_under_mouse = null;
  *  overriding renderFeature to add event handling right-click context menu
  */
 AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
-    containerStart, containerEnd) {
+					      containerStart, containerEnd) {
 	var track = this;
     var featDiv = FeatureTrack.prototype.renderFeature.call(this, feature, uniqueId, block, scale,
-	containerStart, containerEnd);
+							    containerStart, containerEnd);
 	console.log("rendered feature: ");
 	console.log(feature);
 	console.log(featDiv);
@@ -217,19 +217,19 @@ AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 
 /** AnnotTrack subfeatures are similar to DAS subfeatures, so handled similarly */
 /* AnnotTrack.prototype.handleSubFeatures = function(feature, featDiv,
-    displayStart, displayEnd)  {
+    displayStart, displayEnd, block)  {
     var subfeatures = this.fields["subfeatures"];
     for (var i = 0; i < feature[subfeatures].length; i++) {
 	var subfeature = feature[subfeatures][i];
-	this.renderSubfeature(feature, featDiv, subfeature, displayStart, displayEnd);
+	this.renderSubfeature(feature, featDiv, subfeature, displayStart, displayEnd, block);
     }
 }
 */
 
 AnnotTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
-    displayStart, displayEnd) {
+						 displayStart, displayEnd, block) {
     var subdiv = FeatureTrack.prototype.renderSubfeature.call(this, feature, featDiv, subfeature, 
-	displayStart, displayEnd);
+							      displayStart, displayEnd, block);
     if (subdiv && subdiv != null)  {
       subdiv.onmousedown = this.annotMouseDown;
     }
@@ -310,25 +310,17 @@ AnnotTrack.prototype.makeTrackDroppable = function() {
 	    console.log("draggable dropped on AnnotTrack");
 	    console.log(ui);
 	    // getSelectedFeatures() and getSelectedDivs() always return same size with corresponding  feat / div
-	    var feats = DraggableFeatureTrack.getSelectedFeatures();
-	    var tracks = DraggableFeatureTrack.getTracksForSelectedFeatures();
-	    //   var dragdivs = DraggableFeatureTrack.getSelectedDivs();
+	    var feats = DraggableFeatureTrack.selectionManager.getSelection();
+	    //	    var tracks = DraggableFeatureTrack.getTracksForSelectedFeatures();
 
-//	    for (var i in dragdivs)  {
 	    for (var i in feats)  {
 		var dragfeat = feats[i];
-//		var source_track = DraggableFeatureTrack.getTrack(dragfeat);
-		var source_track = tracks[i];
+		var source_track = dragfeat.track;
 		console.log(dragfeat);
 		console.log(source_track);
-		// but can't guarantee a dragdiv -- could be offscreen and unrendered
-		//    need to make a BioFeature wrapper around JSON feature data struct, 
-		//    and give it track, etc. properties
-		// then rather than adding JSON feature array to selection, add BioFeature
-		// also, currently getFeatDiv() only works for features, not subfeatures
 		var dragdiv = source_track.getFeatDiv(dragfeat);
 //		var is_subfeature = dragdiv.subfeature;
-		var is_subfeature = !dragdiv;
+		var is_subfeature = (!!dragfeat.parent);  // !! is shorthand for returning true if value is defined and non-null
 		console.log(is_subfeature);
 		console.log("source track: ");
 		console.log(source_track);

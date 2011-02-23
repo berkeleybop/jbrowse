@@ -48,11 +48,11 @@ DasFeatureTrack.prototype.fillBlock = function(blockIndex, block,
 
 /*
  *DasFeatureTrack.prototype.handleSubFeatures = function(feature, featDiv,
-						     displayStart, displayEnd)  {
+						     displayStart, displayEnd, block)  {
     var subfeatures = this.fields["subfeatures"];
     for (var i = 0; i < feature[subfeatures].length; i++) {
 	var subfeature = feature[subfeatures][i];
-	this.renderSubfeature(feature, featDiv, subfeature, displayStart, displayEnd);
+	this.renderSubfeature(feature, featDiv, subfeature, displayStart, displayEnd, block);
     }
 }
 */
