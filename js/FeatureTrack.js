@@ -534,10 +534,13 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 	featDiv.onclick = this.featureClick;
     }
 
+    block.featureNodes[uniqueId] = featDiv;
+    if (!feature.track)  {
+	feature.track = this;
+    }
+
     featDiv.feature = feature;
     featDiv.layoutEnd = featureEnd;
-
-    block.featureNodes[uniqueId] = featDiv;
 
     switch (feature[fields["strand"]]) {
     case 1:
@@ -623,7 +626,7 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 	// refactoring subfeature handling/loading into 
 	//   handleSubFeatures() method to allow for subclasses to 
 	//   handle differently
-	this.handleSubFeatures(feature, featDiv, displayStart, displayEnd, uniqueId);
+	this.handleSubFeatures(feature, featDiv, displayStart, displayEnd, block);
     }
 
     //ie6 doesn't respect the height style if the div is empty
@@ -636,7 +639,7 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 //   handleSubFeatures() method to allow for subclasses to 
 //   handle differently
 FeatureTrack.prototype.handleSubFeatures = function(feature, featDiv, 
-						    displayStart, displayEnd)  {
+						    displayStart, displayEnd, block)  {
 //    var fields = this.fields;
 /*
     var featParam = {
@@ -660,7 +663,7 @@ FeatureTrack.prototype.handleSubFeatures = function(feature, featDiv,
 	    uid = this.getSubfeatId(subfeat, i, parentId);
 	    subfeat.uid= uid;
 	}
-        this.renderSubfeature(feature, featDiv, subfeat, displayStart, displayEnd);
+        this.renderSubfeature(feature, featDiv, subfeat, displayStart, displayEnd, block);
     }
 };
 
@@ -682,7 +685,7 @@ FeatureTrack.prototype.featureUrl = function(feature) {
 };
 
 FeatureTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
-                                                   displayStart, displayEnd) {
+                                                   displayStart, displayEnd, block) {
 
     if (!subfeature.parent)  { subfeature.parent = feature; }
     var subStart = subfeature[this.subFields["start"]];
@@ -690,6 +693,12 @@ FeatureTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
     var featLength = displayEnd - displayStart;
 
     var subDiv = document.createElement("div");
+
+    block.featureNodes[subfeature.uid] = subDiv;
+
+    if (!subfeature.track)  {
+	subfeature.track = this;
+    }
 
     if (this.subfeatureClasses) {
         var className = this.subfeatureClasses[subfeature[this.subFields["type"]]];
