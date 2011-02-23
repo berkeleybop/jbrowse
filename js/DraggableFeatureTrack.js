@@ -6,23 +6,25 @@ function DraggableFeatureTrack(trackMeta, url, refSeq, browserParams) {
     var thisObj = this;
     this.featMouseDown = function(event) { thisObj.onFeatureMouseDown(event); }
     this.featDoubleClick = function(event) { thisObj.onFeatureDoubleClick(event); }
+
+    // FeatureSelectionManager listeners must implement 
+    //     selectionAdded() and selectionRemoved() response methods
+    DraggableFeatureTrack.selectionManager.addListener(this);
 }
 
 // Inherit from FeatureTrack
 DraggableFeatureTrack.prototype = new FeatureTrack();
 
-// selected feature array is class variable (shared across all DraggableFeatureTrack objects)
-DraggableFeatureTrack.sel_features = []; 
-DraggableFeatureTrack.tracks_for_sel_features = [];
-DraggableFeatureTrack.sel_divs = []; 
+// selectionManager is class variable (shared across all DraggableFeatureTrack objects)
+DraggableFeatureTrack.selectionManager = new FeatureSelectionManager();
+
 DraggableFeatureTrack.dragging = false;
 DraggableFeatureTrack.USE_MULTIDRAG = false;
-DraggableFeatureTrack.featToDiv = [];
-DraggableFeatureTrack.featToSubDivs = [];
 
+/*
 // feat may be a feature or subfeature?
+// experimenting with highlighting edges of features that match selected features (or their subfeatures) 
 DraggableFeatureTrack.showEdgeMatches = function(feat)  {
-    /* experimenting with highlighting edges of features that match selected features (or their subfeatures) */
     //	    var ftracks = $("div.track[features]");
     console.log("finding feature tracks that match:");
     //	    var feat = feature || subfeature;
@@ -93,123 +95,51 @@ DraggableFeatureTrack.showEdgeMatches = function(feat)  {
 	}
     } );
 }
-
-
-
-/** 
-* class method 
-* currently adds to selection info (which is class variable) and sets style for selected div, 
-*   but does not set draggability (this is done in featMouseDown
-*  
 */
-DraggableFeatureTrack.prototype.addToSelection = function(featdiv)  {
-    var ftrack = this;
-    if (featdiv.feature || featdiv.subfeature)  {
-    // Check if it's already in the selected array before adding it
-	if (DraggableFeatureTrack.sel_divs.indexOf(featdiv) == -1)  {
-	    console.log("addToSelection ");
-            console.log(featdiv);
-            DraggableFeatureTrack.sel_divs.push(featdiv);
-	    DraggableFeatureTrack.tracks_for_sel_features.push(ftrack);  // this should eventually change to track ID (but needs to be unique)
-	    var feat;
-	    if (featdiv.feature)  {
-		feat = featdiv.feature;
-		DraggableFeatureTrack.sel_features.push(featdiv.feature);
-		// console.log("add feature to selection");
-		// console.log(featdiv.feature);
+
+
+DraggableFeatureTrack.prototype.selectionAdded = function(feat) {
+    if (feat.track === this)  {
+	// console.log("DFT.selectionAdded(), changing featdiv style");
+	var featdiv = this.getFeatDiv(feat);
+	if (featdiv)  {
+	    var jq_featdiv = $(featdiv);
+	    if (!jq_featdiv.hasClass("selected-feature"))  {
+		jq_featdiv.addClass("selected-feature");
 	    }
-	    else if (featdiv.subfeature)  {
-		feat = featdiv.subfeature;
-		DraggableFeatureTrack.sel_features.push(featdiv.subfeature);
-		// console.log("add subfeature to selection");
-		// console.log(featdiv.subfeature);
-	    }
-	    $(featdiv).addClass("selected-feature");
-	    // edge matching turned off for testing other stuff
-	    //	if (feat)  { DraggableFeatureTrack.showEdgeMatches(feat); }
 	}
-    }
-    else {
-	console.log("no feature or subfeature associated with div: ");
-	console.log(featdiv);
+	// console.log(featdiv);
+	// edge matching turned off for testing other stuff
+	//     DraggableFeatureTrack.showEdgeMatches(feat); 
     }
 }
 
-/** 
- * class method 
- *  in addition to clearing selection data, also removes draggability from the unselected divs
- */
-DraggableFeatureTrack.prototype.clearSelection = function() {
-//    $(DraggableFeatureTrack.sel_divs, ".ui-draggable").draggable("destroy");
-    console.log("clearing previous selection");
-    for (var idx in DraggableFeatureTrack.sel_divs)  {
-	var featdiv = DraggableFeatureTrack.sel_divs[idx];
-	console.log(featdiv);
-	$(featdiv).removeClass("selected-feature");
-	if ($(featdiv).hasClass("ui-draggable"))  {
-	    $(featdiv).draggable("destroy");
+DraggableFeatureTrack.prototype.selectionRemoved = function(feat)  {
+    if (feat.track === this)  {
+	var featdiv = this.getFeatDiv(feat);
+	// console.log("DFT.selectionRemoved(), changing featdiv style: ");
+	if (featdiv)  { 
+	    var jq_featdiv = $(featdiv);
+	    if (jq_featdiv.hasClass("selected-feature"))  {
+		jq_featdiv.removeClass("selected-feature");
+	    }
+	    if (jq_featdiv.hasClass("ui-draggable"))  {
+		jq_featdiv.draggable("destroy");
+	    }
+	    if (jq_featdiv.hasClass("ui-multidraggable"))  {
+		jq_featdiv.multidraggable("destroy");
+	    }
 	}
-	if ($(featdiv).hasClass("ui-multidraggable"))  {
-	    $(featdiv).multidraggable("destroy");
-	}
-	console.log(featdiv);
+	// console.log(featdiv);
     }
-    DraggableFeatureTrack.sel_divs = [];
-    DraggableFeatureTrack.tracks_for_sel_features = [];
-    DraggableFeatureTrack.sel_features = [];
+}
+
+/*DraggableFeatureTrack.prototype.clearSelection = function() {
+    ...
     $(".left-edge-match").removeClass("left-edge-match");
     $(".right-edge-match").removeClass("right-edge-match");
 }
-
-/** 
- * class method 
- *  in addition to removing selection data, also removes draggability from the unselected div
 */
-DraggableFeatureTrack.prototype.removeFromSelection = function(featdiv) {
-    // index of feat in sel_features will be same as index of featdiv in sel_divs
-    var idx = DraggableFeatureTrack.sel_divs.indexOf(featdiv);
-    if (idx > -1)  {
-        DraggableFeatureTrack.sel_divs.splice(idx, 1);
-	DraggableFeatureTrack.sel_features.splice(idx, 1);
-	DraggableFeatureTrack.tracks_for_sel_features.splice(idx, 1);
-	$(featdiv).removeClass("selected-feature");
-	if ($(featdiv).hasClass("ui-draggable"))  {
-	    $(featdiv).draggable("destroy");
-	}
-	if ($(featdiv).hasClass("ui-multidraggable"))  {
-	    $(featdiv).multidraggable("destroy");
-	}
-    }
-    console.log("removeFromSelection " + featdiv);
-}
-
-/**
-*  for the give feature div, remove any descendant feature divs
-*/ 
-DraggableFeatureTrack.prototype.removeChildrenFromSelection = function(featdiv)  {
-    console.log("in removeChildrenFromSelection");
-    var child_divs = $(".selected-feature", featdiv);
-    child_divs.each( function(idx, elem) {
-	console.log("result " + idx);
-	console.log(elem);
-	this.removeFromSelection(elem);
-    } );
-}
-
-/** class method */
-// Returns raw array -- manipulation will change selection...
-DraggableFeatureTrack.getSelectedFeatures = function() {
-    return DraggableFeatureTrack.sel_features;
-}
-
-DraggableFeatureTrack.getTracksForSelectedFeatures = function()  {
-    return DraggableFeatureTrack.tracks_for_sel_features;
-}
-
-DraggableFeatureTrack.getSelectedDivs = function()  {
-    return DraggableFeatureTrack.sel_divs;
-}
-
 
 /**
  *  overriding renderFeature to add event handling for mouseover, mousedown, mouseup
@@ -225,48 +155,26 @@ DraggableFeatureTrack.prototype.renderFeature = function(feature, uniqueId, bloc
 	// using JQuery bind() will normalize events to W3C spec (don't have to worry about IE inconsistencies, etc.)
 	$(featdiv).bind("mousedown", this.featMouseDown);
 	$(featdiv).bind("dblclick", this.featDoubleClick);
-	// $(featdiv).bind("mouseenter", this.featMouseEnter);
-	// $(featdiv).bind("mouseleave", this.featMouseLeave);
-
-	// TODO: need to clear this if re-rendering (or clear on a per-div basis? maybe when blocks are destroyed?)
-	DraggableFeatureTrack.featToDiv[feature[this.fields["id"]]] = featdiv;
-	// DraggableFeatureTrack.featToSubDivs[feature[this.fields["id"]]] = [];
     }
     return featdiv;
 }
 
 DraggableFeatureTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
-							    displayStart, displayEnd )  {
+							    displayStart, displayEnd, block )  {
 							    // subindex) {
     var subfeatdiv = FeatureTrack.prototype.renderSubfeature.call(this, feature, featDiv, subfeature, 
-								  displayStart, displayEnd);
+								  displayStart, displayEnd, block);
     if (subfeatdiv)  {  // just in case subFeatDiv doesn't actually get created
 	// adding pointer to track for each subfeatdiv 
 	//   (could get this by DOM traversal, but shouldn't take much memory, and having it with each subfeatdiv is more convenient)
 	subfeatdiv.track = this;
 	$(subfeatdiv).bind("mousedown", this.featMouseDown);
 	$(subfeatdiv).bind("dblclick", this.featDoubleClick);
-	//	subfeatdiv.onmouseover = this.mouseOverFeat;
-	//	subfeatdiv.onmouseup = this.mouseUpFeat;
-	var id = feature[this.fields["id"]];
-	if (id && id !== null)  {
-	    var subdivs = DraggableFeatureTrack.featToSubDivs[id];
-	    if (! subdivs)  {
-		subdivs = [];
-		DraggableFeatureTrack.featToSubDivs[id] = subdivs;
-	    }
-	    //	console.log(subindex);
-	    // subdivs[subindex] = subfeatdiv;
-//	    console.log(subdivs.length);
-//	    console.log(feature);
-//	    console.log(subfeature);
-	    subdivs.push(subfeatdiv);
-//	    console.log(DraggableFeatureTrack.featToSubDivs[id][subdivs.length-1]);
-	}
     }
     return subfeatdiv;
 }
 
+console.log("loading DraggableFeatureTrack.js");
 /*
 DraggableFeatureTrack.prototype.featMouseEnter = function(event)  {
     console.log("DFT.featMouseEnter");
@@ -302,59 +210,59 @@ DraggableFeatureTrack.prototype.onFeatureMouseDown = function(event) {
 	ftrack.drag_create = null;
     }
     else  {
-	console.log("DFT.featMouseDown actual event");
-	console.log(this);
+	console.log("DFT.featMouseDown actual event, doing selection/deselection");
+	var selman = DraggableFeatureTrack.selectionManager;
+//	console.log(this);
 	var featdiv = (event.currentTarget || event.srcElement);
 //	var featdiv = this;
 	var feat = featdiv.feature;
+
 	console.log(featdiv);
 	if (!feat)  { feat = featdiv.subfeature; }
-	var already_selected = (DraggableFeatureTrack.getSelectedDivs().indexOf(featdiv) > -1);
-	var parent_featdiv = DraggableFeatureTrack.prototype.getParentFeatureDiv(featdiv);
+	var already_selected = selman.isSelected(feat);
 	var parent_selected = false;
-	if (parent_featdiv && parent_featdiv !== null)  {
-	    parent_selected = (DraggableFeatureTrack.getSelectedDivs().indexOf(parent_featdiv) > -1);
+	var parent = feat.parent;
+	if (parent)  {
+	    parent_selected = selman.isSelected(parent);
 	}
-	console.log("parent selected: " + parent_selected);
-	console.log("already selected: " + already_selected);
+	console.log("already selected: " + already_selected + ",  parent selected: " + parent_selected + 
+		    ",  shift: " + (event.shiftKey));
 	var trigger_draggable = false;
-	// if parent is selected, allow propagation of event up to parent, 
-	//     in order to ensure parent draggable setup and triggering
+	// if parent is selected, allow propagation of event up to parent, in order to ensure parent draggable setup and triggering
 	// otherwise stop propagation
 	if (! parent_selected)  {
 	    event.stopPropagation();
 	}
 	if (event.shiftKey)  {
-	    console.log("shift modifier detected");
+	 //   console.log("shift modifier detected");
 	    if (already_selected) {  // if shift-mouse-down and this already selected, deselect this
-		ftrack.removeFromSelection(featdiv);
+		selman.removeFromSelection(feat);
 	    }
 	    else if (parent_selected)  {   // if shift-mouse-down and parent selected, deselect parent
-		ftrack.removeFromSelection(parent_featdiv);
+		selman.removeFromSelection(parent);
 	    }
 	    else  {  // if shift-mouse-down and neither this or parent selected, select this
-		ftrack.removeChildrenFromSelection(featdiv);  // make sure children are deselected
-//		DraggableFeatureTrack.addToSelection(featdiv);
-		ftrack.addToSelection(featdiv);
+		// children are auto-deselected by selection manager when parent is selected
+		selman.addToSelection(feat);
 		// selecting this, must remove selection of any child features
 		trigger_draggable = true;
 	    }
 	}
 	else  {  // no shift modifier
-	    console.log("no shift modifier");
+// 	    console.log("no shift modifier");
 	    if (already_selected)  {  // if this selected, do nothing (this remains selected)
 		console.log("already selected");
 		trigger_draggable = true;  // rechecking for draggability and triggering if needed
 	    }
 	    else  {
-		console.log("not yet selected");
+//		console.log("not yet selected");
 		if (parent_selected)  {  
 		    // if this not selected but parent selected, do nothing (parent remains selected)
 		    //    event will propagate up (since parent_selected), so draggable check will be done in bubbled parent event
 		}
 		else  {  // if this not selected and parent not selected, select this
-		    ftrack.clearSelection();
-		    ftrack.addToSelection(featdiv);
+		    selman.clearSelection();
+		    selman.addToSelection(feat);
 		    trigger_draggable = true;
 		}
 	    }
@@ -429,44 +337,31 @@ DraggableFeatureTrack.prototype.onFeatureMouseDown = function(event) {
 		 create: function(event, ui)  { this.drag_create = true; }
 		} ).trigger(event);
 	}
-*/	
+*/
+
+console.log("loading DraggableFeatureTrack.js, after onFeatureMouseDown");	
 
 
 DraggableFeatureTrack.prototype.onFeatureDoubleClick = function(event)  {
-    var ftrack = this;
+  var ftrack = this;
+    // prevent event bubbling up to genome view and triggering zoom
     event.stopPropagation();
     console.log("DFT.featDoubleClick");
     console.log(ftrack);
-    // prevent event bubbling up to genome view and triggering zoom
-//    var featdiv = this;
+
     var featdiv = (event.currentTarget || event.srcElement);
     console.log(featdiv);
     // only take action on double-click for subfeatures 
     //  (but stop propagation for both features and subfeatures)
     // GAH TODO:  make this work for feature hierarchies > 2 levels deep
-    if (featdiv.subfeature)  {
-	console.log("double clicked on subfeature div");
-	var already_selected = (DraggableFeatureTrack.getSelectedDivs().indexOf(featdiv) > -1);
-	// if subfeature already selected, deselect 
-	if (already_selected)  { 
-	    ftrack.removeFromSelection(featdiv);  // not really needed, given removeChildrenFromSelection call below...
-	    // disable subfeature drag?
-	}
-	// select parent feature
-	var parent_featdiv = DraggableFeatureTrack.prototype.getParentFeatureDiv(featdiv);
-	if (parent_featdiv !== null)  {
-	    ftrack.removeChildrenFromSelection(parent_featdiv);  // make sure children are deselected
-//	    DraggableFeatureTrack.addToSelection(parent_featdiv);
-	    ftrack.addToSelection(parent_featdiv);
-	    // enable parent feature drag?
-	    // not needed here, since mouse down _after_ double-click is required to initiate drag, 
-	    //    and making sure selected divs are draggable is handled in mouse down
-
-	    // deselect all children of parent feature??  
-	    // regardless of whether shift-modifier or not???
-	}
+    var subfeat = featdiv.subfeature;
+    if (subfeat)  {
+	var selman = DraggableFeatureTrack.selectionManager;
+	    var parent = subfeat.parent;
+	    // select parent feature
+	    // children (including subfeat double-clicked one) are auto-deselected in FeatureSelectionManager if parent is selected
+	    if (parent)  { selman.addToSelection(parent); }
     }
-
 }
 
 
@@ -485,7 +380,7 @@ DraggableFeatureTrack.prototype.onFeatureClick = function(event) {
  *   and/or feature/subfeature elements that have non-feature div descendants, possibly nested
  * elem should be a div for a feature or subfeature, or descendant div of feature or subfeature
 */
-DraggableFeatureTrack.prototype.getTopLevelFeatureDiv = function(elem)  {
+/*DraggableFeatureTrack.prototype.getTopLevelFeatureDiv = function(elem)  {
     while (!elem.feature)  {
 	elem = elem.parentNode;
 	if (elem === document)  {return null;} 
@@ -496,12 +391,15 @@ DraggableFeatureTrack.prototype.getTopLevelFeatureDiv = function(elem)  {
     }
     return elem;
 }
+*/
 
 /** returns parent feature div of subfeature div */
-DraggableFeatureTrack.prototype.getParentFeatureDiv = function(elem)  {
+/*
+ *DraggableFeatureTrack.prototype.getParentFeatureDiv = function(elem)  {
     elem = elem.parentNode;
     return DraggableFeatureTrack.prototype.getLowestFeatureDiv(elem);
 }
+*/
 
 /** returns first feature or subfeature div (including itself) found when crawling towards root from branch in feature/subfeature/descendants div hierachy  */
 DraggableFeatureTrack.prototype.getLowestFeatureDiv = function(elem)  {
@@ -524,16 +422,19 @@ DraggableFeatureTrack.prototype.showRange = function(first, last, startBase, bpP
 //    console.log("called DraggableFeatureTrack.showRange(), block range: " + 
 //		this.firstAttached +  "--" + this.lastAttached + ",  " + (this.lastAttached - this.firstAttached));
     // redo selection styles for divs in case any divs for selected features were changed/added/deleted
-    var sfeats = DraggableFeatureTrack.getSelectedFeatures();
-    var stracks = DraggableFeatureTrack.getTracksForSelectedFeatures();
+    var sfeats = DraggableFeatureTrack.selectionManager.getSelection();
     for (var sin in sfeats)  {
 	// only look for selected features in this track -- 
 	// otherwise will be redoing (sfeats.length * tracks.length) times instead of sfeats.length times, 
 	// because showRange is getting called for each track 
 	var sfeat = sfeats[sin];
-	if (this === stracks[sin])  {
+	if (sfeat.track === this)  {
+	    // some or all feature divs are usually recreated in a showRange call
+	    //  therefore calling track.selectionAdded() to retrigger setting of selected-feature CSS style, etc. on new feat divs
+	    this.selectionAdded(sfeat);
+/*
 	    var sdiv = this.getFeatDiv(sfeat);
-	    if (sdiv && sdiv !== null)  { 
+	    if (sdiv)  { 
 		console.log("found selected feature: ");
 		console.log(sdiv);
 		var jdiv = $(sdiv);
@@ -548,6 +449,7 @@ DraggableFeatureTrack.prototype.showRange = function(first, last, startBase, bpP
 		// reset sel_divs to point to the correct div
 		DraggableFeatureTrack.sel_divs[sin] = jdiv;
 	    }
+*/
 	}
     }
 }
