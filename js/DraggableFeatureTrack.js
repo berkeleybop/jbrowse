@@ -308,8 +308,7 @@ DraggableFeatureTrack.prototype.onFeatureMouseDown = function(event) {
 //	var featdiv = this;
 	var feat = featdiv.feature;
 	console.log(featdiv);
-	if (feat)  {feat.isSubFeature = false;}
-	else  {feat = featdiv.subfeature; feat.isSubFeature = true;}
+	if (!feat)  { feat = featdiv.subfeature; }
 	var already_selected = (DraggableFeatureTrack.getSelectedDivs().indexOf(featdiv) > -1);
 	var parent_featdiv = DraggableFeatureTrack.prototype.getParentFeatureDiv(featdiv);
 	var parent_selected = false;
