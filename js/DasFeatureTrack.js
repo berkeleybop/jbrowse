@@ -39,12 +39,15 @@ DasFeatureTrack.prototype.fillBlock = function(blockIndex, block,
 		    containerStart, containerEnd);
 };
 
-DasFeatureTrack.prototype.getId = function(feature, path)  {
+/*
+ DasFeatureTrack.prototype.getId = function(feature, path)  {
     var fid = this.fields["id"];
     return feature[fid];
 };
+*/
 
-DasFeatureTrack.prototype.handleSubFeatures = function(feature, featDiv, 
+/*
+ *DasFeatureTrack.prototype.handleSubFeatures = function(feature, featDiv,
 						     displayStart, displayEnd)  {
     var subfeatures = this.fields["subfeatures"];
     for (var i = 0; i < feature[subfeatures].length; i++) {
@@ -52,7 +55,7 @@ DasFeatureTrack.prototype.handleSubFeatures = function(feature, featDiv,
 	this.renderSubfeature(feature, featDiv, subfeature, displayStart, displayEnd);
     }
 }
-
+*/
 
 /*
 Copyright (c) 2007-2010 The Evolutionary Software Foundation & BerkeleyBOP
