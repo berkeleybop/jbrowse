@@ -216,7 +216,7 @@ AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 }
 
 /** AnnotTrack subfeatures are similar to DAS subfeatures, so handled similarly */
-AnnotTrack.prototype.handleSubFeatures = function(feature, featDiv, 
+/* AnnotTrack.prototype.handleSubFeatures = function(feature, featDiv,
     displayStart, displayEnd)  {
     var subfeatures = this.fields["subfeatures"];
     for (var i = 0; i < feature[subfeatures].length; i++) {
@@ -224,6 +224,7 @@ AnnotTrack.prototype.handleSubFeatures = function(feature, featDiv,
 	this.renderSubfeature(feature, featDiv, subfeature, displayStart, displayEnd);
     }
 }
+*/
 
 AnnotTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
     displayStart, displayEnd) {
@@ -309,14 +310,28 @@ AnnotTrack.prototype.makeTrackDroppable = function() {
 	    console.log("draggable dropped on AnnotTrack");
 	    console.log(ui);
 	    // getSelectedFeatures() and getSelectedDivs() always return same size with corresponding  feat / div
-	    //	    var feats = DraggableFeatureTrack.getSelectedFeatures();
-	    var dragdivs = DraggableFeatureTrack.getSelectedDivs();1
-	    for (var i in dragdivs)  {
-		var dragdiv = dragdivs[i];
-		var is_subfeature = dragdiv.subfeature;
-		var dragfeat = dragdiv.feature || dragdiv.subfeature;
+	    var feats = DraggableFeatureTrack.getSelectedFeatures();
+	    var tracks = DraggableFeatureTrack.getTracksForSelectedFeatures();
+	    //   var dragdivs = DraggableFeatureTrack.getSelectedDivs();
+
+//	    for (var i in dragdivs)  {
+	    for (var i in feats)  {
+		var dragfeat = feats[i];
+//		var source_track = DraggableFeatureTrack.getTrack(dragfeat);
+		var source_track = tracks[i];
 		console.log(dragfeat);
-		var source_track = dragdiv.track;
+		console.log(source_track);
+		// but can't guarantee a dragdiv -- could be offscreen and unrendered
+		//    need to make a BioFeature wrapper around JSON feature data struct, 
+		//    and give it track, etc. properties
+		// then rather than adding JSON feature array to selection, add BioFeature
+		// also, currently getFeatDiv() only works for features, not subfeatures
+		var dragdiv = source_track.getFeatDiv(dragfeat);
+//		var is_subfeature = dragdiv.subfeature;
+		var is_subfeature = !dragdiv;
+		console.log(is_subfeature);
+		console.log("source track: ");
+		console.log(source_track);
 		var newfeat = JSONUtils.convertToTrack(dragfeat, is_subfeature, source_track, target_track);
 		console.log("local feat conversion: " )
 		console.log(newfeat);
