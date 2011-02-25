@@ -177,9 +177,6 @@ AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
     var track = this;
     var featDiv = FeatureTrack.prototype.renderFeature.call(this, feature, uniqueId, block, scale,
 							    containerStart, containerEnd);
-    console.log("rendered feature: ");
-    console.log(feature);
-    console.log(featDiv);
     if (featDiv && featDiv != null)  {
 	annot_context_menu.bindDomNode(featDiv);
 	//    var track = this;
@@ -291,20 +288,26 @@ AnnotTrack.prototype.onFeatureClick = function(event) {
 //   event.stopPropagation();
 }
 
-AnnotTrack.prototype.addToAnnotation = function(annotdiv, newfeat)  {
-    console.log("existing annotation");
-    var existing_annot = annotdiv.feature;
-    console.log(existing_annot);
-    var existing_subs = existing_annot[this.fields["subfeatures"]];
-    existing_subs.push(newfeat);
-    // hardwiring start as f[0], end as f[1] for now -- 
-    //   to fix this need to whether newfeat is a subfeat, etc.
-    if (newfeat[0] < existing_annot[0])  {existing_annot[0] = newfeat[0];}
-    if (newfeat[1] > existing_annot[1])  {existing_annot[1] = newfeat[1];}
-    console.log("added to annotation: ");
-    console.log(existing_annot);
+AnnotTrack.prototype.addToAnnotation = function(annot, features)  {
+    var track = this;
+    console.log("adding to annot: ");
+    console.log(annot);
+    var annotdiv = track.getFeatDiv(annot);
+    for (i in features)  {
+	var newfeat = features[i];
+	console.log(newfeat);
+	var annot_subs = annot[track.fields["subfeatures"]];
+	annot_subs.push(newfeat);
+	// hardwiring start as f[0], end as f[1] for now -- 
+	//   to fix this need to whether newfeat is a subfeat, etc.
+	if (newfeat[0] < annot[0])  { annot[0] = newfeat[0]; }
+	if (newfeat[1] > annot[1])  { annot[1] = newfeat[1]; }
+	console.log("added to annotation: ");
+	console.log(annot);
+    }
     this.hideAll();
     this.changed();
+    console.log("finished adding to annot: ");
 }
 
 AnnotTrack.prototype.makeTrackDroppable = function() {
@@ -319,7 +322,14 @@ AnnotTrack.prototype.makeTrackDroppable = function() {
 	    console.log("draggable dropped on AnnotTrack");
 	    console.log(ui);
 	    var dropped_feats = DraggableFeatureTrack.selectionManager.getSelection();
-	    target_track.createAnnotations(dropped_feats);
+	    // problem with making individual annotations droppable, so checking for "drop" on annotation here, 
+	    //    and if so re-routing to add to existing annotation
+	    if (AnnotTrack.annot_under_mouse != null)  {
+		target_track.addToAnnotation(AnnotTrack.annot_under_mouse.feature, dropped_feats);
+	    }
+	    else  {
+		target_track.createAnnotations(dropped_feats);
+	    }
 	}    
     } );
 }
@@ -328,91 +338,74 @@ AnnotTrack.prototype.createAnnotations = function(feats)  {
     var target_track = this;
     var features_nclist = target_track.features;
     for (var i in feats)  {
-		var dragfeat = feats[i];
-		var source_track = dragfeat.track;
-		console.log(dragfeat);
-		console.log(source_track);
-		var dragdiv = source_track.getFeatDiv(dragfeat);
-//		var is_subfeature = dragdiv.subfeature;
-		var is_subfeature = (!!dragfeat.parent);  // !! is shorthand for returning true if value is defined and non-null
-		console.log(is_subfeature);
-		console.log("source track: ");
-		console.log(source_track);
-		var newfeat = JSONUtils.convertToTrack(dragfeat, is_subfeature, source_track, target_track);
-		console.log("local feat conversion: " )
-		console.log(newfeat);
-		if (AnnotTrack.annot_under_mouse != null)  {
-		    console.log("adding to annot: ");
-		    console.log(AnnotTrack.annot_under_mouse);
-		    target_track.addToAnnotation(AnnotTrack.annot_under_mouse, newfeat);
-		    console.log("finished adding to annot: ");
+	var dragfeat = feats[i];
+	var source_track = dragfeat.track;
+	console.log(dragfeat);
+	console.log(source_track);
+	var dragdiv = source_track.getFeatDiv(dragfeat);
+	var is_subfeature = (!!dragfeat.parent);  // !! is shorthand for returning true if value is defined and non-null
+	console.log(is_subfeature);
+	console.log("source track: ");
+	console.log(source_track);
+	var newfeat = JSONUtils.convertToTrack(dragfeat, is_subfeature, source_track, target_track);
+	console.log("local feat conversion: " )
+	console.log(newfeat);
+	if (AnnotTrack.USE_LOCAL_EDITS)  {
+	    var id = "annot_" + AnnotTrack.creation_count++;
+	    newfeat[target_track.fields["id"]] = id;
+	    newfeat[target_track.fields["name"]] = id;
+	    console.log("new feature: ");
+	    console.log(newfeat);
+	    features_nclist.add(newfeat, id);
+	    target_track.hideAll();
+	    target_track.changed();
+	}
+	else  {
+	    var responseFeature;
+	    var source_fields = source_track.fields;
+	    var source_subFields = source_track.subFields;
+	    var target_fields = target_track.fields;
+	    var target_subFields = target_track.subFields;
+	    // creating JSON feature data struct that WebApollo server understands, 
+	    //    based on JSON feature data struct that JBrowse understands
+	    var afeat = JSONUtils.createApolloFeature(dragfeat, source_fields, source_subFields, "transcript");
+	    console.log("createApolloFeature: ");
+	    console.log(afeat);
+	    console.log(source_fields);
+	    
+	    dojo.xhrPost( {
+		postData: '{ "track": "' + target_track.name + '", "features": [ ' + JSON.stringify(afeat) + '], "operation": "add_feature" }',
+		url: context_path + "/AnnotationEditorService",
+		handleAs: "json",
+		timeout: 5000, // Time in milliseconds
+		// The LOAD function will be called on a successful response.
+		load: function(response, ioArgs) { //
+		    console.log("Successfully created annotation object: " + response)
+		    // response processing is now handled by the long poll thread (when using servlet 3.0)
+		    //  if comet-style long pollling is not working, then create annotations based on 
+		    //     AnnotationEditorResponse
+		    if (!AnnotTrack.USE_COMET || !target_track.comet_working)  {
+			responseFeatures = response.features;
+			for (var rindex in responseFeatures)  {
+			    var rfeat = responseFeatures[rindex];
+			    var jfeat = JSONUtils.createJBrowseFeature(rfeat, target_fields, target_subFields);
+			    features_nclist.add(jfeat, jfeat.id);
+			    console.log("new JBrowse feature:");
+			    console.log(jfeat);
+			} 
+			target_track.hideAll();
+			target_track.changed();
+		    }
+		},
+		// The ERROR function will be called in an error case.
+		error: function(response, ioArgs) { //
+		    console.log("Error creating annotation--maybe you forgot to log into the server?");
+		    console.error("HTTP status code: ", ioArgs.xhr.status); //
+		    //dojo.byId("replace").innerHTML = 'Loading the ressource from the server did not work'; //
+		    return response;
 		}
-		else  {
-		if (AnnotTrack.USE_LOCAL_EDITS)  {
-		    var id = "annot_" + AnnotTrack.creation_count++;
-		    newfeat[target_track.fields["id"]] = id;
-		    newfeat[target_track.fields["name"]] = id;
-		    console.log("new feature: ");
-		    console.log(newfeat);
-		    features_nclist.add(newfeat, id);
-		    target_track.hideAll();
-		    target_track.changed();
-		}
-		else  {
-		    var responseFeature;
-		    var source_fields = source_track.fields;
-		    var source_subFields = source_track.subFields;
-		    var target_fields = target_track.fields;
-		    var target_subFields = target_track.subFields;
-		    // creating JSON feature data struct that WebApollo server understands, 
-		    //    based on JSON feature data struct that JBrowse understands
-		    var testFeature = JSONUtils.createApolloFeature(dragfeat, source_fields, source_subFields, "transcript");
-		    console.log("createApolloFeature: ");
-		    console.log(testFeature);
-		    console.log(source_fields);
-	
-		    dojo.xhrPost( {
-			postData: '{ "track": "' + target_track.name + '", "features": [ ' + JSON.stringify(testFeature) + '], "operation": "add_feature" }',
-			url: context_path + "/AnnotationEditorService",
-			handleAs: "json",
-			timeout: 5000, // Time in milliseconds
-			// The LOAD function will be called on a successful response.
-			load: function(response, ioArgs) { //
-			    console.log("Successfully created annotation object: " + response)
-			    // response processing is now handled by the long poll thread (when using servlet 3.0)
-			    //  if comet-style long pollling is not working, then create annotations based on 
-			    //     AnnotationEditorResponse
-			    if (!AnnotTrack.USE_COMET || !target_track.comet_working)  {
-				// responseFeatures = responseFeatures.features;
-				responseFeatures = response.features;
-				/*
-				for (var j in responseFeatures)  {
-				    var newfeat = JSONUtils.createJBrowseFeature(responseFeatures[i], fields);
-				    features_nclist.add(newfeat, newfeat.id);
-				} 
-				*/ 
-//				var featureArray = JSONUtils.convertJsonToFeatureArray(responseFeatures[0]);
-				var jfeat = JSONUtils.createJBrowseFeature(responseFeatures[0], target_fields, target_subFields);
-//				features_nclist.add(featureArray, responseFeatures[0].uniquename);
-				console.log("new JBrowse feature:");
-				console.log(jfeat);
-				features_nclist.add(jfeat, responseFeatures[0].uniquename);
-
-				target_track.hideAll();
-				target_track.changed();
-			    // console.log("DFT: responseFeatures[0].uniquename = " + responseFeatures[0].uniquename);
-			    }
-			},
-			// The ERROR function will be called in an error case.
-			error: function(response, ioArgs) { //
-			    console.log("Error creating annotation--maybe you forgot to log into the server?");
-			    console.error("HTTP status code: ", ioArgs.xhr.status); //
-			    //dojo.byId("replace").innerHTML = 'Loading the ressource from the server did not work'; //
-			    return response;
-			}
-		    });
-		}
-		}
+	    });
+	}
     }
 }
 
