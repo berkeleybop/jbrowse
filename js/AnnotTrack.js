@@ -28,6 +28,22 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
     this.annotMouseDown = function(event)  {
 	thisObj.onAnnotMouseDown(event);
     }
+
+    annot_context_menu = new dijit.Menu({});
+    annot_context_menu.addChild(new dijit.MenuItem(
+    {
+    	label: "Delete",
+    	onClick: function() {
+    	    thisObj.deleteSelectedFeatures();
+        }
+    }
+    ));
+    annot_context_menu.addChild(new dijit.MenuItem( 
+    {
+    	label: "..."
+    }
+    ));
+    annot_context_menu.startup();
 }
 
 
@@ -62,12 +78,13 @@ var context_path = "/ApolloWeb";
 
 
 dojo.addOnLoad( function()  {
+/*
     annot_context_menu = new dijit.Menu({});
     annot_context_menu.addChild(new dijit.MenuItem(
     {
     	label: "Delete",
     	onClick: function() {
-    		AnnotTrack.deleteSelectedFeatures();
+    	    AnnotTrack.deleteSelectedFeatures();
         }
     }
     ));
@@ -77,6 +94,7 @@ dojo.addOnLoad( function()  {
     }
     ));
     annot_context_menu.startup();
+*/
 } );
 
 console.log("annot context menu created...");
@@ -195,7 +213,8 @@ AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
     	    if (AnnotTrack.selectedFeatures.length == 1) {
     		AnnotTrack.selectedFeatures = [];
     	    }
-    	    AnnotTrack.selectedFeatures.push([feature, track.name]);
+//    	    AnnotTrack.selectedFeatures.push([feature, track.name]);
+    	    AnnotTrack.selectedFeatures.push(feature);
 	});
 	// console.log("added context menu to featdiv: ", uniqueId);
 	
@@ -291,17 +310,18 @@ AnnotTrack.prototype.onFeatureClick = function(event) {
 AnnotTrack.prototype.addToAnnotation = function(annot, features)  {
     var track = this;
     console.log("adding to annot: ");
+    console.log(track);
     console.log(annot);
     var annotdiv = track.getFeatDiv(annot);
-    for (i in features)  {
+    for (var i in features)  {
 	var newfeat = features[i];
 	console.log(newfeat);
 	var annot_subs = annot[track.fields["subfeatures"]];
 	annot_subs.push(newfeat);
 	// hardwiring start as f[0], end as f[1] for now -- 
 	//   to fix this need to whether newfeat is a subfeat, etc.
-	if (newfeat[0] < annot[0])  { annot[0] = newfeat[0]; }
-	if (newfeat[1] > annot[1])  { annot[1] = newfeat[1]; }
+	if (newfeat[0] < annot[0])  {annot[0] = newfeat[0];}
+	if (newfeat[1] > annot[1])  {annot[1] = newfeat[1];}
 	console.log("added to annotation: ");
 	console.log(annot);
     }
@@ -315,6 +335,7 @@ AnnotTrack.prototype.makeTrackDroppable = function() {
     var target_track = this;
     var target_trackdiv = target_track.div;
     console.log(this);
+    console.log(target_trackdiv);
     $(target_trackdiv).droppable(  {
 	accept: ".selected-feature",   // only accept draggables that are selected feature divs
 	drop: function(event, ui)  { 
@@ -332,6 +353,7 @@ AnnotTrack.prototype.makeTrackDroppable = function() {
 	    }
 	}    
     } );
+    console.log("finished making droppable target");
 }
 
 AnnotTrack.prototype.createAnnotations = function(feats)  {
@@ -340,13 +362,10 @@ AnnotTrack.prototype.createAnnotations = function(feats)  {
     for (var i in feats)  {
 	var dragfeat = feats[i];
 	var source_track = dragfeat.track;
+	console.log("creating annotation based on feature: ");
 	console.log(dragfeat);
-	console.log(source_track);
 	var dragdiv = source_track.getFeatDiv(dragfeat);
 	var is_subfeature = (!!dragfeat.parent);  // !! is shorthand for returning true if value is defined and non-null
-	console.log(is_subfeature);
-	console.log("source track: ");
-	console.log(source_track);
 	var newfeat = JSONUtils.convertToTrack(dragfeat, is_subfeature, source_track, target_track);
 	console.log("local feat conversion: " )
 	console.log(newfeat);
@@ -354,6 +373,7 @@ AnnotTrack.prototype.createAnnotations = function(feats)  {
 	    var id = "annot_" + AnnotTrack.creation_count++;
 	    newfeat[target_track.fields["id"]] = id;
 	    newfeat[target_track.fields["name"]] = id;
+	    newfeat.uid = id;
 	    console.log("new feature: ");
 	    console.log(newfeat);
 	    features_nclist.add(newfeat, id);
@@ -371,7 +391,6 @@ AnnotTrack.prototype.createAnnotations = function(feats)  {
 	    var afeat = JSONUtils.createApolloFeature(dragfeat, source_fields, source_subFields, "transcript");
 	    console.log("createApolloFeature: ");
 	    console.log(afeat);
-	    console.log(source_fields);
 	    
 	    dojo.xhrPost( {
 		postData: '{ "track": "' + target_track.name + '", "features": [ ' + JSON.stringify(afeat) + '], "operation": "add_feature" }',
@@ -388,10 +407,12 @@ AnnotTrack.prototype.createAnnotations = function(feats)  {
 			responseFeatures = response.features;
 			for (var rindex in responseFeatures)  {
 			    var rfeat = responseFeatures[rindex];
+			    console.log("AnnotationEditorService annot object: ");
+			    console.log(rfeat);
 			    var jfeat = JSONUtils.createJBrowseFeature(rfeat, target_fields, target_subFields);
-			    features_nclist.add(jfeat, jfeat.id);
-			    console.log("new JBrowse feature:");
+			    console.log("Converted annot object to JBrowse feature array: " + jfeat.uid);
 			    console.log(jfeat);
+			    features_nclist.add(jfeat, jfeat.uid);
 			} 
 			target_track.hideAll();
 			target_track.changed();
@@ -409,32 +430,38 @@ AnnotTrack.prototype.createAnnotations = function(feats)  {
     }
 }
 
-AnnotTrack.deleteSelectedFeatures = function() {
-    var trackdiv = $("div#track_Annotations.track").get(0);
-    var track = trackdiv.track;
-//    console.log("track: ");
-//    console.log(track);
-    var features_nclist = track.features;
-    var trackName;
+/**
+*  If there are multiple AnnotTracks, each has a separate FeatureSelectionManager 
+*    (contrasted with DraggableFeatureTracks, which all share the same selection and selection manager
+*/
+AnnotTrack.prototype.deleteSelectedFeatures = function()  {
+    this.deleteAnnotations(AnnotTrack.selectedFeatures);
+    selectedFeatures = [];
+}
+
+AnnotTrack.prototype.deleteAnnotations = function(annots) {
+    var track = this;
     var features = '"features": [';
-    
     var uniqueNames = [];
-	for (var i = 0; i < AnnotTrack.selectedFeatures.length; ++i) {
-		var data = AnnotTrack.selectedFeatures[i];
-		var feat = data[0];
-		var uniqueName = feat[AnnotTrack.fields["name"]];
-		if (trackName == null) {
-			trackName = data[1];
-		}
-		if (i > 0) {
-			features += ',';
-		}
+    for (var i in annots)  {
+	var annot = annots[i];
+	var uniqueName = annot.uid;
+	// just checking to ensure that all features in selection are from this track -- 
+	//   if not, then don't try and delete them
+	if (annot.track === track)  {
+	    var trackdiv = track.div;
+	    var trackName = track.name;
+	    var features_nclist = track.features;
+	    if (i > 0) {
+		features += ',';
+	    }
 	    features += ' { "uniquename": "' + uniqueName + '" } ';
 	    uniqueNames.push(uniqueName);
 	}
-	features += ']';
-    // console.log("request server deletion");
-    //    console.log(features);
+    }
+    features += ']';
+    console.log("request server deletion");
+    console.log(features);
 
     if (AnnotTrack.USE_LOCAL_EDITS)  {
 	for (var j in uniqueNames)  {
@@ -447,37 +474,36 @@ AnnotTrack.deleteSelectedFeatures = function() {
     }
     else  {
 	dojo.xhrPost( {
-		postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "delete_feature" }',
-		url: context_path + "/AnnotationEditorService",
-		handleAs: "json",
-		timeout: 5000 * 1000, // Time in milliseconds
-		load: function(response, ioArgs) {
-		    if (!AnnotTrack.USE_COMET || !track.comet_working)  {
-			var responseFeatures = response.features;
-			if (!responseFeatures || responseFeatures.length == 0)  {
-			    // if not using comet, or comet not working
-			    // and no features are returned, then they were successfully deleted?
-			    for (var j in uniqueNames)  {
-				var id_to_delete = uniqueNames[j];
-				console.log("server deleted: " + id_to_delete);
-				features_nclist.delete(id_to_delete);
-			    }
-			    track.hideAll();
-			    track.changed();
+	    postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "delete_feature" }',
+	    url: context_path + "/AnnotationEditorService",
+	    handleAs: "json",
+	    timeout: 5000 * 1000, // Time in milliseconds
+	    load: function(response, ioArgs) {
+		if (!AnnotTrack.USE_COMET || !track.comet_working)  {
+		    var responseFeatures = response.features;
+		    if (!responseFeatures || responseFeatures.length == 0)  {
+			// if not using comet, or comet not working
+			// and no features are returned, then they were successfully deleted?
+			for (var j in uniqueNames)  {
+			    var id_to_delete = uniqueNames[j];
+			    console.log("server deleted: " + id_to_delete);
+			    features_nclist.delete(id_to_delete);
 			}
+			track.hideAll();
+			track.changed();
 		    }
-		},
-		// The ERROR function will be called in an error case.
-		error: function(response, ioArgs) { // 
-			console.log("Annotation server error--maybe you forgot to login to the server?")
-			console.error("HTTP status code: ", ioArgs.xhr.status); //
-			//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //  
-			return response; // 
 		}
-		
+	    },
+	    // The ERROR function will be called in an error case.
+	    error: function(response, ioArgs) { // 
+		console.log("Annotation server error--maybe you forgot to login to the server?")
+		console.error("HTTP status code: ", ioArgs.xhr.status); //
+		//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //  
+		return response; // 
+	    }
+	    
 	});
     }
-    AnnotTrack.selectedFeatures = [];
 }
 
 AnnotTrack.prototype.createAnnotation = function()  {
