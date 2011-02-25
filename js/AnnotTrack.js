@@ -47,7 +47,7 @@ AnnotTrack.USE_COMET = false;
 *    to create similar annotations locally
 *  useful when AnnotationEditorService is having problems, or experimenting with something not yet completely implemented server-side
 */
-AnnotTrack.USE_LOCAL_EDITS = true;
+AnnotTrack.USE_LOCAL_EDITS = false;
 
 AnnotTrack.creation_count = 0;
 AnnotTrack.selectedFeatures = [];
@@ -174,42 +174,52 @@ AnnotTrack.annot_under_mouse = null;
  */
 AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 					      containerStart, containerEnd) {
-	var track = this;
+    var track = this;
     var featDiv = FeatureTrack.prototype.renderFeature.call(this, feature, uniqueId, block, scale,
 							    containerStart, containerEnd);
-	console.log("rendered feature: ");
-	console.log(feature);
-	console.log(featDiv);
+    console.log("rendered feature: ");
+    console.log(feature);
+    console.log(featDiv);
     if (featDiv && featDiv != null)  {
-      annot_context_menu.bindDomNode(featDiv);
-      //    var track = this;
-      $(featDiv).bind("mouseenter", function(event)  {
-	  /* "this" in mousenter function will be featdiv */
-	  AnnotTrack.annot_under_mouse = this;
-	  console.log("annot under mouse: ");
-	  console.log(AnnotTrack.annot_under_mouse);
+	annot_context_menu.bindDomNode(featDiv);
+	//    var track = this;
+	$(featDiv).bind("mouseenter", function(event)  {
+	    /* "this" in mousenter function will be featdiv */
+	    AnnotTrack.annot_under_mouse = this;
+	    console.log("annot under mouse: ");
+	    console.log(AnnotTrack.annot_under_mouse);
 	} );
-      $(featDiv).bind("mouseleave", function(event)  {
-	  console.log("no annot under mouse: ");
-	  AnnotTrack.annot_under_mouse = null;
+	$(featDiv).bind("mouseleave", function(event)  {
+	    console.log("no annot under mouse: ");
+	    AnnotTrack.annot_under_mouse = null;
 	} );
-      // console.log("added context menu to featdiv: ", uniqueId);
-    dojo.connect(featDiv, "oncontextmenu", this, function(e) {
-    	if (AnnotTrack.selectedFeatures.length == 1) {
+	// console.log("added context menu to featdiv: ", uniqueId);
+	dojo.connect(featDiv, "oncontextmenu", this, function(e) {
+    	    if (AnnotTrack.selectedFeatures.length == 1) {
     		AnnotTrack.selectedFeatures = [];
-    	}
-    	AnnotTrack.selectedFeatures.push([feature, track.name]);
-    });
-    // console.log("added context menu to featdiv: ", uniqueId);
-    $(featDiv).droppable(  {
-	accept: ".selected-feature",   // only accept draggables that are selected feature divs	
+    	    }
+    	    AnnotTrack.selectedFeatures.push([feature, track.name]);
+	});
+	// console.log("added context menu to featdiv: ", uniqueId);
+	
+	$(featDiv).droppable(  {
+	    accept: ".selected-feature",   // only accept draggables that are selected feature divs	
 	    tolerance: "pointer", 
 	    hoverClass: "annot-drop-hover", 
 	    drop: function(event, ui)  {
-	    console.log("dropped feature on annot:");
-	    console.log(this);
-	  }
-	
+		// ideally in the drop() on annot div is where would handle adding feature(s) to annot, 
+		//   but JQueryUI droppable doesn't actually call drop unless draggable helper div is actually 
+		//   over the droppable -- even if tolerance is set to pointer
+		//      tolerance=pointer will trigger hover styling when over droppable
+		//      BUT location of pointer still does not influence actual dropping and drop() call
+		// therefore getting around this by handling hover styling here based on pointer over annot, 
+		//      but drop-to-add part is handled by whole-track droppable, and uses annot_under_mouse 
+		//      tracking variable to determine if drop was actually on top of an annot instead of 
+		//      track whitespace
+		console.log("dropped feature on annot:");
+		console.log(this);
+	    }
+	    
 	} );
     }
     return featDiv;
@@ -301,19 +311,23 @@ AnnotTrack.prototype.makeTrackDroppable = function() {
     console.log("making track a droppable target: ");
     var target_track = this;
     var target_trackdiv = target_track.div;
-    var features_nclist = target_track.features;
     console.log(this);
     $(target_trackdiv).droppable(  {
 	accept: ".selected-feature",   // only accept draggables that are selected feature divs
-	drop: function(event, ui)  {
+	drop: function(event, ui)  { 
 	    // "this" is the div being dropped on, so same as target_trackdiv
 	    console.log("draggable dropped on AnnotTrack");
 	    console.log(ui);
-	    // getSelectedFeatures() and getSelectedDivs() always return same size with corresponding  feat / div
-	    var feats = DraggableFeatureTrack.selectionManager.getSelection();
-	    //	    var tracks = DraggableFeatureTrack.getTracksForSelectedFeatures();
+	    var dropped_feats = DraggableFeatureTrack.selectionManager.getSelection();
+	    target_track.createAnnotations(dropped_feats);
+	}    
+    } );
+}
 
-	    for (var i in feats)  {
+AnnotTrack.prototype.createAnnotations = function(feats)  {
+    var target_track = this;
+    var features_nclist = target_track.features;
+    for (var i in feats)  {
 		var dragfeat = feats[i];
 		var source_track = dragfeat.track;
 		console.log(dragfeat);
@@ -352,13 +366,6 @@ AnnotTrack.prototype.makeTrackDroppable = function() {
 		    var target_subFields = target_track.subFields;
 		    // creating JSON feature data struct that WebApollo server understands, 
 		    //    based on JSON feature data struct that JBrowse understands
-		    /*
-		    var topLevelFeature = JSONUtils.createJsonFeature(dragfeat[source_fields["start"]], 
-								      dragfeat[source_fields["end"]], 
-								      dragfeat[source_fields["strand"]], "SO", "gene");
-		    console.log("createJsonFeature: ");
-		    console.log(topLevelFeature);
-		    */
 		    var testFeature = JSONUtils.createApolloFeature(dragfeat, source_fields, source_subFields, "transcript");
 		    console.log("createApolloFeature: ");
 		    console.log(testFeature);
@@ -406,10 +413,7 @@ AnnotTrack.prototype.makeTrackDroppable = function() {
 		    });
 		}
 		}
-	    }
-
-	}
-    } );
+    }
 }
 
 AnnotTrack.deleteSelectedFeatures = function() {
@@ -482,6 +486,24 @@ AnnotTrack.deleteSelectedFeatures = function() {
     }
     AnnotTrack.selectedFeatures = [];
 }
+
+AnnotTrack.prototype.createAnnotation = function()  {
+
+}
+
+// AnnotTrack.prototype.addToAnnotation
+
+
+// AnnotTrack.prototype.deleteFromAnnotation = function()  { }
+// handle potential effect on parent?
+AnnotTrack.prototype.deleteAnnotation = function()  {
+
+}
+
+AnnotTrack.prototype.changeAnnotationLocation = function()  {
+
+}
+
 
 /*
 Copyright (c) 2010-2011 Berkeley Bioinformatics Open Projects (BBOP)
