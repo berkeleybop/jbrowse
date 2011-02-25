@@ -28,11 +28,12 @@ JSONUtils.createJsonFeature = function(fmin, fmax, strand, cv, cvterm) {
 JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
     var jfeature = new Array();
     var loc = afeature.location;
+    var uid = afeature.uniquename; 
     jfeature[fields["start"]] = loc.fmin;
     jfeature[fields["end"]] = loc.fmax;
     jfeature[fields["strand"]] = loc.strand;
-    if (fields["id"])  {jfeature[fields["id"]] = afeature.uniquename;}
-    if (fields["name"])  {jfeature[fields["name"]] = afeature.uniquename;}
+    if (fields["id"])  {jfeature[fields["id"]] = uid; }
+    if (fields["name"])  {jfeature[fields["name"]] = uid; }
     if (fields["type"])  { 
 	var type = afeature.type.name;
 	if (type == "exon")  {type = "UTR";}
@@ -48,6 +49,7 @@ JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
 	    jfeature[fields["subfeatures"]][i] =jchild;
 	}
     }
+    jfeature.uid = uid;
     return jfeature;
 }
 
