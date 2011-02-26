@@ -19,10 +19,10 @@ FeatureSelectionManager.prototype.addToSelection = function(feat)  {
     // remove any children
     var selarray = this.selected;
     var slength = selarray.length;
-    for (var i=0; i<slength; i++)  {
-	var sfeat = selarray[i];
+    for (var sindex=0; sindex<slength; sindex++)  {
+	var sfeat = selarray[sindex];
 	if (sfeat.parent == feat)  {
-	    this._removeSelectionAt(i, sfeat);
+	    this._removeSelectionAt(sindex, sfeat);
 	    slength--;
 	}
     }
@@ -32,7 +32,8 @@ FeatureSelectionManager.prototype.addToSelection = function(feat)  {
 	this.removeFromSelection(parent);
     }
     selarray.push(feat);
-    for (var lindex in this.listeners)  {
+    var lislength = this.listeners.length;
+    for (var lindex = 0; lindex<lislength; lindex++)  {
 	var listener = this.listeners[lindex];
 	listener.selectionAdded(feat);
     }
@@ -51,19 +52,29 @@ FeatureSelectionManager.prototype.removeFromSelection = function(feat)  {
 
 FeatureSelectionManager.prototype._removeSelectionAt = function(index, feat)  {
     this.selected.splice(index, 1);
-    for (var i in this.listeners)  {
-	var listener = this.listeners[i];
+    var lislength = this.listeners.length;
+    for (var lindex = 0; lindex<lislength; lindex++)  {
+	var listener = this.listeners[lindex];
 	listener.selectionRemoved(feat);
     }
 }
 
 /**
 *  clearing an empty selection does nothing (and doesn't trigger listener calls)
+*
+*  intended for optimizing when selection is cleared, rather than 
+*     multiple calls to removeSelectionAt (and subsequent multiple calls to listeners.selectionRemoved();
 */
 FeatureSelectionManager.prototype.clearSelection = function()  {
     console.log("called FeatureselectionManager.clearSelection()");
     var previous_selected = this.selected;
     this.selected = [];
+    var lislength = this.listeners.length;
+    for (var lindex=0; lindex<lislength; lindex++)  {
+	var listener = this.listeners[lindex];
+	listener.selectionCleared(previous_selected);
+    }
+/*
     for (var sindex in previous_selected)  {
 	var feat = previous_selected[sindex];
 	for (var lindex in this.listeners)  {
@@ -71,6 +82,7 @@ FeatureSelectionManager.prototype.clearSelection = function()  {
 	    listener.selectionRemoved(feat);
 	}
     }
+*/
   //  console.log("done calling FeatureselectionManager.clearSelection()");
 }
 
