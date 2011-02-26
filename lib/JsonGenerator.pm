@@ -25,6 +25,8 @@ my $endIndex = 1;
 #position of the lazy subfeature file name in the fake feature.
 my $lazyIndex = 2;
 
+my $histChunkSize = 10_000;
+
 my %builtinDefaults =
   (
    "class"        => "feature"
@@ -154,7 +156,8 @@ sub evalSubStrings {
 
 sub new {
     my ($class, $outDir, $chunkBytes, $compress, $label, $segName,
-        $refStart, $refEnd, $setStyle, $headers, $subfeatHeaders) = @_;
+        $refStart, $refEnd, $setStyle, $headers, $subfeatHeaders,
+        $featureCount) = @_;
 
     my %style = ("key" => $label,
                  %builtinDefaults,
@@ -171,29 +174,42 @@ sub new {
         sublistIndex   => $#{$headers} + 1,
         curMapHeaders  => $headers,
         subfeatHeaders => $subfeatHeaders,
-        names          => [],
         ext            => ($compress ? "jsonz" : "json"),
         refStart       => $refStart,
         refEnd         => $refEnd,
         count          => 0
     };
 
-    # arbitrarily set the bin size of the the finest-grained histogram 
-    # to one data point per 10 bases
-    $self->{histBinBases} = 10;
-    $self->{hists} = [];
+    # $featureCount is an optional parameter; if we don't know it,
+    # then arbitrarily estimate that there's 0.25 features per base
+    # (0.25 features/base is pretty dense, which gives us
+    # a relatively high-resolution histogram; we can always throw
+    # away the higher-resolution histogram data later, so a dense
+    # estimate is conservative.  A dense estimate does cost more RAM, though)
+    $featureCount = $refEnd * 0.25 unless defined($featureCount);
+
+    # $histBinThresh is the approximate the number of bases per
+    # histogram bin at the zoom level where FeatureTrack.js switches
+    # to the histogram view by default
+    my $histBinThresh = ($refEnd * 2.5) / $featureCount;
+    $self->{histBinBases} = $multiples[0];
+    foreach my $multiple (@multiples) {
+        $self->{histBinBases} = $multiple;
+        last if $multiple > $histBinThresh;
+    }
 
     # initialize histogram arrays to all zeroes
+    $self->{hists} = [];
     for (my $i = 0; $i <= $#multiples; $i++) {
         my $binBases = $self->{histBinBases} * $multiples[$i];
         $self->{hists}->[$i] = [(0) x ceil($refEnd / $binBases)];
-        last if $binBases > $refEnd;
+        # somewhat arbitrarily cut off the histograms at 100 bins
+        last if $binBases * 100 > $refEnd;
     }
 
     mkdir($outDir) unless (-d $outDir);
     unlink (glob $outDir . "/hist*");
     unlink (glob $outDir . "/lazyfeatures*");
-    unlink $outDir . "/names.json";
     unlink $outDir . "/trackData.json";
 
     my $lazyPathTemplate = "$outDir/lazyfeatures-{chunk}." . $self->{ext};
@@ -235,24 +251,22 @@ sub addFeature {
     $self->{count}++;
 
     my $histograms = $self->{hists};
+    my $curHist;
+    my $start = max(0, min($feature->[$startIndex], $self->{refEnd}));
+    my $end = min($feature->[$endIndex], $self->{refEnd});
+    return if ($end < 0);
 
     for (my $i = 0; $i <= $#multiples; $i++) {
         my $binBases = $self->{histBinBases} * $multiples[$i];
-        last if $binBases > $self->{refEnd};
+        $curHist = $histograms->[$i];
+        last unless defined($curHist);
 
-        my $firstBin = int($feature->[$startIndex] / $binBases);
-        $firstBin = 0 if ($firstBin < 0);
-        my $lastBin = int($feature->[$endIndex] / $binBases);
-        return if ($lastBin < 0);
+        my $firstBin = int($start / $binBases);
+        my $lastBin = int($end / $binBases);
         for (my $bin = $firstBin; $bin <= $lastBin; $bin++) {
-            $histograms->[$i]->[$bin] += 1;
+            $curHist->[$bin] += 1;
         }
     }
-}
-
-sub addName {
-    my ($self, $name) = @_;
-    push @{$self->{names}}, $name;
 }
 
 sub featureCount {
@@ -268,16 +282,9 @@ sub hasFeatures {
 sub generateTrack {
     my ($self) = @_;
 
-    $self->{features}->finish();
-
     my $ext = $self->{ext};
-
-    writeJSON($self->{outDir} . "/names.json", $self->{names}, {pretty => 0, max_depth => MAX_JSON_DEPTH}, 0)
-        if ($#{$self->{names}} >= 0);
-
     my $features = $self->{features};
-
-    my $histChunkSize = 10_000;
+    $features->finish();
 
     # approximate the number of bases per histogram bin at the zoom level where
     # FeatureTrack.js switches to histogram view, by default
@@ -292,10 +299,9 @@ sub generateTrack {
     my @histogramMeta;
     # Generate more zoomed-out histograms so that the client doesn't
     # have to load all of the histogram data when there's a lot of it.
-    # Each successive histogram is 10-fold coarser (3 spots later
-    # in @multiples) than the previous one.
-    for (my $j = $i - 1; $j <= $#multiples; $j += 3) {
+    for (my $j = $i - 1; $j <= $#multiples; $j += 1) {
         my $curHist = $self->{hists}->[$j];
+        last unless defined($curHist);
         my $histBases = $self->{histBinBases} * $multiples[$j];
 
         my $chunks = chunkArray($curHist, $histChunkSize);
@@ -314,15 +320,14 @@ sub generateTrack {
                     chunkSize => $histChunkSize
                 }
             };
-        last if ($#{$curHist} < $histChunkSize);
     }
 
     my @histStats;
     for (my $j = $i - 1; $j <= $#multiples; $j++) {
+        last unless defined($self->{hists}->[$j]);
         my $binBases = $self->{histBinBases} * $multiples[$j];
         push @histStats, {'bases' => $binBases,
                           arrayStats($self->{hists}->[$j])};
-        last if $binBases > $self->{refEnd};
     }
 
     my $trackData = {
@@ -367,11 +372,6 @@ sub generateTrack {
               $self->{compress});
 }
 
-sub trimArray {
-    my $arr = shift;
-    pop @$arr until defined($arr->[-1]);
-}
-
 sub arrayStats {
     my $arr = shift;
     my $max = max(@$arr);
@@ -382,22 +382,6 @@ sub arrayStats {
 #            'mean' => $mean, 'var' => $var,
 #            'stddev' => sqrt($var));
     return ('max' => $max, 'mean' => $mean);
-}
-
-sub aggSumArray {
-    my ($bigArray, $count) = @_;
-
-    my @result;
-    my $curSum = $bigArray->[0];
-    for (my $i = 1; $i <= $#{$bigArray}; $i++) {
-        if (0 == ($i % $count)) {
-            push @result, $curSum;
-            $curSum = 0;
-        }
-        $curSum += $bigArray->[$i];
-    }
-    push @result, $curSum;
-    return \@result;
 }
 
 sub chunkArray {

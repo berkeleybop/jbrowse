@@ -11,6 +11,7 @@ use Data::Dumper;
 use JsonGenerator;
 use BioperlFlattener;
 use ExternalSorter;
+use NameHandler;
 
 my ($confFile, $ref, $refid, $onlyLabel, $verbose, $nclChunk, $compress);
 my $outdir = "data";
@@ -106,24 +107,15 @@ foreach my $seg (@refSeqs) {
         if ($#feature_types >= 0) {
             my $jsonGen;
 
-            my $nameCallback = sub { $jsonGen->addName($_[0]) };
+            my $trackDirForChrom = 
+                sub { "$trackDir/" . $_[0] . "/" . $track->{"track"}; };
+            my $nameHandler = NameHandler->new($trackDirForChrom);
+            my $nameCallback = sub { $nameHandler->addName($_[0]) };
             my $iterator = $db->get_seq_stream(-seq_id => $segName,
                                                -type   => \@feature_types);
             my $flattener = BioperlFlattener->new($track->{"track"},
-                                                  $segName,
                                                   \%style, [], [],
                                                   $nameCallback);
-            $jsonGen = JsonGenerator->new("$trackDir/$segName/"
-                                              . $track->{"track"},
-                                          $nclChunk,
-                                          $compress, $track->{"track"},
-                                          $seg->{name},
-                                          $seg->{start},
-                                          $seg->{end},
-                                          \%style,
-                                          $flattener->featureHeaders,
-                                          $flattener->subfeatureHeaders
-                                      );
 
             my $startCol = BioperlFlattener->startIndex;
             my $endCol = BioperlFlattener->endIndex;
@@ -136,19 +128,32 @@ foreach my $seg (@refSeqs) {
                 }, $sortMem);
 
             my $featureCount = 0;
-            while (my $feature = $iterator->next_seq) {
+            while (defined(my $feature = $iterator->next_seq)) {
                 $sorter->add($flattener->flatten($feature));
                 $featureCount++;
             }
             $sorter->finish();
+            $nameHandler->finish();
 
             print "got $featureCount features for " . $track->{"track"} . "\n";
             next unless $featureCount > 0;
 
+            $jsonGen = JsonGenerator->new("$trackDir/$segName/"
+                                              . $track->{"track"},
+                                          $nclChunk,
+                                          $compress, $track->{"track"},
+                                          $seg->{name},
+                                          $seg->{start},
+                                          $seg->{end},
+                                          \%style,
+                                          $flattener->featureHeaders,
+                                          $flattener->subfeatureHeaders,
+                                          $featureCount
+                                      );
+
             while (my $row = $sorter->get()) {
                 $jsonGen->addFeature($row);
             }
-
             $jsonGen->generateTrack();
 
             my $ext = ($compress ? "jsonz" : "json");
