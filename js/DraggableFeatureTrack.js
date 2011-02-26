@@ -36,6 +36,7 @@ DraggableFeatureTrack.prototype.setSelectionManager = function(selman)  {
     // FeatureSelectionManager listeners must implement 
     //     selectionAdded() and selectionRemoved() response methods
     this.selectionManager.addListener(this);
+    return selman;
 }
 
 
@@ -162,8 +163,8 @@ DraggableFeatureTrack.prototype.renderSubfeature = function(feature, featDiv, su
  */
 DraggableFeatureTrack.prototype.onFeatureMouseDown = function(event) {
     // event.stopPropagation();
+    console.log("DFT.onFeatureMouseDown called");
     var ftrack = this;
-
 
     // checking for whether this is part of drag setup retrigger of mousedown -- 
     //     if so then don't do selection or re-setup draggability)
@@ -184,7 +185,7 @@ DraggableFeatureTrack.prototype.onFeatureMouseDown = function(event) {
 
 DraggableFeatureTrack.prototype.handleFeatureSelection = function(event)  {
     var ftrack = this;
-    console.log("DFT.featMouseDown actual event, doing selection/deselection");
+    console.log("DFT.handleFeatureSelection() called, actual mouse event");
 
     var selman = ftrack.selectionManager;
     var featdiv = (event.currentTarget || event.srcElement);

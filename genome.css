@@ -806,7 +806,7 @@ div.generic_parent-hist {
 */
 .annot-drop-hover  {
     outline-style: solid; 
-    outline-color: red;
+    outline-color: green;
     outline-width: 4px; 
 }
 
@@ -846,11 +846,17 @@ div.generic_parent-hist {
 .selected-feature {
     outline-style: solid; 
     outline-color: green;
-    outline-width: 3px; 
+    outline-width: 3px;
+}
+
+.shadow  { 
+    -moz-box-shadow: 5px 5px 5px #444;
+    -webkit-box-shadow: 5px 5px 5px #444;
+    box-shadow: 5px 5px 5px #444;
 }
 
 /* 
-*  slection of annotations is separate from selection of features, 
+*  selection of annotations is separate from selection of features, 
 *   so want a different selection style for selected annotations 
 */
 .selected-annotation  {

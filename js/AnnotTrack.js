@@ -12,7 +12,9 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
     //                baseUrl: base URL for the URL in trackMeta
 
 
-    FeatureTrack.call(this, trackMeta, url, refSeq, browserParams);
+    DraggableFeatureTrack.call(this, trackMeta, url, refSeq, browserParams);
+    this.selectionManager = this.setSelectionManager(new FeatureSelectionManager());
+    this.selectionClass = "selected-annotation";
 
     var thisObj = this;
     /*
@@ -48,8 +50,8 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
 
 
 
-// Inherit from FeatureTrack 
-AnnotTrack.prototype = new FeatureTrack();
+// Inherit from DraggableFeatureTrack 
+AnnotTrack.prototype = new DraggableFeatureTrack();
 
 /**
 *  only set USE_COMET true if server supports Servlet 3.0 comet-style long-polling, and web app is propertly set up for async
@@ -100,7 +102,7 @@ dojo.addOnLoad( function()  {
 console.log("annot context menu created...");
 
 AnnotTrack.prototype.loadSuccess = function(trackInfo) {
-    FeatureTrack.prototype.loadSuccess.call(this, trackInfo);
+    DraggableFeatureTrack.prototype.loadSuccess.call(this, trackInfo);
 	
     var track = this;
     var features = this.features;
@@ -193,7 +195,7 @@ AnnotTrack.annot_under_mouse = null;
 AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 					      containerStart, containerEnd) {
     var track = this;
-    var featDiv = FeatureTrack.prototype.renderFeature.call(this, feature, uniqueId, block, scale,
+    var featDiv = DraggableFeatureTrack.prototype.renderFeature.call(this, feature, uniqueId, block, scale,
 							    containerStart, containerEnd);
     if (featDiv && featDiv != null)  {
 	annot_context_menu.bindDomNode(featDiv);
@@ -201,11 +203,11 @@ AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 	$(featDiv).bind("mouseenter", function(event)  {
 	    /* "this" in mousenter function will be featdiv */
 	    AnnotTrack.annot_under_mouse = this;
-	    console.log("annot under mouse: ");
-	    console.log(AnnotTrack.annot_under_mouse);
+//	    console.log("annot under mouse: ");
+//	    console.log(AnnotTrack.annot_under_mouse);
 	} );
 	$(featDiv).bind("mouseleave", function(event)  {
-	    console.log("no annot under mouse: ");
+//	    console.log("no annot under mouse: ");
 	    AnnotTrack.annot_under_mouse = null;
 	} );
 	// console.log("added context menu to featdiv: ", uniqueId);
@@ -254,25 +256,51 @@ AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 
 AnnotTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
 						 displayStart, displayEnd, block) {
-    var subdiv = FeatureTrack.prototype.renderSubfeature.call(this, feature, featDiv, subfeature, 
+    var subdiv = DraggableFeatureTrack.prototype.renderSubfeature.call(this, feature, featDiv, subfeature, 
 							      displayStart, displayEnd, block);
     if (subdiv && subdiv != null)  {
-      subdiv.onmousedown = this.annotMouseDown;
+      // subdiv.onmousedown = this.annotMouseDown;
+	$(subdiv).bind("mousedown", this.annotMouseDown);
     }
 }
 
 AnnotTrack.prototype.showRange = function(first, last, startBase, bpPerBlock, scale,
                                      containerStart, containerEnd) {
-    FeatureTrack.prototype.showRange.call(this, first, last, startBase, bpPerBlock, scale,
+    DraggableFeatureTrack.prototype.showRange.call(this, first, last, startBase, bpPerBlock, scale,
 					  containerStart, containerEnd);
 //    console.log("after calling annot track.showRange(), block range: " + 
 //		this.firstAttached + "--" + this.lastAttached + ",  " + (this.lastAttached - this.firstAttached));
 }
 
+AnnotTrack.prototype.onFeatureMouseDown = function(event) {
+    console.log("AnnotTrack.onFeatureMouseDown called");
+    // _not_ calling DraggableFeatureTrack.prototyp.onFeatureMouseDown -- 
+    //     don't want to allow dragging (at least not yet)
+    // event.stopPropagation();
+    var ftrack = this;
+
+    // checking for whether this is part of drag setup retrigger of mousedown -- 
+    //     if so then don't do selection or re-setup draggability)
+    //     this keeps selection from getting confused, 
+    //     and keeps trigger(event) in draggable setup from causing infinite recursion 
+    //     in event handling calls to featMouseDown
+    if (ftrack.drag_create)  { 
+	console.log("DFT.featMouseDown re-triggered event for drag initiation, drag_create: " + ftrack.drag_create);
+	console.log(ftrack);
+	ftrack.drag_create = null;
+    }
+    else  {
+	this.handleFeatureSelection(event);
+	// this.handleFeatureDragSetup(event);
+    }
+}
+
 AnnotTrack.prototype.onAnnotMouseDown = function(event)  {
+    console.log("AnnotTrack.onAnnotMouseDown called");
     event = event || window.event;
     var elem = (event.currentTarget || event.srcElement);
     var featdiv = DraggableFeatureTrack.prototype.getLowestFeatureDiv(elem);
+/*
     if (featdiv && (featdiv != null))  {
 	if (dojo.hasClass(featdiv, "ui-resizable"))  {
 	    console.log("already resizable");
@@ -290,6 +318,7 @@ AnnotTrack.prototype.onAnnotMouseDown = function(event)  {
 	}
     }
     event.stopPropagation();
+*/
 }
 
 /**
