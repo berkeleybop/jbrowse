@@ -58,7 +58,7 @@ AnnotTrack.prototype = new DraggableFeatureTrack();
 *    otherwise if USE_COMET is set to true, will cause server-breaking errors
 *  
 */
-AnnotTrack.USE_COMET = false;
+AnnotTrack.USE_COMET = true;
 
 /**
 *  set USE_LOCAL_EDITS = true to bypass editing calls to AnnotationEditorService servlet and attempt 
@@ -68,7 +68,6 @@ AnnotTrack.USE_COMET = false;
 AnnotTrack.USE_LOCAL_EDITS = false;
 
 AnnotTrack.creation_count = 0;
-AnnotTrack.selectedFeatures = [];
 
 AnnotTrack.fields = {"start": 0, "end": 1, "strand": 2, "name": 3};
 
@@ -170,7 +169,7 @@ AnnotTrack.prototype.createAnnotationChangeListener = function() {
 		var responseFeatures = response.features;
                         for (var i = 0; i < responseFeatures.length; ++i) {
                               var id_to_delete = responseFeatures[i].uniquename;
-                              features.delete(id_to_delete);
+                              features.(id_to_delete);
 			}
 	    }
 		track.hideAll();
@@ -211,13 +210,8 @@ AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 	    AnnotTrack.annot_under_mouse = null;
 	} );
 	// console.log("added context menu to featdiv: ", uniqueId);
-	dojo.connect(featDiv, "oncontextmenu", this, function(e) {
-    	    if (AnnotTrack.selectedFeatures.length == 1) {
-    		AnnotTrack.selectedFeatures = [];
-    	    }
-//    	    AnnotTrack.selectedFeatures.push([feature, track.name]);
-    	    AnnotTrack.selectedFeatures.push(feature);
-	});
+//	dojo.connect(featDiv, "oncontextmenu", this, function(e) {
+//	});
 	// console.log("added context menu to featdiv: ", uniqueId);
 	
 	$(featDiv).droppable(  {
@@ -464,8 +458,9 @@ AnnotTrack.prototype.createAnnotations = function(feats)  {
 *    (contrasted with DraggableFeatureTracks, which all share the same selection and selection manager
 */
 AnnotTrack.prototype.deleteSelectedFeatures = function()  {
-    this.deleteAnnotations(AnnotTrack.selectedFeatures);
-    selectedFeatures = [];
+    var selected = this.selectionManager.getSelection();
+    this.selectionManager.clearSelection();
+    this.deleteAnnotations(selected);
 }
 
 AnnotTrack.prototype.deleteAnnotations = function(annots) {
@@ -496,7 +491,7 @@ AnnotTrack.prototype.deleteAnnotations = function(annots) {
 	for (var j in uniqueNames)  {
 	    var id_to_delete = uniqueNames[j];
 	    console.log("server deleted: " + id_to_delete);
-	    features_nclist.delete(id_to_delete);
+	    features_nclist.deleteEntry(id_to_delete);
 	}
 	track.hideAll();
 	track.changed();
@@ -516,7 +511,7 @@ AnnotTrack.prototype.deleteAnnotations = function(annots) {
 			for (var j in uniqueNames)  {
 			    var id_to_delete = uniqueNames[j];
 			    console.log("server deleted: " + id_to_delete);
-			    features_nclist.delete(id_to_delete);
+			    features_nclist.deleteEntry(id_to_delete);
 			}
 			track.hideAll();
 			track.changed();

@@ -225,6 +225,8 @@ NCList.prototype.setSublistIndex = function(index) {
 };
 
 NCList.prototype.add = function(feat, id) {
+    console.log("NCList.add() called, id: " + id);
+    console.log(feat);
     var featArray = [feat];
     this.iterate(-Infinity, Infinity, function(f) { featArray.push(f); });
     for (var i = 0; i < featArray.length; i++) {
@@ -235,8 +237,10 @@ NCList.prototype.add = function(feat, id) {
     this.featIdMap[id] = feat;
 };
 
-NCList.prototype.delete = function(id) {
+NCList.prototype.deleteEntry = function(id) {
+    console.log("NCList.deleteEntry() called, id: " + id);
     var toDelete = this.featIdMap[id];
+    console.log(toDelete);
     if (toDelete) {
         var featArray = [];
         this.iterate(-Infinity, Infinity,
@@ -250,7 +254,7 @@ NCList.prototype.delete = function(id) {
         delete this.featIdMap[id];
         this.fill(featArray, this.sublistIndex);
     } else {
-        throw new Error("NCList.delete: id " + id + " doesn't exist");
+        throw new Error("NCList.deleteEntry: id " + id + " doesn't exist");
     }
 };
 
