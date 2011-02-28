@@ -225,8 +225,10 @@ NCList.prototype.setSublistIndex = function(index) {
 };
 
 NCList.prototype.add = function(feat, id) {
-    console.log("NCList.add() called, id: " + id);
-    console.log(feat);
+    if (this.verbose)  {
+	console.log("NCList.add() called, id: " + id);
+	console.log(feat);
+    }
     var featArray = [feat];
     this.iterate(-Infinity, Infinity, function(f) { featArray.push(f); });
     for (var i = 0; i < featArray.length; i++) {
@@ -238,9 +240,11 @@ NCList.prototype.add = function(feat, id) {
 };
 
 NCList.prototype.deleteEntry = function(id) {
-    console.log("NCList.deleteEntry() called, id: " + id);
     var toDelete = this.featIdMap[id];
-    console.log(toDelete);
+    if (this.verbose)  {
+	console.log("NCList.deleteEntry() called, id: " + id);
+	console.log(toDelete);
+    }
     if (toDelete) {
         var featArray = [];
         this.iterate(-Infinity, Infinity,
