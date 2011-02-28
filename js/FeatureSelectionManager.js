@@ -16,6 +16,11 @@ function FeatureSelectionManager()  {
 // attemptign to add a feature that's already part of the selection does nothing (and doesn't trigger listener calls)
 FeatureSelectionManager.prototype.addToSelection = function(feat)  {
 //    console.log("called FeatureselectionManager.addToSelection()");
+    // do nothing if feat is already in selection
+    if (this.isSelected(feat))  {
+	console.log("called FeatureSelectionManager.addToSelection(), but feature already in selection");
+	return;
+    }
     // remove any children
     var selarray = this.selected;
     var slength = selarray.length;
