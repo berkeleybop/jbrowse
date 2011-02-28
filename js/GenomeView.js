@@ -393,7 +393,7 @@ function GenomeView(elem, stripeWidth, refseq, zoomLevel) {
 
     dojo.connect(view.elem, "mousedown", view.mouseDown);
 
-    dojo.connect(view.elem, "dblclick", function(event) {
+   dojo.connect(view.elem, "dblclick", function(event) {
 	    if (view.dragging) return;
 	    if ("animation" in view) return;
 	    var zoomLoc = (event.pageX - dojo.coords(view.elem, true).x) / view.dim.width;

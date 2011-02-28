@@ -53,11 +53,13 @@ FeatureTrack.prototype.loadSuccess = function(trackInfo) {
     }
 
     this.uniqueIdField = trackInfo.uniqueIdField;
+/*
     if (this.uniqueIdField)  {
 	console.log("track has uniqueIdField: " + this.uniqueIdField);
 	console.log(this);
 
     }
+*/
     this.subFields = {};
     if (trackInfo.subfeatureHeaders) {
         for (var i = 0; i < trackInfo.subfeatureHeaders.length; i++) {
