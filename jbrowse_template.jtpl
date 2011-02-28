@@ -32,7 +32,7 @@ src="../../../jslib/dojo/jbrowse_dojo.js" ></script> -->
 <!--        google.load("jquery", "1.3.2");  -->
 <!--        google.load("jqueryui", "1.7.2");  -->
          google.load("jquery", "1.4");  
-         google.load("jqueryui", "1.8.8"); 
+         google.load("jqueryui", "1.8.10"); 
 	google.load("dojo", "1.5");
    </script>
 <!--    <link rel="stylesheet" type="text/css"
@@ -54,7 +54,10 @@ src="../../../jslib/dojo/jbrowse_dojo.js" ></script> -->
    <script type="text/javascript" src="../../../js/AnnotTrack.js"></script>
     <script type="text/javascript" src="../../../js/UITracks.js"></script>
     <script type="text/javascript" src="../../../js/ImageTrack.js"></script>
-    <script type="text/javascript" src="../../../js/GenomeView.js"></script>
+    <script type="text/javascript"
+    src="../../../js/GenomeView.js"></script>
+    <script type="text/javascript" src="js/JSONUtils.js"></script>
+   <script type="text/javascript" src="js/BioFeatureUtils.js"></script>
     <script type="text/javascript" src="segments?format=jbrowse-refseqs"></script>
     <script type="text/javascript"
     src="types?format=jbrowse-trackinfo"></script>
