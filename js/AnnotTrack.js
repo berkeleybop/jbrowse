@@ -75,7 +75,7 @@ AnnotTrack.USE_LOCAL_EDITS = true;
 
 AnnotTrack.creation_count = 0;
 
-AnnotTrack.fields = {"start": 0, "end": 1, "strand": 2, "name": 3};
+AnnotTrack.fields = {"start": 0, "end": 1, "strand": 2, "name": 3, "id":4, "subfeatures":5 };
 
 dojo.require("dijit.Menu");
 dojo.require("dijit.MenuItem");
@@ -91,32 +91,34 @@ AnnotTrack.prototype.loadSuccess = function(trackInfo) {
     var track = this;
     var features = this.features;
     
-    dojo.xhrPost( {
-	postData: '{ "track": "' + track.name + '", "operation": "get_features" }',
-	url: context_path + "/AnnotationEditorService",
-	handleAs: "json",
-	timeout: 5 * 1000, // Time in milliseconds
-	// The LOAD function will be called on a successful response.
-	load: function(response, ioArgs) { //
-	    var responseFeatures = response.features;
-	    for (var i = 0; i < responseFeatures.length; i++) {
-		var jfeat = JSONUtils.createJBrowseFeature(responseFeatures[i], track.fields, track.subFields);
-		features.add(jfeat, responseFeatures[i].uniquename);
-		// console.log("responseFeatures[0].uniquename: " + responseFeatures[0].uniquename);
+    if (! AnnotTrack.USE_LOCAL_EDITS)  {
+	dojo.xhrPost( {
+	    postData: '{ "track": "' + track.name + '", "operation": "get_features" }',
+	    url: context_path + "/AnnotationEditorService",
+	    handleAs: "json",
+	    timeout: 5 * 1000, // Time in milliseconds
+	    // The LOAD function will be called on a successful response.
+	    load: function(response, ioArgs) { //
+		var responseFeatures = response.features;
+		for (var i = 0; i < responseFeatures.length; i++) {
+		    var jfeat = JSONUtils.createJBrowseFeature(responseFeatures[i], track.fields, track.subFields);
+		    features.add(jfeat, responseFeatures[i].uniquename);
+		    // console.log("responseFeatures[0].uniquename: " + responseFeatures[0].uniquename);
+		}
+		track.hideAll();
+		track.changed();
+		features.verbose = true;  // turn on diagnostics reporting for track's NCList
+	    },
+	    // The ERROR function will be called in an error case.
+	    error: function(response, ioArgs) { //
+		console.log("Annotation server error--maybe you forgot to login to the server?")
+		console.error("HTTP status code: ", ioArgs.xhr.status); //
+		//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //
+		track.remote_edit_working = false;
+		return response; //
 	    }
-	    track.hideAll();
-	    track.changed();
-	    features.verbose = true;  // turn on diagnostics reporting for track's NCList
-	},
-	// The ERROR function will be called in an error case.
-	error: function(response, ioArgs) { //
-	    console.log("Annotation server error--maybe you forgot to login to the server?")
-	    console.error("HTTP status code: ", ioArgs.xhr.status); //
-	    //dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //
-	    track.remote_edit_working = false;
-	    return response; //
-	}
-    });
+	});
+    }
 	
     if (AnnotTrack.USE_COMET)  {
 	this.createAnnotationChangeListener();
@@ -502,25 +504,53 @@ AnnotTrack.prototype.deleteAnnotations = function(annots) {
     }
     features += ']';
     if (this.verbose_delete)  {
-	console.log("request server deletion");
+	console.log("annotations to delete:");
 	console.log(features);
     }
 
     if (AnnotTrack.USE_LOCAL_EDITS)  {
 	// need to sort into top-level features (which need to get deleted from nclist) and non-top-level 
 	//   (which need to get removed from their parent feature)
-	for (var k in uniqueNames)  {
-	    var id_to_delete = uniqueNames[k];
-	    if (this.verbose_delete)  { console.log("server deleted: " + id_to_delete); }
-	    features_nclist.deleteEntry(id_to_delete);
+	for (var k in annots)  {
+	    var annot = annots[k];
+	    var id_to_delete = annot.uid;
+	    if (this.verbose_delete)  { 
+		console.log("trying to delete: " + id_to_delete); 
+		console.log(annot);
+		// console.dir(annot);
+	    }
+	    // console.log(features_nclist);
+	    if (features_nclist.contains(id_to_delete))  {
+		if (this.verbose_delete)  { console.log("found in nclist, calling nclist.deleteEntry()"); }
+		features_nclist.deleteEntry(id_to_delete);
+	    }
+	    else  {
+		if (this.verbose_delete)  { console.log("not found in nclist, trying to remove from parent: "); }
+		var parent = annot.parent;
+		if (this.verbose_delete)  { console.log(parent); }
+		if (parent)  {
+		    // var modparent = BioFeatureUtils.removeChild(annot);
+		    var modparent = BioFeatureUtils.removeChild(annot);
+		    if (this.verbose_delete)  { console.log(parent); }
+		    if (modparent)  {  // child removed, removeChild returned parent 
+			features_nclist.deleteEntry(parent.uid);
+			features_nclist.add(parent, parent.uid);
+		    }
+		    else  {   // child removed, but removeChild returned null, indicating parent has no more children
+			if (this.verbose_delete)  { console.log("no more children, so removing parent too"); }
+			features_nclist.deleteEntry(parent.uid);
+		    }
+		}
+	    }
 	}
+	if (this.verbose_delete)  { console.log("re-rendering track"); }
 	track.hideAll();
 	track.changed();
     }
     else  {
 	dojo.xhrPost( {
-//	    postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "delete_feature" }',
-	    postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "delete_exon" }',
+	    postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "delete_feature" }',
+	    // postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "delete_exon" }',
 	    url: context_path + "/AnnotationEditorService",
 	    handleAs: "json",
 	    timeout: 5000 * 1000, // Time in milliseconds
