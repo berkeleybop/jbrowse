@@ -1,4 +1,4 @@
-function JSONUtils() {
+  function JSONUtils() {
 }
 
 // Convert JSON feature object from server into feature array (fa) for JBrowse.  fa[0] is an array of field definitions
@@ -160,10 +160,15 @@ JSONUtils.convertToTrack = function(feat, is_subfeat, source_track, target_track
 		newsub[target_subfields["end"]] = oldsub[source_subfields["end"]];
 		newsub[target_subfields["strand"]] = oldsub[source_subfields["strand"]];
 		newsub[target_subfields["type"]] = oldsub[source_subfields["type"]];
+		newsub.parent = newfeat;
+		newsub.track = target_track;
+		if (oldsub.uid)  { newsub.uid = oldsub.uid; }
 		newsubfeats[i] = newsub;
 	    }
 	}
 	newfeat[target_fields["subfeatures"]]  = newsubfeats;
     }
+    newfeat.track = target_track;
+    newfeat.uid = feat.uid;
     return newfeat;
 }

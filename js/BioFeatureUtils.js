@@ -8,7 +8,7 @@ function BioFeatureUtils() {  }
 //     child.parent.track
 //      
 BioFeatureUtils.removeChild = function(child)  {
-    console.log("called BioFeatureUtils.removeChild");
+    // console.log("called BioFeatureUtils.removeChild");
     var parent = child.parent;
     var fields = parent.track.fields;
     var subfields = parent.track.subFields;
@@ -17,18 +17,18 @@ BioFeatureUtils.removeChild = function(child)  {
     var index = children.indexOf(child);
     console.log(index);
     if (index < 0)  {
-	console.log("BioFeatureUtils ERROR: child not found in parent!!");
+	// console.log("BioFeatureUtils ERROR: child not found in parent!!");
 	return parent;
     }
     children.splice(index, 1);
-    console.log(children);
+    //    console.log(children);
     var clength = children.length;
     if (children.length === 0)  {
-	console.log("parent has no more children");
+	// console.log("parent has no more children");
 	return null;
     }
     else  {
-	console.log("rechecking parent bounds");
+	// console.log("rechecking parent bounds");
 	var prevmin = parent[fields["start"]];
 	var prevmax = parent[fields["end"]];
 	var sibling = children[0];
@@ -39,16 +39,16 @@ BioFeatureUtils.removeChild = function(child)  {
 	    newmin = Math.min(newmin, sibling[subfields["start"]]);
 	    newmax = Math.max(newmax, sibling[subfields["end"]]);
 	}
-	console.log("checked all child bounds");
+	// console.log("checked all child bounds");
 	if (newmin !== prevmin)  {
-	    console.log("changing parent min: " + newmin);
+	    // console.log("changing parent min: " + newmin);
 	    parent[fields["start"]] = newmin;
 	}
 	if (newmax !=  prevmax)  {
-	    console.log("changing parent max: " + newmin);
+	    // console.log("changing parent max: " + newmin);
 	    parent[fields["end"]] = newmax;
 	}
-	console.log("returning from BioFeatureUtils.removeChild");
+	// console.log("returning from BioFeatureUtils.removeChild");
 	return parent;
     }
 }

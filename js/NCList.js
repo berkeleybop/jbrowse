@@ -212,7 +212,7 @@ NCList.prototype.histogram = function(from, to, numBins, callback) {
                  },
                  function() {
                      callback(result);
-                 }
+                }
                  );
 };
 
