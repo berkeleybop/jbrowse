@@ -22,6 +22,9 @@ function DraggableFeatureTrack(trackMeta, url, refSeq, browserParams) {
     this.last_whitespace_mouseup_time = new Date();  // dummy timestamp
     this.prev_selection = null;
 
+    this.verbose = false;
+    this.verbose_selection = false;
+    this.verbose_drag = false;
 
 }
 
@@ -81,28 +84,29 @@ DraggableFeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
 	    // if click in whitespace without dragging (no movement between mouse down and mouse up, 
 	    //    and no shift modifier, 
 	    //    then deselect all
-//	    console.log("mouse up on track whitespace");
+	    if (this.verbose_selection)  { console.log("mouse up on track whitespace"); }
 	    if (track.last_whitespace_mousedown_loc && 
 		xup === track.last_whitespace_mousedown_loc[0] && 
 		yup === track.last_whitespace_mousedown_loc[1] && 
 		(! event.shiftKey) )  {
-//		console.log("should clear selection");
 		var timestamp = new Date();
 		var prev_timestamp = track.last_whitespace_mouseup_time;
 		track.last_whitespace_mouseup_time = timestamp;
 		// if less than half a second, probably a doubleclick (or triple or more click...)
 		var probably_doubleclick = ((timestamp.getTime() - prev_timestamp.getTime()) < 500);
 		if (probably_doubleclick)  {
-//		    console.log("mouse up probably part of a doubleclick");
+		    if (this.verbose_selection)  { console.log("mouse up probably part of a doubleclick"); }
 		    // don't record selection state, want to keep prev_selection set 
 		    //    to selection prior to first mouseup of doubleclick
 		}
 		else {
-//		    console.log("recording prev selection");
 		    track.prev_selection = track.selectionManager.getSelection();
-//		    console.log(track.prev_selection);
+		    if (this.verbose_selection)  { 
+			console.log("recording prev selection"); 
+			console.log(track.prev_selection);
+		    }
 		}
-//		console.log("clearing selection");
+		if (this.verbose_selection)  { console.log("clearing selection"); }
 		track.selectionManager.clearSelection();
 	    }
 	    else   {
@@ -119,9 +123,11 @@ DraggableFeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
 	// because of dblclick bound to features, will only bubble up to here on whitespace, 
 	//   but doing feature check just to make sure
 	if (! (target.feature || target.subfeature))  { 
-//	    console.log("double click on track whitespace");
-//	    console.log("restoring selection after double click");
-//	    console.log(track.prev_selection);
+	    if (this.verbose_selection)  {
+		console.log("double click on track whitespace");
+		console.log("restoring selection after double click");
+		console.log(track.prev_selection);
+	    }
 	    if (track.prev_selection)  {
 		var plength = track.prev_selection.length;
 		// restore selection
@@ -240,7 +246,7 @@ DraggableFeatureTrack.prototype.renderSubfeature = function(feature, featDiv, su
  */
 DraggableFeatureTrack.prototype.onFeatureMouseDown = function(event) {
     // event.stopPropagation();
-    console.log("DFT.onFeatureMouseDown called");
+    if (this.verbose_selection || this.verbose_drag)  { console.log("DFT.onFeatureMouseDown called"); }
     var ftrack = this;
 
     // checking for whether this is part of drag setup retrigger of mousedown -- 
@@ -249,8 +255,10 @@ DraggableFeatureTrack.prototype.onFeatureMouseDown = function(event) {
     //     and keeps trigger(event) in draggable setup from causing infinite recursion 
     //     in event handling calls to featMouseDown
     if (ftrack.drag_create)  { 
-	console.log("DFT.featMouseDown re-triggered event for drag initiation, drag_create: " + ftrack.drag_create);
-	console.log(ftrack);
+	if (this.verbose_selection || this.verbose_drag)  {
+	    console.log("DFT.featMouseDown re-triggered event for drag initiation, drag_create: " + ftrack.drag_create);
+	    console.log(ftrack);
+	}
 	ftrack.drag_create = null;
     }
     else  {
@@ -262,22 +270,23 @@ DraggableFeatureTrack.prototype.onFeatureMouseDown = function(event) {
 
 DraggableFeatureTrack.prototype.handleFeatureSelection = function(event)  {
     var ftrack = this;
-    console.log("DFT.handleFeatureSelection() called, actual mouse event");
-
     var selman = ftrack.selectionManager;
     var featdiv = (event.currentTarget || event.srcElement);
-    console.log(featdiv);
     var feat = featdiv.feature;
     if (!feat)  { feat = featdiv.subfeature; }
-    console.log(feat);
     var already_selected = selman.isSelected(feat);
     var parent_selected = false;
     var parent = feat.parent;
     if (parent)  {
 	parent_selected = selman.isSelected(parent);
     }
-    console.log("already selected: " + already_selected + ",  parent selected: " + parent_selected + 
-		",  shift: " + (event.shiftKey));
+    if (this.verbose_selection)  {
+	console.log("DFT.handleFeatureSelection() called, actual mouse event");
+	console.log(featdiv);
+	console.log(feat);
+	console.log("already selected: " + already_selected + ",  parent selected: " + parent_selected + 
+		    ",  shift: " + (event.shiftKey));
+    }
     // if parent is selected, allow propagation of event up to parent,
     //    in order to ensure parent draggable setup and triggering
     // otherwise stop propagation
@@ -300,7 +309,7 @@ DraggableFeatureTrack.prototype.handleFeatureSelection = function(event)  {
     }
     else  {  // no shift modifier
 	if (already_selected)  {  // if this selected, do nothing (this remains selected)
-	    console.log("already selected");
+	    if (this.verbose_selection)  { console.log("already selected"); }
 	}
 	else  {
 	    if (parent_selected)  {  
@@ -319,7 +328,7 @@ DraggableFeatureTrack.prototype.handleFeatureSelection = function(event)  {
 DraggableFeatureTrack.prototype.handleFeatureDragSetup = function(event)  {
     var ftrack = this;
     var featdiv = (event.currentTarget || event.srcElement);
-    console.log(featdiv);
+    if (this.verbose_drag)  {  console.log(featdiv); }
     var feat = featdiv.feature;
     if (!feat)  { feat = featdiv.subfeature; }
     var selected = this.selectionManager.isSelected(feat);
@@ -336,7 +345,7 @@ DraggableFeatureTrack.prototype.handleFeatureDragSetup = function(event)  {
 	var $featdiv = $(featdiv);
 	if (DraggableFeatureTrack.USE_MULTIDRAG)  {
 	    if (! $featdiv.hasClass("ui-multidraggable"))  {  
-		console.log("setting up multi-dragability");
+		if (this.verbose_drag)  { console.log("setting up multi-dragability"); }
 		console.log(featdiv);
 		$featdiv.multidraggable(   // multidraggable() adds "ui-multidraggable" class to div
 		    {helper: 'clone', 
@@ -347,8 +356,10 @@ DraggableFeatureTrack.prototype.handleFeatureDragSetup = function(event)  {
 	    }
 	}
 	else if (! $featdiv.hasClass("ui-draggable"))  {  
-	    console.log("setting up dragability");
-	    console.log(featdiv);
+	    if (this.verbose_drag)  { 
+		console.log("setting up dragability");
+		console.log(featdiv);
+	    }
 	    $featdiv.draggable(   // draggable() adds "ui-draggable" class to div
 		{
 		    helper: 'clone', 
@@ -382,11 +393,13 @@ DraggableFeatureTrack.prototype.onFeatureDoubleClick = function(event)  {
     var ftrack = this;
     // prevent event bubbling up to genome view and triggering zoom
     event.stopPropagation();
-    console.log("DFT.featDoubleClick");
-    console.log(ftrack);
-
     var featdiv = (event.currentTarget || event.srcElement);
-    console.log(featdiv);
+    if (this.verbose_selection)  {
+	console.log("DFT.featDoubleClick");
+	console.log(ftrack);
+	console.log(featdiv);
+    }
+
     // only take action on double-click for subfeatures 
     //  (but stop propagation for both features and subfeatures)
     // GAH TODO:  make this work for feature hierarchies > 2 levels deep

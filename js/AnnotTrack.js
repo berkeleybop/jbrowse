@@ -46,6 +46,12 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
     }
     ));
     annot_context_menu.startup();
+
+    this.verbose_create = false;
+    this.verbose_delete = true;
+    this.verbose_drop = false;
+    this.verbose_click = false;
+    this.verbose_resize = false;
 }
 
 
@@ -58,14 +64,14 @@ AnnotTrack.prototype = new DraggableFeatureTrack();
 *    otherwise if USE_COMET is set to true, will cause server-breaking errors
 *  
 */
-AnnotTrack.USE_COMET = true;
+AnnotTrack.USE_COMET = false;
 
 /**
 *  set USE_LOCAL_EDITS = true to bypass editing calls to AnnotationEditorService servlet and attempt 
 *    to create similar annotations locally
 *  useful when AnnotationEditorService is having problems, or experimenting with something not yet completely implemented server-side
 */
-AnnotTrack.USE_LOCAL_EDITS = false;
+AnnotTrack.USE_LOCAL_EDITS = true;
 
 AnnotTrack.creation_count = 0;
 
@@ -77,28 +83,7 @@ var annot_context_menu;
 var context_path = "/ApolloWeb";
 // var context_path = "";
 
-
-dojo.addOnLoad( function()  {
-/*
-    annot_context_menu = new dijit.Menu({});
-    annot_context_menu.addChild(new dijit.MenuItem(
-    {
-    	label: "Delete",
-    	onClick: function() {
-    	    AnnotTrack.deleteSelectedFeatures();
-        }
-    }
-    ));
-    annot_context_menu.addChild(new dijit.MenuItem( 
-    {
-    	label: "..."
-    }
-    ));
-    annot_context_menu.startup();
-*/
-} );
-
-console.log("annot context menu created...");
+dojo.addOnLoad( function()  {  /* add dijit menu stuff here? */ } );
 
 AnnotTrack.prototype.loadSuccess = function(trackInfo) {
     DraggableFeatureTrack.prototype.loadSuccess.call(this, trackInfo);
@@ -121,6 +106,7 @@ AnnotTrack.prototype.loadSuccess = function(trackInfo) {
 	    }
 	    track.hideAll();
 	    track.changed();
+	    features.verbose = true;  // turn on diagnostics reporting for track's NCList
 	},
 	// The ERROR function will be called in an error case.
 	error: function(response, ioArgs) { //
@@ -152,6 +138,9 @@ AnnotTrack.prototype.createAnnotationChangeListener = function() {
 	// The LOAD function will be called on a successful response.
 	load: function(response, ioArgs) {
 	    if (response.operation == "ADD") {
+		console.log("ADD command from server: ");
+		console.log(response);
+		
 	    	var responseFeatures = response.features;
 //	    	var featureArray = JSONUtils.convertJsonToFeatureArray(responseFeatures[0]);
 	    	var featureArray = JSONUtils.createJBrowseFeature(responseFeatures[0], track.fields, track.subFields);
@@ -165,12 +154,18 @@ AnnotTrack.prototype.createAnnotationChangeListener = function() {
 	    	}
 	    }
 	    else if (response.operation == "DELETE") {
+		console.log("DELETE command from server: ");
+		console.log(response);
 
 		var responseFeatures = response.features;
                         for (var i = 0; i < responseFeatures.length; ++i) {
                               var id_to_delete = responseFeatures[i].uniquename;
-                              features.(id_to_delete);
+                              features.deleteEntry(id_to_delete);
 			}
+	    }
+	    else  {
+		console.log("UNKNOWN command from server: ");
+		console.log(response);
 	    }
 		track.hideAll();
 		track.changed();
@@ -228,8 +223,10 @@ AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 		//      but drop-to-add part is handled by whole-track droppable, and uses annot_under_mouse 
 		//      tracking variable to determine if drop was actually on top of an annot instead of 
 		//      track whitespace
-		console.log("dropped feature on annot:");
-		console.log(this);
+		if (track.verbose_drop)  {
+		    console.log("dropped feature on annot:");
+		    console.log(this);
+		}
 	    }
 	    
 	} );
@@ -253,7 +250,6 @@ AnnotTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
     var subdiv = DraggableFeatureTrack.prototype.renderSubfeature.call(this, feature, featDiv, subfeature, 
 							      displayStart, displayEnd, block);
     if (subdiv && subdiv != null)  {
-      // subdiv.onmousedown = this.annotMouseDown;
 	$(subdiv).bind("mousedown", this.annotMouseDown);
     }
 }
@@ -267,11 +263,14 @@ AnnotTrack.prototype.showRange = function(first, last, startBase, bpPerBlock, sc
 }
 
 AnnotTrack.prototype.onFeatureMouseDown = function(event) {
-    console.log("AnnotTrack.onFeatureMouseDown called");
     // _not_ calling DraggableFeatureTrack.prototyp.onFeatureMouseDown -- 
     //     don't want to allow dragging (at least not yet)
     // event.stopPropagation();
     var ftrack = this;
+    if (ftrack.verbose_selection || ftrack.verbose_drag)  { 
+	console.log("AnnotTrack.onFeatureMouseDown called"); 
+    }
+
 
     // checking for whether this is part of drag setup retrigger of mousedown -- 
     //     if so then don't do selection or re-setup draggability)
@@ -279,8 +278,10 @@ AnnotTrack.prototype.onFeatureMouseDown = function(event) {
     //     and keeps trigger(event) in draggable setup from causing infinite recursion 
     //     in event handling calls to featMouseDown
     if (ftrack.drag_create)  { 
-	console.log("DFT.featMouseDown re-triggered event for drag initiation, drag_create: " + ftrack.drag_create);
-	console.log(ftrack);
+	if (ftrack.verbose_selection || ftrack.verbose_drag)  {
+	    console.log("DFT.featMouseDown re-triggered event for drag initiation, drag_create: " + ftrack.drag_create);
+	    console.log(ftrack);
+	}
 	ftrack.drag_create = null;
     }
     else  {
@@ -290,19 +291,22 @@ AnnotTrack.prototype.onFeatureMouseDown = function(event) {
 }
 
 AnnotTrack.prototype.onAnnotMouseDown = function(event)  {
-    console.log("AnnotTrack.onAnnotMouseDown called");
+    if (this.verbose_resize)  { console.log("AnnotTrack.onAnnotMouseDown called"); }
     event = event || window.event;
     var elem = (event.currentTarget || event.srcElement);
     var featdiv = DraggableFeatureTrack.prototype.getLowestFeatureDiv(elem);
-/*
     if (featdiv && (featdiv != null))  {
 	if (dojo.hasClass(featdiv, "ui-resizable"))  {
-	    console.log("already resizable");
-	    console.log(featdiv);
+	    if (this.verbose_resize)  {
+		console.log("already resizable");
+		console.log(featdiv);
+	    }
 	}
 	else {
-	    console.log("making annotation resizable");
-	    console.log(featdiv);
+	    if (this.verbose_resize)  {
+		console.log("making annotation resizable");
+		console.log(featdiv);
+	    }
 	    $(featdiv).resizable( {
 		handles: "e, w",
 		helper: "ui-resizable-helper",
@@ -312,19 +316,18 @@ AnnotTrack.prototype.onAnnotMouseDown = function(event)  {
 	}
     }
     event.stopPropagation();
-*/
 }
 
 /**
  *  feature click no-op (to override FeatureTrack.onFeatureClick, which conflicts with mouse-down selection
  */
 AnnotTrack.prototype.onFeatureClick = function(event) {
-    console.log("in AnnotTrack.onFeatureClick");
+    if (this.verbose_click)  { console.log("in AnnotTrack.onFeatureClick"); }
     event = event || window.event;
     var elem = (event.currentTarget || event.srcElement);
     var featdiv = DraggableFeatureTrack.prototype.getLowestFeatureDiv(elem);
     if (featdiv && (featdiv != null))  {
-	console.log(featdiv);
+	if (this.verbose_click)  { console.log(featdiv); }
     }
 // do nothing
 //   event.stopPropagation();
@@ -354,17 +357,21 @@ AnnotTrack.prototype.addToAnnotation = function(annot, features)  {
 }
 
 AnnotTrack.prototype.makeTrackDroppable = function() {
-    console.log("making track a droppable target: ");
     var target_track = this;
     var target_trackdiv = target_track.div;
-    console.log(this);
-    console.log(target_trackdiv);
+    if (target_track.verbose_drop)  {
+	console.log("making track a droppable target: ");
+	console.log(this);
+	console.log(target_trackdiv);
+    }
     $(target_trackdiv).droppable(  {
 	accept: ".selected-feature",   // only accept draggables that are selected feature divs
 	drop: function(event, ui)  { 
 	    // "this" is the div being dropped on, so same as target_trackdiv
-	    console.log("draggable dropped on AnnotTrack");
-	    console.log(ui);
+	    if (target_track.verbose_drop)  {
+		console.log("draggable dropped on AnnotTrack");
+		console.log(ui);
+	    }
 	    var dropped_feats = DraggableFeatureTrack.selectionManager.getSelection();
 	    // problem with making individual annotations droppable, so checking for "drop" on annotation here, 
 	    //    and if so re-routing to add to existing annotation
@@ -376,7 +383,7 @@ AnnotTrack.prototype.makeTrackDroppable = function() {
 	    }
 	}    
     } );
-    console.log("finished making droppable target");
+    if (target_track.verbose_drop) { console.log("finished making droppable target"); }
 }
 
 AnnotTrack.prototype.createAnnotations = function(feats)  {
@@ -385,20 +392,27 @@ AnnotTrack.prototype.createAnnotations = function(feats)  {
     for (var i in feats)  {
 	var dragfeat = feats[i];
 	var source_track = dragfeat.track;
-	console.log("creating annotation based on feature: ");
-	console.log(dragfeat);
+	if (this.verbose_create)  {
+	    console.log("creating annotation based on feature: ");
+	    console.log(dragfeat);
+	}
 	var dragdiv = source_track.getFeatDiv(dragfeat);
 	var is_subfeature = (!!dragfeat.parent);  // !! is shorthand for returning true if value is defined and non-null
 	var newfeat = JSONUtils.convertToTrack(dragfeat, is_subfeature, source_track, target_track);
-	console.log("local feat conversion: " )
-	console.log(newfeat);
+	if (this.verbose_create)  {
+	    console.log("local feat conversion: " );
+	    console.log(newfeat);
+	}
 	if (AnnotTrack.USE_LOCAL_EDITS)  {
 	    var id = "annot_" + AnnotTrack.creation_count++;
 	    newfeat[target_track.fields["id"]] = id;
 	    newfeat[target_track.fields["name"]] = id;
 	    newfeat.uid = id;
-	    console.log("new feature: ");
-	    console.log(newfeat);
+	    if (this.verbose_create)  {
+		console.log("local annotation creation");
+		console.log("new feature: ");
+		console.log(newfeat);
+	    }
 	    features_nclist.add(newfeat, id);
 	    target_track.hideAll();
 	    target_track.changed();
@@ -412,8 +426,11 @@ AnnotTrack.prototype.createAnnotations = function(feats)  {
 	    // creating JSON feature data struct that WebApollo server understands, 
 	    //    based on JSON feature data struct that JBrowse understands
 	    var afeat = JSONUtils.createApolloFeature(dragfeat, source_fields, source_subFields, "transcript");
-	    console.log("createApolloFeature: ");
-	    console.log(afeat);
+	    if (this.verbose_create)  {
+		console.log("remote annotation creation");
+		console.log("createApolloFeature: ");
+		console.log(afeat);
+	    }
 	    
 	    dojo.xhrPost( {
 		postData: '{ "track": "' + target_track.name + '", "features": [ ' + JSON.stringify(afeat) + '], "operation": "add_feature" }',
@@ -422,7 +439,7 @@ AnnotTrack.prototype.createAnnotations = function(feats)  {
 		timeout: 5000, // Time in milliseconds
 		// The LOAD function will be called on a successful response.
 		load: function(response, ioArgs) { //
-		    console.log("Successfully created annotation object: " + response)
+		    if (this.verbose_create)  { console.log("Successfully created annotation object: " + response) }
 		    // response processing is now handled by the long poll thread (when using servlet 3.0)
 		    //  if comet-style long pollling is not working, then create annotations based on 
 		    //     AnnotationEditorResponse
@@ -430,11 +447,11 @@ AnnotTrack.prototype.createAnnotations = function(feats)  {
 			responseFeatures = response.features;
 			for (var rindex in responseFeatures)  {
 			    var rfeat = responseFeatures[rindex];
-			    console.log("AnnotationEditorService annot object: ");
-			    console.log(rfeat);
+			    if (this.verbose_create)  { console.log("AnnotationEditorService annot object: ");
+						     console.log(rfeat); }
 			    var jfeat = JSONUtils.createJBrowseFeature(rfeat, target_fields, target_subFields);
-			    console.log("Converted annot object to JBrowse feature array: " + jfeat.uid);
-			    console.log(jfeat);
+			    if (this.verbose_create)  { console.log("Converted annot object to JBrowse feature array: " + jfeat.uid);
+						     console.log(jfeat); }
 			    features_nclist.add(jfeat, jfeat.uid);
 			} 
 			target_track.hideAll();
@@ -484,13 +501,17 @@ AnnotTrack.prototype.deleteAnnotations = function(annots) {
 	}
     }
     features += ']';
-    console.log("request server deletion");
-    console.log(features);
+    if (this.verbose_delete)  {
+	console.log("request server deletion");
+	console.log(features);
+    }
 
     if (AnnotTrack.USE_LOCAL_EDITS)  {
-	for (var j in uniqueNames)  {
-	    var id_to_delete = uniqueNames[j];
-	    console.log("server deleted: " + id_to_delete);
+	// need to sort into top-level features (which need to get deleted from nclist) and non-top-level 
+	//   (which need to get removed from their parent feature)
+	for (var k in uniqueNames)  {
+	    var id_to_delete = uniqueNames[k];
+	    if (this.verbose_delete)  { console.log("server deleted: " + id_to_delete); }
 	    features_nclist.deleteEntry(id_to_delete);
 	}
 	track.hideAll();
@@ -498,7 +519,8 @@ AnnotTrack.prototype.deleteAnnotations = function(annots) {
     }
     else  {
 	dojo.xhrPost( {
-	    postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "delete_feature" }',
+//	    postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "delete_feature" }',
+	    postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "delete_exon" }',
 	    url: context_path + "/AnnotationEditorService",
 	    handleAs: "json",
 	    timeout: 5000 * 1000, // Time in milliseconds
@@ -510,7 +532,7 @@ AnnotTrack.prototype.deleteAnnotations = function(annots) {
 			// and no features are returned, then they were successfully deleted?
 			for (var j in uniqueNames)  {
 			    var id_to_delete = uniqueNames[j];
-			    console.log("server deleted: " + id_to_delete);
+			    if (this.verbose_delete)  { console.log("server deleted: " + id_to_delete); }
 			    features_nclist.deleteEntry(id_to_delete);
 			}
 			track.hideAll();
