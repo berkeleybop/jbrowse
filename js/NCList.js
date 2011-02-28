@@ -258,6 +258,10 @@ NCList.prototype.deleteEntry = function(id) {
     }
 };
 
+NCList.prototype.contains = function(id)  {
+    return (!!this.featIdMap[id]);  
+}
+
 /*
 
 Copyright (c) 2007-2009 The Evolutionary Software Foundation
