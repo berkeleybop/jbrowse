@@ -18,7 +18,9 @@ function DraggableFeatureTrack(trackMeta, url, refSeq, browserParams) {
     
     DraggableFeatureTrack.selectionManager.addListener(this);
 
-    this.current_whitespace_down = null;
+    this.last_whitespace_mousedown_loc = null;
+    this.last_whitespace_mouseup_time = new Date();  // dummy timestamp
+    this.prev_selection = null;
 
 
 }
@@ -45,6 +47,14 @@ DraggableFeatureTrack.prototype.setSelectionManager = function(selman)  {
 
 /**
 *   only called once, during track setup ???
+*
+*   doublclick in track whitespace is used by JBrowse for zoom
+*      but WebApollo/JBrowse uses single click in whitespace to clear selection
+*
+*   so this sets up mousedown/mouseup/doubleclick 
+*      kludge to restore selection after a double click to whatever selection was before 
+*      initiation of doubleclick (first mousedown/mouseup)
+* 
 */
 DraggableFeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
 						       trackDiv, labelDiv,
@@ -60,30 +70,68 @@ DraggableFeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
     $div.bind('mousedown', function(event)  {
 	var target = event.target;
 	if (! (target.feature || target.subfeature))  {
-	    track.current_whitespace_down = [ event.pageX, event.pageY ];
-	    console.log(track.current_whitespace_down);
+	    track.last_whitespace_mousedown_loc = [ event.pageX, event.pageY ];
 	}
     } );
     $div.bind('mouseup', function(event)  {
 	var target = event.target;
-	if (! (target.feature || target.subfeature))  {
+	if (! (target.feature || target.subfeature))  {  // event not on feature, so must be on whitespace
 	    var xup = event.pageX;
 	    var yup = event.pageY;
 	    // if click in whitespace without dragging (no movement between mouse down and mouse up, 
 	    //    and no shift modifier, 
 	    //    then deselect all
-	    if (track.current_whitespace_down && 
-		xup === track.current_whitespace_down[0] && 
-		yup === track.current_whitespace_down[1] && 
+//	    console.log("mouse up on track whitespace");
+	    if (track.last_whitespace_mousedown_loc && 
+		xup === track.last_whitespace_mousedown_loc[0] && 
+		yup === track.last_whitespace_mousedown_loc[1] && 
 		(! event.shiftKey) )  {
+//		console.log("should clear selection");
+		var timestamp = new Date();
+		var prev_timestamp = track.last_whitespace_mouseup_time;
+		track.last_whitespace_mouseup_time = timestamp;
+		// if less than half a second, probably a doubleclick (or triple or more click...)
+		var probably_doubleclick = ((timestamp.getTime() - prev_timestamp.getTime()) < 500);
+		if (probably_doubleclick)  {
+//		    console.log("mouse up probably part of a doubleclick");
+		    // don't record selection state, want to keep prev_selection set 
+		    //    to selection prior to first mouseup of doubleclick
+		}
+		else {
+//		    console.log("recording prev selection");
+		    track.prev_selection = track.selectionManager.getSelection();
+//		    console.log(track.prev_selection);
+		}
+//		console.log("clearing selection");
 		track.selectionManager.clearSelection();
+	    }
+	    else   {
+		track.prev_selection = null;
 	    }
 	}
 	// regardless of what element it's over, mouseup clears out tracking of mouse down
-	track.current_whitespace_down = null;
+	track.last_whitespace_mousedown_loc = null;
     } );
-    
-    console.log("end of DraggableFT.setViewInfo() ");
+// kludge to restore selection after a double click to whatever selection was before 
+//      initiation of doubleclick (first mousedown/mouseup)
+    $div.bind('dblclick', function(event) {
+	var target = event.target;
+	// because of dblclick bound to features, will only bubble up to here on whitespace, 
+	//   but doing feature check just to make sure
+	if (! (target.feature || target.subfeature))  { 
+//	    console.log("double click on track whitespace");
+//	    console.log("restoring selection after double click");
+//	    console.log(track.prev_selection);
+	    if (track.prev_selection)  {
+		var plength = track.prev_selection.length;
+		// restore selection
+		for (var i = 0; i<plength; i++)  { 
+		    track.selectionManager.addToSelection(track.prev_selection[i]);
+		}
+	    }
+	}
+	track.prev_selection = null;
+    } );
 };
 
 

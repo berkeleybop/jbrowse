@@ -15,7 +15,7 @@ function FeatureSelectionManager()  {
 // adding a child should remove all parents
 // attemptign to add a feature that's already part of the selection does nothing (and doesn't trigger listener calls)
 FeatureSelectionManager.prototype.addToSelection = function(feat)  {
-    console.log("called FeatureselectionManager.addToSelection()");
+//    console.log("called FeatureselectionManager.addToSelection()");
     // remove any children
     var selarray = this.selected;
     var slength = selarray.length;
@@ -66,7 +66,7 @@ FeatureSelectionManager.prototype._removeSelectionAt = function(index, feat)  {
 *     multiple calls to removeSelectionAt (and subsequent multiple calls to listeners.selectionRemoved();
 */
 FeatureSelectionManager.prototype.clearSelection = function()  {
-    console.log("called FeatureselectionManager.clearSelection()");
+//    console.log("called FeatureselectionManager.clearSelection()");
     var previous_selected = this.selected;
     this.selected = [];
     var lislength = this.listeners.length;
@@ -90,8 +90,16 @@ FeatureSelectionManager.prototype.isSelected = function(feat)  {
     return (this.selected.indexOf(feat) >= 0);
 }
 
+/**
+* returns array of currently selected features
+* this is a (shallow) copy of the selected array, therefore a snapshot of what is selected 
+*     as of when getSelection is called
+*  so if selection changes, previous value returned from getSelection will not change
+*/  
 FeatureSelectionManager.prototype.getSelection = function()  {
-    return this.selected;
+//    return this.selected;
+//    return this.selected.slice(0);  // return shallow copy of array
+    return this.selected.slice();  // return shallow copy of array
 }
 
 FeatureSelectionManager.prototype.addListener = function(listener)  {
