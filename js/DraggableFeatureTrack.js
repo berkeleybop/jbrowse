@@ -17,6 +17,10 @@ function DraggableFeatureTrack(trackMeta, url, refSeq, browserParams) {
     this.selectionClass = "selected-feature";
     
     DraggableFeatureTrack.selectionManager.addListener(this);
+
+    this.current_whitespace_down = null;
+
+
 }
 
 // Inherit from FeatureTrack
@@ -39,21 +43,46 @@ DraggableFeatureTrack.prototype.setSelectionManager = function(selman)  {
     return selman;
 }
 
-
+/**
+*   only called once, during track setup ???
+*/
 DraggableFeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
 						       trackDiv, labelDiv,
 						       widthPct, widthPx, scale) {
-    console.log("DraggableFT.setViewInfo() called");
     FeatureTrack.prototype.setViewInfo.apply(this, [genomeView, numBlocks,
 						    trackDiv, labelDiv,
 						    widthPct, widthPx, scale]);
-    var div = this.div;
-    $(div).bind('click', function(event)  {
-	console.log("DraggableFeatureTrack click event");
+    var $div = $(this.div);
+    var track = this;
+
+    // setting up mousedown and mouseup handlers to enable click-in-whitespace to clear selection
+    //    (without conflicting with JBrowse drag-in-whitespace to scroll)
+    $div.bind('mousedown', function(event)  {
+	var target = event.target;
+	if (! (target.feature || target.subfeature))  {
+	    track.current_whitespace_down = [ event.pageX, event.pageY ];
+	    console.log(track.current_whitespace_down);
+	}
     } );
-    $(div).bind('dblclick', function(event)  {
-	console.log("DraggableFeatureTrack double-click event");
+    $div.bind('mouseup', function(event)  {
+	var target = event.target;
+	if (! (target.feature || target.subfeature))  {
+	    var xup = event.pageX;
+	    var yup = event.pageY;
+	    // if click in whitespace without dragging (no movement between mouse down and mouse up, 
+	    //    and no shift modifier, 
+	    //    then deselect all
+	    if (track.current_whitespace_down && 
+		xup === track.current_whitespace_down[0] && 
+		yup === track.current_whitespace_down[1] && 
+		(! event.shiftKey) )  {
+		track.selectionManager.clearSelection();
+	    }
+	}
+	// regardless of what element it's over, mouseup clears out tracking of mouse down
+	track.current_whitespace_down = null;
     } );
+    
     console.log("end of DraggableFT.setViewInfo() ");
 };
 
@@ -76,7 +105,7 @@ DraggableFeatureTrack.prototype.selectionAdded = function(feat) {
 }
 
 DraggableFeatureTrack.prototype.selectionCleared = function(selected) {
-    console.log("called DFT.selectionCleared()");
+//    console.log("called DFT.selectionCleared()");
     var slength = selected.length;
     for (var i=0; i<slength; i++)  {
 	var feat = selected[i];
@@ -87,7 +116,7 @@ DraggableFeatureTrack.prototype.selectionCleared = function(selected) {
 DraggableFeatureTrack.prototype.selectionRemoved = function(feat)  {
     if (feat.track === this)  {
 	var featdiv = this.getFeatDiv(feat);
-	console.log("DFT.selectionRemoved(), changing featdiv style: ");
+//	console.log("DFT.selectionRemoved(), changing featdiv style: ");
 	if (featdiv)  { 
 	    var jq_featdiv = $(featdiv);
 	    if (jq_featdiv.hasClass(this.selectionClass))  {
