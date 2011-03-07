@@ -13,15 +13,16 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
 
 
     DraggableFeatureTrack.call(this, trackMeta, url, refSeq, browserParams);
-    this.selectionManager = this.setSelectionManager(new FeatureSelectionManager());
+    // this.selectionManager = this.setSelectionManager(new FeatureSelectionManager());
+    this.selectionManager = this.setSelectionManager(AnnotTrack.annotSelectionManager);
     this.selectionClass = "selected-annotation";
 
     var thisObj = this;
     /*
-    this.subfeatureCallback = function(i, val, param) {
-        thisObj.renderSubfeature(param.feature, param.featDiv, val);
-    };
-*/
+      this.subfeatureCallback = function(i, val, param) {
+      thisObj.renderSubfeature(param.feature, param.featDiv, val);
+      };
+    */
     // define fields meta data
     this.fields = AnnotTrack.fields;
     this.comet_working = true;
@@ -33,17 +34,17 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
 
     annot_context_menu = new dijit.Menu({});
     annot_context_menu.addChild(new dijit.MenuItem(
-    {
-    	label: "Delete",
-    	onClick: function() {
-    	    thisObj.deleteSelectedFeatures();
-        }
-    }
+	{
+    	    label: "Delete",
+    	    onClick: function() {
+    		thisObj.deleteSelectedFeatures();
+            }
+	}
     ));
     annot_context_menu.addChild(new dijit.MenuItem( 
-    {
-    	label: "..."
-    }
+	{
+    	    label: "..."
+	}
     ));
     annot_context_menu.startup();
 
@@ -60,18 +61,21 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
 // Inherit from DraggableFeatureTrack 
 AnnotTrack.prototype = new DraggableFeatureTrack();
 
+// annotSelectionManager is class variable (shared by all AnnotTrack instances)
+AnnotTrack.annotSelectionManager = new FeatureSelectionManager();
+
 /**
-*  only set USE_COMET true if server supports Servlet 3.0 comet-style long-polling, and web app is propertly set up for async
-*    otherwise if USE_COMET is set to true, will cause server-breaking errors
-*  
-*/
+ *  only set USE_COMET true if server supports Servlet 3.0 comet-style long-polling, and web app is propertly set up for async
+ *    otherwise if USE_COMET is set to true, will cause server-breaking errors
+ *  
+ */
 AnnotTrack.USE_COMET = false;
 
 /**
-*  set USE_LOCAL_EDITS = true to bypass editing calls to AnnotationEditorService servlet and attempt 
-*    to create similar annotations locally
-*  useful when AnnotationEditorService is having problems, or experimenting with something not yet completely implemented server-side
-*/
+ *  set USE_LOCAL_EDITS = true to bypass editing calls to AnnotationEditorService servlet and attempt 
+ *    to create similar annotations locally
+ *  useful when AnnotationEditorService is having problems, or experimenting with something not yet completely implemented server-side
+ */
 AnnotTrack.USE_LOCAL_EDITS = true;
 
 AnnotTrack.creation_count = 0;
@@ -91,7 +95,7 @@ dojo.addOnLoad( function()  {  /* add dijit menu stuff here? */ } );
 
 AnnotTrack.prototype.loadSuccess = function(trackInfo) {
     DraggableFeatureTrack.prototype.loadSuccess.call(this, trackInfo);
-	
+    
     var track = this;
     var features = this.features;
     
@@ -111,7 +115,7 @@ AnnotTrack.prototype.loadSuccess = function(trackInfo) {
 		}
 		track.hideAll();
 		track.changed();
-//		features.verbose = true;  // turn on diagnostics reporting for track's NCList
+		//		features.verbose = true;  // turn on diagnostics reporting for track's NCList
 		features.verbose = false;  // turn on diagnostics reporting for track's NCList
 	    },
 	    // The ERROR function will be called in an error case.
@@ -124,7 +128,7 @@ AnnotTrack.prototype.loadSuccess = function(trackInfo) {
 	    }
 	});
     }
-	
+    
     if (AnnotTrack.USE_COMET)  {
 	this.createAnnotationChangeListener();
     }
@@ -149,15 +153,15 @@ AnnotTrack.prototype.createAnnotationChangeListener = function() {
 		console.log(response);
 		
 	    	var responseFeatures = response.features;
-//	    	var featureArray = JSONUtils.convertJsonToFeatureArray(responseFeatures[0]);
+		//	    	var featureArray = JSONUtils.convertJsonToFeatureArray(responseFeatures[0]);
 	    	var featureArray = JSONUtils.createJBrowseFeature(responseFeatures[0], track.fields, track.subFields);
 
 	    	var id = responseFeatures[0].uniquename;
 	    	if (features.featIdMap[id] == null) {
-	    		// note that proper handling of subfeatures requires annotation trackData.json resource to
-	    		//    set sublistIndex one past last feature array index used by other fields
-	    		//    (currently Annotations always have 6 fields (0-5), so sublistIndex = 6
-	    		features.add(featureArray, id);
+	    	    // note that proper handling of subfeatures requires annotation trackData.json resource to
+	    	    //    set sublistIndex one past last feature array index used by other fields
+	    	    //    (currently Annotations always have 6 fields (0-5), so sublistIndex = 6
+	    	    features.add(featureArray, id);
 	    	}
 	    }
 	    else if (response.operation == "DELETE") {
@@ -165,17 +169,17 @@ AnnotTrack.prototype.createAnnotationChangeListener = function() {
 		console.log(response);
 
 		var responseFeatures = response.features;
-                        for (var i = 0; i < responseFeatures.length; ++i) {
-                              var id_to_delete = responseFeatures[i].uniquename;
-                              features.deleteEntry(id_to_delete);
-			}
+                for (var i = 0; i < responseFeatures.length; ++i) {
+                    var id_to_delete = responseFeatures[i].uniquename;
+                    features.deleteEntry(id_to_delete);
+		}
 	    }
 	    else  {
 		console.log("UNKNOWN command from server: ");
 		console.log(response);
 	    }
-		track.hideAll();
-		track.changed();
+	    track.hideAll();
+	    track.changed();
 	    track.createAnnotationChangeListener();
 	},
 	// The ERROR function will be called in an error case.
@@ -195,25 +199,28 @@ AnnotTrack.annot_under_mouse = null;
  */
 AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 					      containerStart, containerEnd) {
+    //  if (uniqueId.length > 20)  {
+    //    feature.short_id = uniqueId;
+    //  }
     var track = this;
     var featDiv = DraggableFeatureTrack.prototype.renderFeature.call(this, feature, uniqueId, block, scale,
-							    containerStart, containerEnd);
+								     containerStart, containerEnd);
     if (featDiv && featDiv != null)  {
 	annot_context_menu.bindDomNode(featDiv);
 	//    var track = this;
 	$(featDiv).bind("mouseenter", function(event)  {
 	    /* "this" in mousenter function will be featdiv */
 	    AnnotTrack.annot_under_mouse = this;
-//	    console.log("annot under mouse: ");
-//	    console.log(AnnotTrack.annot_under_mouse);
+	    //	    console.log("annot under mouse: ");
+	    //	    console.log(AnnotTrack.annot_under_mouse);
 	} );
 	$(featDiv).bind("mouseleave", function(event)  {
-//	    console.log("no annot under mouse: ");
+	    //	    console.log("no annot under mouse: ");
 	    AnnotTrack.annot_under_mouse = null;
 	} );
 	// console.log("added context menu to featdiv: ", uniqueId);
-//	dojo.connect(featDiv, "oncontextmenu", this, function(e) {
-//	});
+	//	dojo.connect(featDiv, "oncontextmenu", this, function(e) {
+	//	});
 	// console.log("added context menu to featdiv: ", uniqueId);
 	
 	$(featDiv).droppable(  {
@@ -243,30 +250,30 @@ AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 
 /** AnnotTrack subfeatures are similar to DAS subfeatures, so handled similarly */
 /* AnnotTrack.prototype.handleSubFeatures = function(feature, featDiv,
-    displayStart, displayEnd, block)  {
-    var subfeatures = this.fields["subfeatures"];
-    for (var i = 0; i < feature[subfeatures].length; i++) {
-	var subfeature = feature[subfeatures][i];
-	this.renderSubfeature(feature, featDiv, subfeature, displayStart, displayEnd, block);
-    }
-}
+   displayStart, displayEnd, block)  {
+   var subfeatures = this.fields["subfeatures"];
+   for (var i = 0; i < feature[subfeatures].length; i++) {
+   var subfeature = feature[subfeatures][i];
+   this.renderSubfeature(feature, featDiv, subfeature, displayStart, displayEnd, block);
+   }
+   }
 */
 
 AnnotTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
 						 displayStart, displayEnd, block) {
     var subdiv = DraggableFeatureTrack.prototype.renderSubfeature.call(this, feature, featDiv, subfeature, 
-							      displayStart, displayEnd, block);
+								       displayStart, displayEnd, block);
     if (subdiv && subdiv != null)  {
 	$(subdiv).bind("mousedown", this.annotMouseDown);
     }
 }
 
 AnnotTrack.prototype.showRange = function(first, last, startBase, bpPerBlock, scale,
-                                     containerStart, containerEnd) {
+					  containerStart, containerEnd) {
     DraggableFeatureTrack.prototype.showRange.call(this, first, last, startBase, bpPerBlock, scale,
-					  containerStart, containerEnd);
-//    console.log("after calling annot track.showRange(), block range: " + 
-//		this.firstAttached + "--" + this.lastAttached + ",  " + (this.lastAttached - this.firstAttached));
+						   containerStart, containerEnd);
+    //    console.log("after calling annot track.showRange(), block range: " + 
+    //		this.firstAttached + "--" + this.lastAttached + ",  " + (this.lastAttached - this.firstAttached));
 }
 
 AnnotTrack.prototype.onFeatureMouseDown = function(event) {
@@ -298,32 +305,68 @@ AnnotTrack.prototype.onFeatureMouseDown = function(event) {
 }
 
 AnnotTrack.prototype.onAnnotMouseDown = function(event)  {
-    if (this.verbose_resize)  { console.log("AnnotTrack.onAnnotMouseDown called"); }
+    var track = this;
+    var verbose_resize = track.verbose_resize;
+    if (verbose_resize)  { console.log("AnnotTrack.onAnnotMouseDown called"); }
     event = event || window.event;
     var elem = (event.currentTarget || event.srcElement);
     var featdiv = DraggableFeatureTrack.prototype.getLowestFeatureDiv(elem);
     if (featdiv && (featdiv != null))  {
 	if (dojo.hasClass(featdiv, "ui-resizable"))  {
-	    if (this.verbose_resize)  {
+	    if (verbose_resize)  {
 		console.log("already resizable");
 		console.log(featdiv);
 	    }
 	}
 	else {
-	    if (this.verbose_resize)  {
+	    if (verbose_resize)  {
 		console.log("making annotation resizable");
 		console.log(featdiv);
 	    }
 	    $(featdiv).resizable( {
 		handles: "e, w",
 		helper: "ui-resizable-helper",
-		autohide: false
+		autohide: false, 
+
+		stop: function(event, ui)  {
+		    if (verbose_resize) { 
+			console.log("resizable.stop() called, event:");
+			console.dir(event);
+			console.log("ui:");
+			console.dir(ui);
+		    }
+		    var gview = track.gview;
+		    var oldPos = ui.originalPosition;
+		    var newPos = ui.position;
+		    var oldSize = ui.originalSize;
+		    var newSize = ui.size;
+		    var leftDeltaPixels = newPos.left - oldPos.left;
+		    var leftDeltaBases = Math.round(gview.pxToBp(leftDeltaPixels));
+		    var oldRightEdge = oldPos.left + oldSize.width;
+		    var newRightEdge = newPos.left + newSize.width;
+		    var rightDeltaPixels = newRightEdge - oldRightEdge;
+		    var rightDeltaBases = Math.round(gview.pxToBp(rightDeltaPixels));
+		    if (verbose_resize)  {
+			console.log("left edge delta pixels: " + leftDeltaPixels);
+			console.log("left edge delta bases: " + leftDeltaBases);
+			console.log("right edge delta pixels: " + rightDeltaPixels);
+			console.log("right edge delta bases: " + rightDeltaBases);
+		    }
+		    var subfeat = ui.originalElement[0].subfeature;
+		    console.log(subfeat);
+		    subfeat[track.subFields["start"]] += leftDeltaBases;
+		    subfeat[track.subFields["end"]] += rightDeltaBases;
+		    console.log(subfeat);
+		    track.hideAll();
+		    track.changed();
+		}
 	    } );
 	    
 	}
     }
     event.stopPropagation();
 }
+
 
 /**
  *  feature click no-op (to override FeatureTrack.onFeatureClick, which conflicts with mouse-down selection
@@ -336,8 +379,8 @@ AnnotTrack.prototype.onFeatureClick = function(event) {
     if (featdiv && (featdiv != null))  {
 	if (this.verbose_click)  { console.log(featdiv); }
     }
-// do nothing
-//   event.stopPropagation();
+    // do nothing
+    //   event.stopPropagation();
 }
 
 AnnotTrack.prototype.addToAnnotation = function(annot, features)  {
@@ -512,10 +555,10 @@ AnnotTrack.prototype.createAnnotations = function(feats)  {
 			for (var rindex in responseFeatures)  {
 			    var rfeat = responseFeatures[rindex];
 			    if (this.verbose_create)  { console.log("AnnotationEditorService annot object: ");
-						     console.log(rfeat); }
+							console.log(rfeat); }
 			    var jfeat = JSONUtils.createJBrowseFeature(rfeat, target_fields, target_subFields);
 			    if (this.verbose_create)  { console.log("Converted annot object to JBrowse feature array: " + jfeat.uid);
-						     console.log(jfeat); }
+							console.log(jfeat); }
 			    features_nclist.add(jfeat, jfeat.uid);
 			} 
 			target_track.hideAll();
@@ -535,9 +578,9 @@ AnnotTrack.prototype.createAnnotations = function(feats)  {
 }
 
 /**
-*  If there are multiple AnnotTracks, each has a separate FeatureSelectionManager 
-*    (contrasted with DraggableFeatureTracks, which all share the same selection and selection manager
-*/
+ *  If there are multiple AnnotTracks, each has a separate FeatureSelectionManager 
+ *    (contrasted with DraggableFeatureTracks, which all share the same selection and selection manager
+ */
 AnnotTrack.prototype.deleteSelectedFeatures = function()  {
     var selected = this.selectionManager.getSelection();
     this.selectionManager.clearSelection();
@@ -664,11 +707,11 @@ AnnotTrack.prototype.changeAnnotationLocation = function()  {
 
 
 /*
-Copyright (c) 2010-2011 Berkeley Bioinformatics Open Projects (BBOP)
+  Copyright (c) 2010-2011 Berkeley Bioinformatics Open Projects (BBOP)
 
-This package and its accompanying libraries are free software; you can
-redistribute it and/or modify it under the terms of the LGPL (either
-version 2.1, or at your option, any later version) or the Artistic
-License 2.0.  Refer to LICENSE for the full license text.
+  This package and its accompanying libraries are free software; you can
+  redistribute it and/or modify it under the terms of the LGPL (either
+  version 2.1, or at your option, any later version) or the Artistic
+  License 2.0.  Refer to LICENSE for the full license text.
 
 */
