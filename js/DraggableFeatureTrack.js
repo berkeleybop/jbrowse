@@ -2,6 +2,7 @@
 /*  Subclass of FeatureTrack that allows features to be dragged and dropped into the annotation track to create annotations. */
 function DraggableFeatureTrack(trackMeta, url, refSeq, browserParams) {
     FeatureTrack.call(this, trackMeta, url, refSeq, browserParams);
+    //  console.log("DragableFeatureTrack constructor called");
 
     var thisObj = this;
     this.featMouseDown = function(event) { thisObj.onFeatureMouseDown(event); }
@@ -16,7 +17,7 @@ function DraggableFeatureTrack(trackMeta, url, refSeq, browserParams) {
     // override if want subclass to have different CSS class for selected features
     this.selectionClass = "selected-feature";
     
-    DraggableFeatureTrack.selectionManager.addListener(this);
+    //  DraggableFeatureTrack.selectionManager.addListener(this);
 
     this.last_whitespace_mousedown_loc = null;
     this.last_whitespace_mouseup_time = new Date();  // dummy timestamp
@@ -25,8 +26,11 @@ function DraggableFeatureTrack(trackMeta, url, refSeq, browserParams) {
     this.verbose = false;
     this.verbose_selection = false;
     this.verbose_drag = false;
+    this.verbose_edges = DraggableFeatureTrack.verbose_edges;
 
 }
+
+// DraggableFeatureTrack.verbose_edges = true;
 
 // Inherit from FeatureTrack
 DraggableFeatureTrack.prototype = new FeatureTrack();
@@ -46,19 +50,19 @@ DraggableFeatureTrack.prototype.setSelectionManager = function(selman)  {
     //     selectionAdded() and selectionRemoved() response methods
     this.selectionManager.addListener(this);
     return selman;
-}
+};
 
 /**
-*   only called once, during track setup ???
-*
-*   doublclick in track whitespace is used by JBrowse for zoom
-*      but WebApollo/JBrowse uses single click in whitespace to clear selection
-*
-*   so this sets up mousedown/mouseup/doubleclick 
-*      kludge to restore selection after a double click to whatever selection was before 
-*      initiation of doubleclick (first mousedown/mouseup)
-* 
-*/
+ *   only called once, during track setup ???
+ *
+ *   doublclick in track whitespace is used by JBrowse for zoom
+ *      but WebApollo/JBrowse uses single click in whitespace to clear selection
+ *
+ *   so this sets up mousedown/mouseup/doubleclick 
+ *      kludge to restore selection after a double click to whatever selection was before 
+ *      initiation of doubleclick (first mousedown/mouseup)
+ * 
+ */
 DraggableFeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
 						       trackDiv, labelDiv,
 						       widthPct, widthPx, scale) {
@@ -116,8 +120,8 @@ DraggableFeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
 	// regardless of what element it's over, mouseup clears out tracking of mouse down
 	track.last_whitespace_mousedown_loc = null;
     } );
-// kludge to restore selection after a double click to whatever selection was before 
-//      initiation of doubleclick (first mousedown/mouseup)
+    // kludge to restore selection after a double click to whatever selection was before 
+    //      initiation of doubleclick (first mousedown/mouseup)
     $div.bind('dblclick', function(event) {
 	var target = event.target;
 	// because of dblclick bound to features, will only bubble up to here on whitespace, 
@@ -143,7 +147,8 @@ DraggableFeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
 
 
 DraggableFeatureTrack.prototype.selectionAdded = function(feat) {
-    if (feat.track === this)  {
+    var track = this;
+    if (feat.track === track)  {  
 	// console.log("DFT.selectionAdded(), changing featdiv style");
 	var featdiv = this.getFeatDiv(feat);
 	if (featdiv)  {
@@ -151,26 +156,24 @@ DraggableFeatureTrack.prototype.selectionAdded = function(feat) {
 	    if (!jq_featdiv.hasClass(this.selectionClass))  {
 		jq_featdiv.addClass(this.selectionClass);
 	    }
+	    //      track.showEdgeMatches(feat); 
 	}
-	// console.log(featdiv);
-	// edge matching turned off for testing other stuff
-	//     DraggableFeatureTrack.showEdgeMatches(feat); 
     }
-}
+};
 
 DraggableFeatureTrack.prototype.selectionCleared = function(selected) {
-//    console.log("called DFT.selectionCleared()");
+    var track = this;
     var slength = selected.length;
     for (var i=0; i<slength; i++)  {
 	var feat = selected[i];
 	this.selectionRemoved(feat);
     }
-}
+};
 
 DraggableFeatureTrack.prototype.selectionRemoved = function(feat)  {
     if (feat.track === this)  {
 	var featdiv = this.getFeatDiv(feat);
-//	console.log("DFT.selectionRemoved(), changing featdiv style: ");
+	//	console.log("DFT.selectionRemoved(), changing featdiv style: ");
 	if (featdiv)  { 
 	    var jq_featdiv = $(featdiv);
 	    if (jq_featdiv.hasClass(this.selectionClass))  {
@@ -182,17 +185,10 @@ DraggableFeatureTrack.prototype.selectionRemoved = function(feat)  {
 	    if (jq_featdiv.hasClass("ui-multidraggable"))  {
 		jq_featdiv.multidraggable("destroy");
 	    }
-
-	    // redo edge matching
-	    //    $(".left-edge-match").removeClass("left-edge-match");
-	    //    $(".right-edge-match").removeClass("right-edge-match");
 	}
-	// console.log(featdiv);
 
     }
-}
-
-
+};
 
 
 /**
@@ -201,7 +197,7 @@ DraggableFeatureTrack.prototype.selectionRemoved = function(feat)  {
 DraggableFeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 							 containerStart, containerEnd) {
     var featdiv = FeatureTrack.prototype.renderFeature.call(this, feature, uniqueId, block, scale,
-                                                            containerStart, containerEnd);
+							    containerStart, containerEnd);
     if (featdiv)  {  // just in case featDiv doesn't actually get created
 	var $featdiv = $(featdiv);
 	// adding pointer to track for each featdiv
@@ -228,7 +224,7 @@ DraggableFeatureTrack.prototype.renderSubfeature = function(feature, featDiv, su
 	$subfeatdiv.bind("dblclick", this.featDoubleClick);
     }
     return subfeatdiv;
-}
+};
 
 
 /* 
@@ -266,7 +262,7 @@ DraggableFeatureTrack.prototype.onFeatureMouseDown = function(event) {
 	this.handleFeatureDragSetup(event);
     }
 
-}
+};
 
 DraggableFeatureTrack.prototype.handleFeatureSelection = function(event)  {
     var ftrack = this;
@@ -323,7 +319,7 @@ DraggableFeatureTrack.prototype.handleFeatureSelection = function(event)  {
 	    }
 	}
     }
-}
+};
 
 DraggableFeatureTrack.prototype.handleFeatureDragSetup = function(event)  {
     var ftrack = this;
@@ -364,7 +360,7 @@ DraggableFeatureTrack.prototype.handleFeatureDragSetup = function(event)  {
 		{
 		    helper: 'clone', 
 		    /* experimenting for pseudo-multi-drag 
-  		       helper: function() { 
+		       helper: function() { 
 		       var holder = document.createElement("div");
 		       var seldivs = DraggableFeatureTrack.getSelectedDivs();
 		       for (var i in seldivs)  {
@@ -386,7 +382,7 @@ DraggableFeatureTrack.prototype.handleFeatureDragSetup = function(event)  {
 
 	}
     }
-}
+};
 
 
 DraggableFeatureTrack.prototype.onFeatureDoubleClick = function(event)  {
@@ -411,7 +407,7 @@ DraggableFeatureTrack.prototype.onFeatureDoubleClick = function(event)  {
 	// children (including subfeat double-clicked one) are auto-deselected in FeatureSelectionManager if parent is selected
 	if (parent)  { selman.addToSelection(parent); }
     }
-}
+};
 
 
 /**
@@ -419,7 +415,7 @@ DraggableFeatureTrack.prototype.onFeatureDoubleClick = function(event)  {
  */
 DraggableFeatureTrack.prototype.onFeatureClick = function(event) {
     // event.stopPropagation();
-}
+};
 
 /** 
  * get highest level feature in feature hierarchy 
@@ -457,7 +453,7 @@ DraggableFeatureTrack.prototype.getLowestFeatureDiv = function(elem)  {
 	if (elem === document)  {return null;} 
     }
     return elem;
-}
+};
 
 /**
  *   Near as I can tell, track.showRange is called every time the appearance of the track changes in a way that would 
@@ -483,84 +479,9 @@ DraggableFeatureTrack.prototype.showRange = function(first, last, startBase, bpP
 	    this.selectionAdded(sfeat);
 	}
     }
-}
+};
 
 
-/*
-// feat may be a feature or subfeature?
-// experimenting with highlighting edges of features that match selected features (or their subfeatures) 
-DraggableFeatureTrack.showEdgeMatches = function(feat)  {
-//	    var ftracks = $("div.track[features]");
-console.log("finding feature tracks that match:");
-//	    var feat = feature || subfeature;
-var first_left_hit = true;
-var first_right_hit = true;
-// TODO remove hardwiring of min and max index (need track info to do this)
-var min = feat[0];
-var max = feat[1];
-var ftracks = $("div.track").each( function(index, elem)  {
-var ftrak = elem.track;
-if (ftrak && ftrak.features)  {
-var nclist = ftrak.features;
-// iterate calls function only for features that overlap min/max coords
-nclist.iterate(min, max, function(rfeat, path) {
-// TODO remove hardwiring of subfeature index
-var subfeats = feat[4];
-var rsubfeats = rfeat[4];
-if (subfeats instanceof Array && rsubfeats instanceof Array && rsubfeats[0] instanceof Array)  {
-//			    console.log("found overlap");
-//			    console.log(rfeat);
-var id = feat[3];
-var rid = rfeat[3];
-var rdiv = DraggableFeatureTrack.featToDiv[rid];
-var rsubdivs = DraggableFeatureTrack.featToSubDivs[rid];
-if (rdiv && rsubdivs)  {
-// console.log(rdiv);
-// console.log(rsubdivs);
-for (var i in subfeats)  {
-var sfeat = subfeats[i];
-var smin = sfeat[0];
-var smax = sfeat[1];
-for (var j in rsubfeats)  {
-var rfeat = rsubfeats[j];
-var rmin = rfeat[0];
-var rmax = rfeat[1];
-if (smin === rmin)  {
-var rsubdiv = rsubdivs[j];
-if (rsubdiv)  {
-$(rsubdiv).addClass("left-edge-match");
-if (first_left_hit)  {
-console.log("left match:");
-console.log(rfeat);
-console.log("left match div: ");
-console.log(rsubdiv);
-first_left_hit = false;
-}
-}
-}
-if (smax === rmax)  {
-var rsubdiv = rsubdivs[j];
-if (rsubdiv)  {
-$(rsubdiv).addClass("right-edge-match");
-if (first_right_hit)  {
-console.log("right match:");
-console.log(rfeat);
-console.log("right match div: ");
-console.log(rsubdiv);
-first_right_hit = false;
-}
-}
-
-}
-}
-}
-}
-}
-}, function() {} );  // empty function for no-op on finishing
-}
-} );
-}
-*/
 
 
 /*
