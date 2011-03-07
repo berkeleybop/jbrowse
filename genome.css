@@ -698,12 +698,16 @@ div.transcript-hist {
 .plus-transcript-three_prime_UTR,
 .minus-transcript-three_prime_UTR {
     position: absolute;
-    height: 4px;
+    height: 8px;
     margin-top: -2px;
     background-color: #B66;
+    /* redoing to try and play nice with edge-match border-box-style
+    height: 8px;
+    margin-top: -4px;
     border-style: solid;
     border-color: #D88;
     border-width: 2px 0px 2px 0px;
+    */
     z-index: 8;
     min-width: 1px;
     cursor: pointer;
@@ -780,12 +784,16 @@ div.generic_parent-hist {
 .plus-annot-UTR, 
 .minus-annot-UTR {
     position: absolute;
-    height: 6px;
-    margin-top: -2px;
+    height: 8px; 
+    margin-top: -2px; 
     background-color: #2088FF;
+    /*
+    height: 6px; 
+    margin-top: -4px; 
     border-style: solid;
     border-color: #01F;
     border-width: 1px 0px 2px 0px;
+    */
     z-index: 8;
     min-width: 1px;
     cursor: pointer;
