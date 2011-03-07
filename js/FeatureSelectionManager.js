@@ -1,10 +1,10 @@
 /**
-*  Selection manager for bio-features
-*     handles deselection of any ancestors/descendants of selected features
-*        (which is desired behavior for feature selection)
-*     assumes features have had their parent property set before calling selection manager methods
-*  Sends selectionAdded() and selectionRemoved() function calls to listeners
-*/
+ *  Selection manager for bio-features
+ *     handles deselection of any ancestors/descendants of selected features
+ *        (which is desired behavior for feature selection)
+ *     assumes features have had their parent property set before calling selection manager methods
+ *  Sends selectionAdded() and selectionRemoved() function calls to listeners
+ */
 function FeatureSelectionManager()  {
     this.selected = [];
     this.listeners = [];
@@ -15,7 +15,7 @@ function FeatureSelectionManager()  {
 // adding a child should remove all parents
 // attemptign to add a feature that's already part of the selection does nothing (and doesn't trigger listener calls)
 FeatureSelectionManager.prototype.addToSelection = function(feat)  {
-//    console.log("called FeatureselectionManager.addToSelection()");
+    //    console.log("called FeatureselectionManager.addToSelection()");
     // do nothing if feat is already in selection
     if (this.isSelected(feat))  {
 	console.log("called FeatureSelectionManager.addToSelection(), but feature already in selection");
@@ -42,12 +42,12 @@ FeatureSelectionManager.prototype.addToSelection = function(feat)  {
 	var listener = this.listeners[lindex];
 	listener.selectionAdded(feat);
     }
-//    console.log("done calling FeatureselectionManager.addToSelection()");
+    //    console.log("done calling FeatureselectionManager.addToSelection()");
 }
 
 /**
-*  attempting to remove a feature that isn't selected does nothing (and doesn't trigger listener calls)
-*/
+ *  attempting to remove a feature that isn't selected does nothing (and doesn't trigger listener calls)
+ */
 FeatureSelectionManager.prototype.removeFromSelection = function(feat)  {
     var index = this.selected.indexOf(feat);
     if (index >= 0)  {
@@ -65,13 +65,13 @@ FeatureSelectionManager.prototype._removeSelectionAt = function(index, feat)  {
 }
 
 /**
-*  clearing an empty selection does nothing (and doesn't trigger listener calls)
-*
-*  intended for optimizing when selection is cleared, rather than 
-*     multiple calls to removeSelectionAt (and subsequent multiple calls to listeners.selectionRemoved();
-*/
+ *  clearing an empty selection does nothing (and doesn't trigger listener calls)
+ *
+ *  intended for optimizing when selection is cleared, rather than 
+ *     multiple calls to removeSelectionAt (and subsequent multiple calls to listeners.selectionRemoved();
+ */
 FeatureSelectionManager.prototype.clearSelection = function()  {
-//    console.log("called FeatureselectionManager.clearSelection()");
+    //    console.log("called FeatureselectionManager.clearSelection()");
     var previous_selected = this.selected;
     this.selected = [];
     var lislength = this.listeners.length;
@@ -79,16 +79,16 @@ FeatureSelectionManager.prototype.clearSelection = function()  {
 	var listener = this.listeners[lindex];
 	listener.selectionCleared(previous_selected);
     }
-/*
-    for (var sindex in previous_selected)  {
-	var feat = previous_selected[sindex];
-	for (var lindex in this.listeners)  {
-	    var listener = this.listeners[lindex];
-	    listener.selectionRemoved(feat);
-	}
-    }
-*/
-  //  console.log("done calling FeatureselectionManager.clearSelection()");
+    /*
+      for (var sindex in previous_selected)  {
+      var feat = previous_selected[sindex];
+      for (var lindex in this.listeners)  {
+      var listener = this.listeners[lindex];
+      listener.selectionRemoved(feat);
+      }
+      }
+    */
+    //  console.log("done calling FeatureselectionManager.clearSelection()");
 }
 
 FeatureSelectionManager.prototype.isSelected = function(feat)  {
@@ -96,22 +96,29 @@ FeatureSelectionManager.prototype.isSelected = function(feat)  {
 }
 
 /**
-* returns array of currently selected features
-* this is a (shallow) copy of the selected array, therefore a snapshot of what is selected 
-*     as of when getSelection is called
-*  so if selection changes, previous value returned from getSelection will not change
-*/  
+ * returns array of currently selected features
+ * this is a (shallow) copy of the selected array, therefore a snapshot of what is selected 
+ *     as of when getSelection is called
+ *  so if selection changes, previous value returned from getSelection will not change
+ */  
 FeatureSelectionManager.prototype.getSelection = function()  {
-//    return this.selected;
-//    return this.selected.slice(0);  // return shallow copy of array
+    //    return this.selected;
+    //    return this.selected.slice(0);  // return shallow copy of array
     return this.selected.slice();  // return shallow copy of array
-}
+};
 
 FeatureSelectionManager.prototype.addListener = function(listener)  {
-    this.listeners.push(listener);
-}
+    var index = this.listeners.indexOf(listener);
+    if (index < 0)  {  // only add if not already in listener list
+	this.listeners.push(listener);
+    }
+};
 
 FeatureSelectionManager.prototype.removeListener = function(listener)  {
     var index = this.listeners.indexOf(listener);
-    this.listeners.splice(index, 1);
-}
+    if (index >= 0)  {  // only remove if already in listener list
+	this.listeners.splice(index, 1);
+    }
+
+};
+
