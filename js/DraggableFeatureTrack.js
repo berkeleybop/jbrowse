@@ -39,7 +39,6 @@ DraggableFeatureTrack.prototype = new FeatureTrack();
 DraggableFeatureTrack.selectionManager = new FeatureSelectionManager();
 
 DraggableFeatureTrack.dragging = false;
-DraggableFeatureTrack.USE_MULTIDRAG = false;
 
 DraggableFeatureTrack.prototype.setSelectionManager = function(selman)  {
     if (this.selectionManager)  {
@@ -339,42 +338,71 @@ DraggableFeatureTrack.prototype.handleFeatureDragSetup = function(event)  {
 	 *       check that draggability and redo if missing 
 	 */  
 	var $featdiv = $(featdiv);
-	if (DraggableFeatureTrack.USE_MULTIDRAG)  {
-	    if (! $featdiv.hasClass("ui-multidraggable"))  {  
-		if (this.verbose_drag)  { console.log("setting up multi-dragability"); }
-		console.log(featdiv);
-		$featdiv.multidraggable(   // multidraggable() adds "ui-multidraggable" class to div
-		    {helper: 'clone', 
-		     opacity: 0.3, 
-		     axis: 'y', 
-		     create: function(event, ui)  {ftrack.drag_create = true;}
-		    } ).trigger(event);
-	    }
-	}
-	else if (! $featdiv.hasClass("ui-draggable"))  {  
+	if (! $featdiv.hasClass("ui-draggable"))  {  
 	    if (this.verbose_drag)  { 
 		console.log("setting up dragability");
 		console.log(featdiv);
 	    }
 	    $featdiv.draggable(   // draggable() adds "ui-draggable" class to div
 		{
-		    helper: 'clone', 
-		    /* experimenting for pseudo-multi-drag 
-		       helper: function() { 
-		       var holder = document.createElement("div");
-		       var seldivs = DraggableFeatureTrack.getSelectedDivs();
-		       for (var i in seldivs)  {
-		       var featclone = $(seldivs[i]).clone();
-		       console.log("drag helper experiment");
-		       console.log(holder);
-		       console.log(featclone);
-		       holder.appendChild(featclone[0]);
-		       }
-		       //  var featclone = $(featdiv).clone();
-		       console.log(holder);
-		       return holder;
-		       }, 
-		    */
+		    //  helper: 'clone', 
+		    // experimenting for pseudo-multi-drag 
+		    helper: function() { 
+			var $featdiv_copy = $featdiv.clone();
+			var $holder = $featdiv.clone();
+			$holder.removeClass();
+			$holder.addClass("custom-multifeature-draggable-helper"); 
+			var holder = $holder[0];
+			var featdiv_copy = $featdiv_copy[0];
+
+			var foffset = $featdiv.offset();
+			var fheight = $featdiv.height();
+			var fwidth = $featdiv.width();
+			var ftop = foffset.top;
+			var fleft = foffset.left;
+			if (this.verbose_drag)  {
+			    console.log("featdiv dimensions: ");
+			    console.log(foffset); console.log("height: " + fheight + ", width: " + fwidth);
+			}
+			var selection = ftrack.selectionManager.getSelection();
+			var selength = selection.length;
+			for (var i=0; i<selength; i++)  {
+			    var sfeat = selection[i];
+			    var strack = sfeat.track;
+			    var sfeatdiv = strack.getFeatDiv(sfeat);
+			    // if (sfeatdiv && (sfeatdiv !== featdiv))  {
+			    if (sfeatdiv)  {
+				var $sfeatdiv = $(sfeatdiv);
+				var $divclone = $sfeatdiv.clone();
+				var soffset = $sfeatdiv.offset();
+				var sheight = $sfeatdiv.height();
+				var swidth =$sfeatdiv.width();
+				var seltop = soffset.top;
+				var sleft = soffset.left;
+				$divclone.width(swidth);
+				$divclone.height(sheight);
+				var delta_top = seltop - ftop
+				var delta_left = sleft - fleft;
+				if (this.verbose_drag)  { 
+				    console.log(sfeatdiv);
+				    console.log("delta_left: " + delta_left + ", delta_top: " + delta_top);
+				}
+				/*  setting left and top by pixel, based on delta relative to moused-on feature 
+				    tried using $divclone.position( { ...., "offset": delta_left + " " + delta_top } );, 
+				    but position() not working for negative deltas? (ends up using absolute value)
+				    so doing more directly with "left and "top" css calls
+				    
+				*/
+				$divclone.css("left", delta_left);
+				$divclone.css("top", delta_top);
+				var divclone = $divclone[0];
+				holder.appendChild(divclone);
+			    }
+			}
+			if (this.verbose_drag)  { console.log(holder); }
+			return holder;
+		    }, 
+
 		    opacity: 0.5, 
 		    axis: 'y', 
 		    create: function(event, ui)  {ftrack.drag_create = true;}

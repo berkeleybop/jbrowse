@@ -809,6 +809,19 @@ div.generic_parent-hist {
     background: rgba(100, 150, 255, 0.5);
     
 }
+
+/**
+*  By default, no styling associated with custom multifeature draggable helper
+*  But leaving here for easing toggling of diagnostic rendering
+*/
+.custom-multifeature-draggable-helper  {
+/*  
+    outline-style: dotted; 
+    outline-color: red;
+    outline-width: 4px; 
+*/
+}
+
 /**
 *  appearance of annotations (features in AnnoTracks)  when they are drop targets and are hovered over 
 */
@@ -831,7 +844,7 @@ div.generic_parent-hist {
 *  (-moz*, -webkit*, -ms* prefixed versions needed because box-sizing property name currently differs across browsers)
 */
 .left-edge-match  {
-    border-left: solid blue 1px;
+    border-left: solid blue 2px;
     box-sizing: border-box;
     -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;
@@ -843,7 +856,7 @@ div.generic_parent-hist {
 *  (-moz*, -webkit*, -ms* prefixed versions needed because box-sizing property name currently differs across browsers)
 */
 .right-edge-match  {
-    border-right: solid blue 1px;
+    border-right: solid blue 2px;
     box-sizing: border-box;
     -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;
