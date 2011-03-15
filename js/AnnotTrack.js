@@ -41,6 +41,14 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
             }
 	}
     ));
+    annot_context_menu.addChild(new dijit.MenuItem(
+    		{
+    	    	    label: "Merge",
+    	    	    onClick: function() {
+    	    		thisObj.mergeSelectedFeatures();
+    	            }
+    		}
+    	    ));
     annot_context_menu.addChild(new dijit.MenuItem( 
 	{
     	    label: "..."
@@ -69,14 +77,14 @@ AnnotTrack.annotSelectionManager = new FeatureSelectionManager();
  *    otherwise if USE_COMET is set to true, will cause server-breaking errors
  *  
  */
-AnnotTrack.USE_COMET = false;
+AnnotTrack.USE_COMET = true;
 
 /**
  *  set USE_LOCAL_EDITS = true to bypass editing calls to AnnotationEditorService servlet and attempt 
  *    to create similar annotations locally
  *  useful when AnnotationEditorService is having problems, or experimenting with something not yet completely implemented server-side
  */
-AnnotTrack.USE_LOCAL_EDITS = true;
+AnnotTrack.USE_LOCAL_EDITS = false;
 
 AnnotTrack.creation_count = 0;
 
@@ -148,38 +156,31 @@ AnnotTrack.prototype.createAnnotationChangeListener = function() {
 	timeout: 1000 * 1000, // Time in milliseconds
 	// The LOAD function will be called on a successful response.
 	load: function(response, ioArgs) {
-	    if (response.operation == "ADD") {
-		console.log("ADD command from server: ");
-		console.log(response);
-		
-	    	var responseFeatures = response.features;
-		//	    	var featureArray = JSONUtils.convertJsonToFeatureArray(responseFeatures[0]);
-	    	var featureArray = JSONUtils.createJBrowseFeature(responseFeatures[0], track.fields, track.subFields);
-
-	    	var id = responseFeatures[0].uniquename;
-	    	if (features.featIdMap[id] == null) {
-	    	    // note that proper handling of subfeatures requires annotation trackData.json resource to
-	    	    //    set sublistIndex one past last feature array index used by other fields
-	    	    //    (currently Annotations always have 6 fields (0-5), so sublistIndex = 6
-	    	    features.add(featureArray, id);
-	    	}
-	    }
-	    else if (response.operation == "DELETE") {
-		console.log("DELETE command from server: ");
-		console.log(response);
-
-		var responseFeatures = response.features;
-                for (var i = 0; i < responseFeatures.length; ++i) {
-                    var id_to_delete = responseFeatures[i].uniquename;
-                    features.deleteEntry(id_to_delete);
+		for (var i in response) {
+			var changeData = response[i];
+			if (changeData.operation == "ADD") {
+				console.log("ADD command from server: ");
+				console.log(changeData);
+				track.addFeatures(changeData.features);
+			}
+			else if (changeData.operation == "DELETE") {
+				console.log("DELETE command from server: ");
+				console.log(changeData);
+				track.deleteFeatures(changeData.features);
+			}
+			else if (changeData.operation == "UPDATE") {
+				console.log("UPDATE command from server: ");
+				console.log(changeData);
+				track.deleteFeatures(changeData.features);
+				track.addFeatures(changeData.features);
+			}
+			else  {
+				console.log("UNKNOWN command from server: ");
+				console.log(response);
+			}
 		}
-	    }
-	    else  {
-		console.log("UNKNOWN command from server: ");
-		console.log(response);
-	    }
-	    track.hideAll();
-	    track.changed();
+		track.hideAll();
+		track.changed();
 	    track.createAnnotationChangeListener();
 	},
 	// The ERROR function will be called in an error case.
@@ -190,6 +191,26 @@ AnnotTrack.prototype.createAnnotationChangeListener = function() {
 	}
     });
 
+}
+
+AnnotTrack.prototype.addFeatures = function(responseFeatures) {
+	var featureArray = JSONUtils.createJBrowseFeature(responseFeatures[0], this.fields, this.subFields);
+
+	var id = responseFeatures[0].uniquename;
+	if (this.features.featIdMap[id] == null) {
+		// note that proper handling of subfeatures requires annotation trackData.json resource to
+		//    set sublistIndex one past last feature array index used by other fields
+		//    (currently Annotations always have 6 fields (0-5), so sublistIndex = 6
+		this.features.add(featureArray, id);
+	}
+
+}
+
+AnnotTrack.prototype.deleteFeatures = function(responseFeatures) {
+	for (var i = 0; i < responseFeatures.length; ++i) {
+		var id_to_delete = responseFeatures[i].uniquename;
+		this.features.deleteEntry(id_to_delete);
+	}
 }
 
 AnnotTrack.annot_under_mouse = null;
@@ -386,79 +407,84 @@ AnnotTrack.prototype.onFeatureClick = function(event) {
 AnnotTrack.prototype.addToAnnotation = function(annot, features)  {
     var target_track = this;
     var nclist = target_track.features;
-    if (this.verbose_add)  {
-	console.log("adding to annot: ");
-	console.log(annot);
-	// console.log("removing annotation for modification");
-    }
-    // removing annotation from NCList (since need to re-add after modifications for proper repositioning)
-    // not necessary, track.hideAll() / track.changed() at end forces rerendering
-    //  nclist.deleteEntry(annot.uid);
-
-
-    // flatten features (only add subfeats)
-    var subfeats = [];
-
-    var flength = features.length;
-    for (var i=0; i<flength; i++)  { 
-	var feat = features[i];
-	var is_subfeature = (!!feat.parent);  // !! is shorthand for returning true if value is defined and non-null
-	if (is_subfeature)  {
-	    subfeats.push(feat);
-	}
-	else  {
-	    var source_track = feat.track;
-	    if (source_track.fields["subfeatures"])  {
-		var subs = feat[source_track.fields["subfeatures"]];
-		$.merge(subfeats, subs);
-	    }
-	}
-    }
-    if (this.verbose_add)  {
-	console.log("flattened feats to add");
-	console.log(subfeats);
-    }
     
-    var slength = subfeats.length;
-    for (var k=0; k<slength; k++)  {
-	var sfeat = subfeats[k];
-	if (this.verbose_add)  {
-	    console.log("converting feature, is_subfeature = " + is_subfeature + ":");
-	    console.log(sfeat);
-	}
-	var source_track = sfeat.track;
-	var newfeat = JSONUtils.convertToTrack(sfeat, true, source_track, target_track);
-	var id = "annot_" + AnnotTrack.creation_count++;
-	newfeat.parent = annot;
-	if (target_track.subFields["id"])  { newfeat[target_track.subFields["id"]] = id; }
-	if (target_track.subFields["name"])  { newfeat[target_track.fields["name"]] = id; }
-	newfeat.uid = id;
-	newfeat.track = target_track;  // done in convertToTrack, but just making sure...
-	if (this.verbose_add)  {
-	    console.log("converted feature created: ");
-	    console.log(newfeat);
-	}
-	var annot_subs = annot[target_track.fields["subfeatures"]];
-	annot_subs.push(newfeat);
-	// hardwiring start as f[0], end as f[1] for now -- 
-	//   to fix this need to whether newfeat is a subfeat, etc.
-	if (newfeat[0] < annot[0])  {annot[0] = newfeat[0];}
-	if (newfeat[1] > annot[1])  {annot[1] = newfeat[1];}
-    }
+    if (AnnotTrack.USE_LOCAL_EDITS) {
+    	if (this.verbose_add)  {
+    		console.log("adding to annot: ");
+    		console.log(annot);
+    		// console.log("removing annotation for modification");
+    	}
+    	// removing annotation from NCList (since need to re-add after modifications for proper repositioning)
+    	// not necessary, track.hideAll() / track.changed() at end forces rerendering
+    	//  nclist.deleteEntry(annot.uid);
 
-    if (this.verbose_add)  {
-	console.log("adding modified annotation back: ");
-	console.log(annot.slice());
-    }
-    
-    // adding modified annotation back to NCList 
-    // no longer removing (relying on hideAll/changed calls), so don't need to add back
-    //    nclist.add(annot, annot.uid);
 
-    // force re-rendering
-    this.hideAll();
-    this.changed();
-    if (this.verbose_add)  { console.log("finished adding to annot: "); }
+    	// flatten features (only add subfeats)
+    	var subfeats = [];
+
+    	var flength = features.length;
+    	for (var i=0; i<flength; i++)  { 
+    		var feat = features[i];
+    		var is_subfeature = (!!feat.parent);  // !! is shorthand for returning true if value is defined and non-null
+    		if (is_subfeature)  {
+    			subfeats.push(feat);
+    		}
+    		else  {
+    			var source_track = feat.track;
+    			if (source_track.fields["subfeatures"])  {
+    				var subs = feat[source_track.fields["subfeatures"]];
+    				$.merge(subfeats, subs);
+    			}
+    		}
+    	}
+    	if (this.verbose_add)  {
+    		console.log("flattened feats to add");
+    		console.log(subfeats);
+    	}
+
+    	var slength = subfeats.length;
+    	for (var k=0; k<slength; k++)  {
+    		var sfeat = subfeats[k];
+    		if (this.verbose_add)  {
+    			console.log("converting feature, is_subfeature = " + is_subfeature + ":");
+    			console.log(sfeat);
+    		}
+    		var source_track = sfeat.track;
+    		var newfeat = JSONUtils.convertToTrack(sfeat, true, source_track, target_track);
+    		var id = "annot_" + AnnotTrack.creation_count++;
+    		newfeat.parent = annot;
+    		if (target_track.subFields["id"])  { newfeat[target_track.subFields["id"]] = id; }
+    		if (target_track.subFields["name"])  { newfeat[target_track.fields["name"]] = id; }
+    		newfeat.uid = id;
+    		newfeat.track = target_track;  // done in convertToTrack, but just making sure...
+    		if (this.verbose_add)  {
+    			console.log("converted feature created: ");
+    			console.log(newfeat);
+    		}
+    		var annot_subs = annot[target_track.fields["subfeatures"]];
+    		annot_subs.push(newfeat);
+    		// hardwiring start as f[0], end as f[1] for now -- 
+    		//   to fix this need to whether newfeat is a subfeat, etc.
+    		if (newfeat[0] < annot[0])  {annot[0] = newfeat[0];}
+    		if (newfeat[1] > annot[1])  {annot[1] = newfeat[1];}
+    	}
+
+    	if (this.verbose_add)  {
+    		console.log("adding modified annotation back: ");
+    		console.log(annot.slice());
+    	}
+
+    	// adding modified annotation back to NCList 
+    	// no longer removing (relying on hideAll/changed calls), so don't need to add back
+    	//    nclist.add(annot, annot.uid);
+
+    	// force re-rendering
+    	this.hideAll();
+    	this.changed();
+    	if (this.verbose_add)  { console.log("finished adding to annot: "); }
+    }
+    else {
+    }
 }
 
 AnnotTrack.prototype.makeTrackDroppable = function() {
@@ -588,72 +614,72 @@ AnnotTrack.prototype.deleteSelectedFeatures = function()  {
 }
 
 AnnotTrack.prototype.deleteAnnotations = function(annots) {
-    var track = this;
-    var features_nclist = track.features;
-    var features = '"features": [';
-    var uniqueNames = [];
-    for (var i in annots)  {
-	var annot = annots[i];
-	var uniqueName = annot.uid;
-	// just checking to ensure that all features in selection are from this track -- 
-	//   if not, then don't try and delete them
-	if (annot.track === track)  {
-	    var trackdiv = track.div;
-	    var trackName = track.name;
+	var track = this;
+	var features_nclist = track.features;
+	var features = '"features": [';
+	var uniqueNames = [];
+	for (var i in annots)  {
+		var annot = annots[i];
+		var uniqueName = annot.uid;
+		// just checking to ensure that all features in selection are from this track -- 
+		//   if not, then don't try and delete them
+		if (annot.track === track)  {
+			var trackdiv = track.div;
+			var trackName = track.name;
 
-	    if (i > 0) {
-		features += ',';
-	    }
-	    features += ' { "uniquename": "' + uniqueName + '" } ';
-	    uniqueNames.push(uniqueName);
-	}
-    }
-    features += ']';
-    if (this.verbose_delete)  {
-	console.log("annotations to delete:");
-	console.log(features);
-    }
-
-    if (AnnotTrack.USE_LOCAL_EDITS)  {
-	// need to sort into top-level features (which need to get deleted from nclist) and non-top-level 
-	//   (which need to get removed from their parent feature)
-	for (var k in annots)  {
-	    var annot = annots[k];
-	    var id_to_delete = annot.uid;
-	    if (this.verbose_delete)  { 
-		console.log("trying to delete: " + id_to_delete); 
-		console.log(annot);
-		// console.dir(annot);
-	    }
-	    // console.log(features_nclist);
-	    if (features_nclist.contains(id_to_delete))  {
-		if (this.verbose_delete)  { console.log("found in nclist, calling nclist.deleteEntry()"); }
-		features_nclist.deleteEntry(id_to_delete);
-	    }
-	    else  {
-		if (this.verbose_delete)  { console.log("not found in nclist, trying to remove from parent: "); }
-		var parent = annot.parent;
-		if (this.verbose_delete)  { console.log(parent); }
-		if (parent)  {
-		    // var modparent = BioFeatureUtils.removeChild(annot);
-		    var modparent = BioFeatureUtils.removeChild(annot);
-		    if (this.verbose_delete)  { console.log(parent); }
-		    if (modparent)  {  // child removed, removeChild returned parent 
-			features_nclist.deleteEntry(parent.uid);
-			features_nclist.add(parent, parent.uid);
-		    }
-		    else  {   // child removed, but removeChild returned null, indicating parent has no more children
-			if (this.verbose_delete)  { console.log("no more children, so removing parent too"); }
-			features_nclist.deleteEntry(parent.uid);
-		    }
+			if (i > 0) {
+				features += ',';
+			}
+			features += ' { "uniquename": "' + uniqueName + '" } ';
+			uniqueNames.push(uniqueName);
 		}
-	    }
 	}
-	if (this.verbose_delete)  { console.log("re-rendering track"); }
-	track.hideAll();
-	track.changed();
-    }
-    else  {
+	features += ']';
+	if (this.verbose_delete)  {
+		console.log("annotations to delete:");
+		console.log(features);
+	}
+
+	if (AnnotTrack.USE_LOCAL_EDITS)  {
+		// need to sort into top-level features (which need to get deleted from nclist) and non-top-level 
+		//   (which need to get removed from their parent feature)
+		for (var k in annots)  {
+			var annot = annots[k];
+			var id_to_delete = annot.uid;
+			if (this.verbose_delete)  { 
+				console.log("trying to delete: " + id_to_delete); 
+				console.log(annot);
+				// console.dir(annot);
+			}
+			// console.log(features_nclist);
+			if (features_nclist.contains(id_to_delete))  {
+				if (this.verbose_delete)  { console.log("found in nclist, calling nclist.deleteEntry()"); }
+				features_nclist.deleteEntry(id_to_delete);
+			}
+			else  {
+				if (this.verbose_delete)  { console.log("not found in nclist, trying to remove from parent: "); }
+				var parent = annot.parent;
+				if (this.verbose_delete)  { console.log(parent); }
+				if (parent)  {
+					// var modparent = BioFeatureUtils.removeChild(annot);
+					var modparent = BioFeatureUtils.removeChild(annot);
+					if (this.verbose_delete)  { console.log(parent); }
+					if (modparent)  {  // child removed, removeChild returned parent 
+						features_nclist.deleteEntry(parent.uid);
+						features_nclist.add(parent, parent.uid);
+					}
+					else  {   // child removed, but removeChild returned null, indicating parent has no more children
+						if (this.verbose_delete)  { console.log("no more children, so removing parent too"); }
+						features_nclist.deleteEntry(parent.uid);
+					}
+				}
+			}
+		}
+		if (this.verbose_delete)  { console.log("re-rendering track"); }
+		track.hideAll();
+		track.changed();
+	}
+    else {
 	dojo.xhrPost( {
 	    postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "delete_feature" }',
 	    // postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "delete_exon" }',
@@ -685,6 +711,67 @@ AnnotTrack.prototype.deleteAnnotations = function(annots) {
 	    }
 	    
 	});
+    }
+}
+
+AnnotTrack.prototype.mergeSelectedFeatures = function()  {
+    var selected = this.selectionManager.getSelection();
+    this.selectionManager.clearSelection();
+    this.mergeAnnotations(selected);
+}
+
+AnnotTrack.prototype.mergeAnnotations = function(annots) {
+    var track = this;
+    var leftAnnot = null;
+    var rightAnnot = null;
+    for (var i in annots)  {
+        var annot = annots[i];
+        // just checking to ensure that all features in selection are from this track -- 
+        //   if not, then don't try and delete them
+        if (annot.track === track)  {
+            var trackName = track.name;
+                if (leftAnnot == null || annot[track.fields["start"]] < leftAnnot[track.fields["start"]]) {
+                        leftAnnot = annot;
+                }
+                if (rightAnnot == null || annot[track.fields["end"]] > rightAnnot[track.fields["end"]]) {
+                    rightAnnot = annot;
+                }
+        }
+    }
+    var features;
+    var operation;
+    if (leftAnnot.parent == rightAnnot.parent) {
+        features = '"features": [ { "uniquename": "' + leftAnnot.uid + '" }, { "uniquename": "' + rightAnnot.uid + '" } ]';
+        operation = "merge_exons";
+    }
+    else {
+        features = '"features": [ { "uniquename": "' + leftAnnot.parent.uid + '" }, { "uniquename": "' + rightAnnot.parent.uid + '" } ]';
+        operation = "merge_transcripts";
+    }
+    if (AnnotTrack.USE_LOCAL_EDITS)  {
+        // TODO
+        track.hideAll();
+        track.changed();
+    }
+    else  {
+    	dojo.xhrPost( {
+    		postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }',
+    		url: context_path + "/AnnotationEditorService",
+    		handleAs: "json",
+    		timeout: 5000 * 1000, // Time in milliseconds
+    		load: function(response, ioArgs) {
+    			// TODO
+    		},
+    		// The ERROR function will be called in an error case.
+    		error: function(response, ioArgs) { // 
+    			console.log("Annotation server error--maybe you forgot to login to the server?")
+    			console.error("HTTP status code: ", ioArgs.xhr.status); 
+    			//
+    			//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //  
+    			return response; // 
+    		}
+
+    	});
     }
 }
 
