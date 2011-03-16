@@ -51,8 +51,7 @@ Track.prototype.setViewInfo = function(heightUpdate, numBlocks,
     this.div.appendChild(this.leftBlank);
 
     this.sizeInit(numBlocks, widthPct);
-    this.labelHTML = "";
-    this.labelHeight = 0;
+    this.labelHTML = "";    this.labelHeight = 0;
 };
 
 Track.prototype.hide = function() {
@@ -206,21 +205,20 @@ Track.prototype._loadingBlock = function(blockDiv) {
 
 Track.prototype._showBlock = function(blockIndex, startBase, endBase, scale,
                                       containerStart, containerEnd) {
-    if (this.blocks[blockIndex]) {
-        this.heightUpdate(this.blockHeights[blockIndex], blockIndex);
-        return;
+    var blockDiv = this.blocks[blockIndex];
+//    if (this.blocks[blockIndex]) {
+    if (blockDiv) {
+	this.heightUpdate(this.blockHeights[blockIndex], blockIndex);
+        return blockDiv;
     }
     if (this.empty) {
         this.heightUpdate(this.labelHeight, blockIndex);
-        return;
+        return;  // or return null?
     }
 
-    var blockDiv = document.createElement("div");
-    blockDiv.className = "block";
-    blockDiv.style.left = (blockIndex * this.widthPct) + "%";
-    blockDiv.style.width = this.widthPct + "%";
-    blockDiv.startBase = startBase;
-    blockDiv.endBase = endBase;
+    // GAH Refactored block div creation into it's own method to allow for overriding in subclasses
+    blockDiv = this.createBlock(blockIndex, startBase, endBase, scale, containerStart, containerEnd);
+
     if (this.loaded) {
         this.fillBlock(blockIndex,
                        blockDiv,
@@ -238,7 +236,25 @@ Track.prototype._showBlock = function(blockIndex, startBase, endBase, scale,
 
     this.blocks[blockIndex] = blockDiv;
     this.div.appendChild(blockDiv);
+    return blockDiv;
 };
+
+/**
+*  GAH
+*  Refactored block div creation into it's own method to allow for overriding in subclasses
+*
+*  Track.createBlock does not need scale, containerStart, containerEnd arguments, 
+*     but subclasses might...
+*/
+Track.prototype.createBlock = function(blockIndex, startBase, endBase, scale, containerStart, containerEnd)  {
+    var blockDiv = document.createElement("div");
+    blockDiv.className = "block";
+    blockDiv.style.left = (blockIndex * this.widthPct) + "%";
+    blockDiv.style.width = this.widthPct + "%";
+    blockDiv.startBase = startBase;
+    blockDiv.endBase = endBase;
+    return blockDiv;
+}
 
 Track.prototype.moveBlocks = function(delta) {
     var newBlocks = new Array(this.numBlocks);
