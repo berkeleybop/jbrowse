@@ -886,4 +886,29 @@ div.generic_parent-hist {
     outline-width: 3px;
 }
 
+/**
+*  diagnostics for tiling images (in ImageTracks)
+*/
+/*
+.image-tile  {
+    border: solid aqua 4px;
+    outline-style: solid;
+    outline-color: aqua;
+    outline-width: 2px;
+}
+*/
 
+/*
+*  diagnostics for blocks
+*/
+/*
+div.block  {
+    outline-style: solid;
+    outline-color: gray;
+    outline-width: 1px;
+}
+*/
+
+canvas.block-canvas  {
+ border: solid red 1px;
+}
