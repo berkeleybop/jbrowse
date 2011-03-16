@@ -346,7 +346,15 @@ DraggableFeatureTrack.prototype.handleFeatureDragSetup = function(event)  {
 	    $featdiv.draggable(   // draggable() adds "ui-draggable" class to div
 		{
 		    //  helper: 'clone', 
-		    // experimenting for pseudo-multi-drag 
+		    // custom helper for pseudo-multi-drag ("pseudo" because multidrag is visual only -- 
+		    //      handling of draggable when dropped is already done through selection)
+		    //    strategy for custom helper is to make a "holder" div with same dimensionsas featdiv 
+		    //       that's (mostly) a clone of the featdiv draggable is being called on 
+		    //       (since draggable seems to like that), 
+		    //     then add clones of all selected feature divs (including another clone of featdiv) 
+		    //        to holder, with dimensions of each clone recalculated as pixels and set relative to 
+		    //        featdiv that the drag is actually initiated on (and thus relative to the holder's 
+		    //        dimensions)
 		    helper: function() { 
 			var $featdiv_copy = $featdiv.clone();
 			var $holder = $featdiv.clone();
