@@ -8,51 +8,39 @@
     <title>Apollo 2 JBrowse</title>
     <link rel="stylesheet" type="text/css" href="jslib/dijit/themes/tundra/tundra.css"></link>
     <link rel="stylesheet" type="text/css" href="jslib/dojo/resources/dojo.css"></link>
-  <!-- need jqueryui theme for resizable, etc. --> 
- <link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/themes/base/jquery-ui.css"/>
-<!-- <link rel="stylesheet" type="text/css" href="jslib/jquery-ui.css"/> -->
-<style type="text/css">
+
+    <!-- load JQuery theme CSS remotely from Google CDN: -->
+    <link rel="stylesheet" type="text/css"
+	  href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/themes/base/jquery-ui.css"/>  
+
+    <!-- load JQuery theme CSS from WebApollo server -->
+    <!--    
+    <link rel="stylesheet" type="text/css" href="jslib/jquery-ui.css"/> 
+    -->
+
+    <style type="text/css">
       html, body { height: 100%; width: 100%; padding: 0; border: 0; }
-</style>
-<link rel="stylesheet" type="text/css" href="genome.css"></link>
+    </style>
+    <link rel="stylesheet" type="text/css" href="genome.css"></link>
 
-<!-- <script src="http://o.aolcdn.com/dojo/1.5/dojo/dojo.xd.js"
-type="text/javascript"></script> -->
+    <!--  Load JQuery, JQuery-UI, Dojo remotely from Google CDN: -->
+   <script src="http://www.google.com/jsapi" type="text/javascript"></script>
+    <script type="text/javascript"> 
+      google.load("jquery", "1.5"); 
+      google.load("jqueryui", "1.8.10");
+      google.load("dojo", "1.5");
+    </script>
 
-<!-- <script type="text/javascript"
-src="http://ajax.googleapis.com/ajax/libs/dojo/1.5/dojo/dojo.xd.js"
-djConfig="isDebug: true"></script> -->
-<!-- <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/dojo/1.5/dijit/dijit.js"></script> -->
+    <!--  Load JQuery, JQuery-ui, Dojo from WebApollo server: -->
+    <!--
+    <script type="text/javascript" src="jslib/jquery-1.5/jquery-1.5.min.js" ></script> 
+    <script type="text/javascript" src="jslib/jquery-ui-1.8.9.custom/js/jquery-ui-1.8.9.custom.min.js"></script> 
+    <script type="text/javascript" src="jslib/dojo-1.5.0/dojo/dojo.js"></script>
+    -->
 
-<!--
-<script type="text/javascript" src="jslib/dojo/dojo.js" djConfig="isDebug: true"></script>
-<script type="text/javascript" src="jslib/dojo/jbrowse_dojo.js"></script>
--->
+    <!--  djConfig="isDebug: true" -->
 
-<!--  for accessing JQuery, JQuery-UI, Dojo, and Dijit remotely from Google CDN -->
-<script src="http://www.google.com/jsapi" type="text/javascript"></script>
-   <script type="text/javascript"> 
-
-	google.load("jquery", "1.4"); 
-        google.load("jqueryui", "1.8.10");
-       google.load("dojo", "1.5");
-   </script>
-<!--	google.load("jquery", "1.5");  -->
-<!--  local loading of jquery, jquery-ui, dojo
-<script type="text/javascript" src="jslib/jquery-1.5/jquery-1.5.min.js" ></script> 
- <script type="text/javascript" src="jslib/jquery-ui-1.8.9.custom/js/jquery-ui-1.8.9.custom.min.js"></script> 
-<script type="text/javascript"
-        src="jslib/dojo-1.5.0/dojo/dojo.js"></script>
--->
-
-<!--  djConfig="isDebug: true" -->
-
-<!-- Dojo will autoload dijit in ../dijit, so dijit-all.js not really necessary... -->
-<!-- <script type="text/javascript" src="jslib/dojo-1.5.0/dijit/dijit-all.js" ></script>  -->
-
-
-
-   <script type="text/javascript" src="jslib/jquery_plugins/mod.jquery.ui.multidraggable-1.8.8.js"></script>
+    <script type="text/javascript" src="jslib/jquery_plugins/mod.jquery.ui.multidraggable-1.8.8.js"></script>
     <script type="text/javascript" src="js/Browser.js"></script>
     <script type="text/javascript" src="js/Util.js"></script>
     <script type="text/javascript" src="js/NCList.js"></script>
@@ -66,19 +54,21 @@ djConfig="isDebug: true"></script> -->
     <script type="text/javascript" src="js/DraggableFeatureTrack.js"></script>
     <!-- for testing draggable etc. -->
     <!--   <script type="text/javascript" src="js/BasicDraggableFeatureTrack.js"></script>   -->
-   <script type="text/javascript" src="js/DasFeatureTrack.js"></script>
+    <script type="text/javascript" src="js/DasFeatureTrack.js"></script>
     <script type="text/javascript" src="js/AnnotTrack.js"></script>
     <script type="text/javascript" src="js/UITracks.js"></script>
     <script type="text/javascript" src="js/ImageTrack.js"></script>
+    <!-- for testing CanvasTrack -->
+    <!-- <script type="text/javascript" src="js/CanvasTrack.js"></script> -->
     <script type="text/javascript" src="js/GenomeView.js"></script>
     <script type="text/javascript" src="js/JSONUtils.js"></script>
-   <script type="text/javascript" src="js/BioFeatureUtils.js"></script>
-   <script type="text/javascript" src="js/FeatureEdgeMatchManager.js"></script>
+    <script type="text/javascript" src="js/BioFeatureUtils.js"></script>
+    <script type="text/javascript" src="js/FeatureEdgeMatchManager.js"></script>
     <script type="text/javascript" src="data/refSeqs.js"></script>
     <script type="text/javascript" src="data/trackInfo.js"></script>
 
     <script type="text/javascript">
-    /* <![CDATA[ */
+      /* <![CDATA[ */
            var queryParams = dojo.queryToObject(window.location.search.slice(1));
            var bookmarkCallback = function(brwsr) {
                return window.location.protocol
@@ -98,8 +88,8 @@ djConfig="isDebug: true"></script> -->
 	                           dataRoot: "" 
                                });
     /* ]]> */
-    <!-- standard jbrowse dataRoot setting in Browser constructor... -->
-    <!-- dataRoot: "data/" -->
+      <!-- standard jbrowse dataRoot setting in Browser constructor... -->
+      <!-- dataRoot: "data/" -->
     </script>
   </head>
   
