@@ -61,6 +61,7 @@ ImageTrack.prototype.getImages = function(zoom, startBase, endBase) {
 	im = this.tileToImage[i];
 	if (!im) {
 	    im = document.createElement("img");
+	    dojo.addClass(im, "image-tile");
             dojo.connect(im, "onerror", this.imgErrorHandler);
             //prepend this.baseUrl if zoom.urlPrefix is relative
             var absUrl = new RegExp("^(([^/]+:)|\/)");
