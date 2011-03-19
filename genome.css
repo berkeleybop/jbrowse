@@ -430,8 +430,8 @@ div.est-hist {
 .minus-annot {
     position: absolute;
     height: 4px;
-    margin-top: 4px;
-    margin-bottom: 4px;
+    margin-top: 6px;
+    margin-bottom: 6px;
     background-color: #99F;
     z-index: 6;
     min-width: 1px;
@@ -770,8 +770,8 @@ div.generic_parent-hist {
 .plus-annot-CDS,
 .minus-annot-CDS {
     position: absolute;
-    height: 12px;
-    margin-top: -4px; 
+    height: 16px;
+    margin-top: -6px; 
     background-color: #30AAFF;
     border-style: solid;
     border-color: #01F;
@@ -779,13 +779,17 @@ div.generic_parent-hist {
     cursor: pointer;
     z-index: 10;
     min-width: 1px;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
 }
 
 .plus-annot-UTR, 
 .minus-annot-UTR {
     position: absolute;
-    height: 8px; 
-    margin-top: -2px; 
+    height: 12px; 
+    margin-top: -4px; 
     background-color: #2088FF;
     /*
     height: 6px; 
@@ -797,6 +801,10 @@ div.generic_parent-hist {
     z-index: 8;
     min-width: 1px;
     cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
 }
 
 /**
