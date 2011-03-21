@@ -16,6 +16,7 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
     // this.selectionManager = this.setSelectionManager(new FeatureSelectionManager());
     this.selectionManager = this.setSelectionManager(AnnotTrack.annotSelectionManager);
     this.selectionClass = "selected-annotation";
+    this.annot_under_mouse = null;
 
     var thisObj = this;
     /*
@@ -62,6 +63,8 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
     this.verbose_drop = false;
     this.verbose_click = false;
     this.verbose_resize = false;
+    this.verbose_mouseenter = false;
+    this.verbose_mouseleave = false;
 }
 
 
@@ -213,7 +216,6 @@ AnnotTrack.prototype.deleteFeatures = function(responseFeatures) {
 	}
 }
 
-AnnotTrack.annot_under_mouse = null;
 
 /**
  *  overriding renderFeature to add event handling right-click context menu
@@ -228,43 +230,34 @@ AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 								     containerStart, containerEnd);
     if (featDiv && featDiv != null)  {
 	annot_context_menu.bindDomNode(featDiv);
-	//    var track = this;
-	$(featDiv).bind("mouseenter", function(event)  {
-	    /* "this" in mousenter function will be featdiv */
-	    AnnotTrack.annot_under_mouse = this;
-	    //	    console.log("annot under mouse: ");
-	    //	    console.log(AnnotTrack.annot_under_mouse);
-	} );
-	$(featDiv).bind("mouseleave", function(event)  {
-	    //	    console.log("no annot under mouse: ");
-	    AnnotTrack.annot_under_mouse = null;
-	} );
-	// console.log("added context menu to featdiv: ", uniqueId);
-	//	dojo.connect(featDiv, "oncontextmenu", this, function(e) {
-	//	});
-	// console.log("added context menu to featdiv: ", uniqueId);
-	
 	$(featDiv).droppable(  {
 	    accept: ".selected-feature",   // only accept draggables that are selected feature divs	
 	    tolerance: "pointer", 
 	    hoverClass: "annot-drop-hover", 
-	    drop: function(event, ui)  {
-		// ideally in the drop() on annot div is where would handle adding feature(s) to annot, 
-		//   but JQueryUI droppable doesn't actually call drop unless draggable helper div is actually 
-		//   over the droppable -- even if tolerance is set to pointer
-		//      tolerance=pointer will trigger hover styling when over droppable
-		//      BUT location of pointer still does not influence actual dropping and drop() call
-		// therefore getting around this by handling hover styling here based on pointer over annot, 
-		//      but drop-to-add part is handled by whole-track droppable, and uses annot_under_mouse 
-		//      tracking variable to determine if drop was actually on top of an annot instead of 
-		//      track whitespace
-		if (track.verbose_drop)  {
-		    console.log("dropped feature on annot:");
-		    console.log(this);
-		}
+	    over: function(event, ui)  {
+		track.annot_under_mouse = event.target;
+	    }, 
+	      out: function(event, ui)  {
+	      track.annot_under_mouse = null;
+	    }, 
+	      drop: function(event, ui)  {
+	      // ideally in the drop() on annot div is where would handle adding feature(s) to annot, 
+	      //   but JQueryUI droppable doesn't actually call drop unless draggable helper div is actually 
+	      //   over the droppable -- even if tolerance is set to pointer
+	      //      tolerance=pointer will trigger hover styling when over droppable, 
+	      //           as well as call to over method (and out when leave droppable)
+	      //      BUT location of pointer still does not influence actual dropping and drop() call
+	      // therefore getting around this by handling hover styling here based on pointer over annot, 
+	      //      but drop-to-add part is handled by whole-track droppable, and uses annot_under_mouse 
+	      //      tracking variable to determine if drop was actually on top of an annot instead of 
+	      //      track whitespace
+	      if (track.verbose_drop)  {
+		console.log("dropped feature on annot:");
+		console.log(featDiv);
+	      }
 	    }
 	    
-	} );
+	  } );
     }
     return featDiv;
 }
@@ -280,81 +273,81 @@ AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
    }
 */
 
-AnnotTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
-						 displayStart, displayEnd, block) {
+  AnnotTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
+						   displayStart, displayEnd, block) {
     var subdiv = DraggableFeatureTrack.prototype.renderSubfeature.call(this, feature, featDiv, subfeature, 
 								       displayStart, displayEnd, block);
     if (subdiv && subdiv != null)  {
-	$(subdiv).bind("mousedown", this.annotMouseDown);
+      $(subdiv).bind("mousedown", this.annotMouseDown);
     }
-}
+  }
 
-AnnotTrack.prototype.showRange = function(first, last, startBase, bpPerBlock, scale,
-					  containerStart, containerEnd) {
-    DraggableFeatureTrack.prototype.showRange.call(this, first, last, startBase, bpPerBlock, scale,
-						   containerStart, containerEnd);
-    //    console.log("after calling annot track.showRange(), block range: " + 
-    //		this.firstAttached + "--" + this.lastAttached + ",  " + (this.lastAttached - this.firstAttached));
-}
-
-AnnotTrack.prototype.onFeatureMouseDown = function(event) {
-    // _not_ calling DraggableFeatureTrack.prototyp.onFeatureMouseDown -- 
-    //     don't want to allow dragging (at least not yet)
-    // event.stopPropagation();
-    var ftrack = this;
-    if (ftrack.verbose_selection || ftrack.verbose_drag)  { 
-	console.log("AnnotTrack.onFeatureMouseDown called"); 
+    AnnotTrack.prototype.showRange = function(first, last, startBase, bpPerBlock, scale,
+					      containerStart, containerEnd) {
+      DraggableFeatureTrack.prototype.showRange.call(this, first, last, startBase, bpPerBlock, scale,
+						     containerStart, containerEnd);
+      //    console.log("after calling annot track.showRange(), block range: " + 
+      //		this.firstAttached + "--" + this.lastAttached + ",  " + (this.lastAttached - this.firstAttached));
     }
 
+      AnnotTrack.prototype.onFeatureMouseDown = function(event) {
+	// _not_ calling DraggableFeatureTrack.prototyp.onFeatureMouseDown -- 
+	//     don't want to allow dragging (at least not yet)
+	// event.stopPropagation();
+	var ftrack = this;
+	if (ftrack.verbose_selection || ftrack.verbose_drag)  { 
+	  console.log("AnnotTrack.onFeatureMouseDown called"); 
+	}
 
-    // checking for whether this is part of drag setup retrigger of mousedown -- 
-    //     if so then don't do selection or re-setup draggability)
-    //     this keeps selection from getting confused, 
-    //     and keeps trigger(event) in draggable setup from causing infinite recursion 
-    //     in event handling calls to featMouseDown
-    if (ftrack.drag_create)  { 
-	if (ftrack.verbose_selection || ftrack.verbose_drag)  {
+
+	// checking for whether this is part of drag setup retrigger of mousedown -- 
+	//     if so then don't do selection or re-setup draggability)
+	//     this keeps selection from getting confused, 
+	//     and keeps trigger(event) in draggable setup from causing infinite recursion 
+	//     in event handling calls to featMouseDown
+	if (ftrack.drag_create)  { 
+	  if (ftrack.verbose_selection || ftrack.verbose_drag)  {
 	    console.log("DFT.featMouseDown re-triggered event for drag initiation, drag_create: " + ftrack.drag_create);
 	    console.log(ftrack);
+	  }
+	  ftrack.drag_create = null;
 	}
-	ftrack.drag_create = null;
-    }
-    else  {
-	this.handleFeatureSelection(event);
-	// this.handleFeatureDragSetup(event);
-    }
-}
+	else  {
+	  this.handleFeatureSelection(event);
+	  // this.handleFeatureDragSetup(event);
+	}
+      }
 
-AnnotTrack.prototype.onAnnotMouseDown = function(event)  {
-    var track = this;
-    var verbose_resize = track.verbose_resize;
-    if (verbose_resize)  { console.log("AnnotTrack.onAnnotMouseDown called"); }
-    event = event || window.event;
-    var elem = (event.currentTarget || event.srcElement);
-    var featdiv = DraggableFeatureTrack.prototype.getLowestFeatureDiv(elem);
-    if (featdiv && (featdiv != null))  {
-	if (dojo.hasClass(featdiv, "ui-resizable"))  {
-	    if (verbose_resize)  {
+	AnnotTrack.prototype.onAnnotMouseDown = function(event)  {
+	  var track = this;
+	  var verbose_resize = track.verbose_resize;
+	  if (verbose_resize)  { console.log("AnnotTrack.onAnnotMouseDown called"); }
+	  event = event || window.event;
+	  var elem = (event.currentTarget || event.srcElement);
+	  var featdiv = DraggableFeatureTrack.prototype.getLowestFeatureDiv(elem);
+	  if (featdiv && (featdiv != null))  {
+	    if (dojo.hasClass(featdiv, "ui-resizable"))  {
+	      if (verbose_resize)  {
 		console.log("already resizable");
 		console.log(featdiv);
+	      }
 	    }
-	}
-	else {
-	    if (verbose_resize)  {
+	    else {
+	      if (verbose_resize)  {
 		console.log("making annotation resizable");
 		console.log(featdiv);
-	    }
-	    $(featdiv).resizable( {
+	      }
+	      $(featdiv).resizable( {
 		handles: "e, w",
-		helper: "ui-resizable-helper",
-		autohide: false, 
+		    helper: "ui-resizable-helper",
+		    autohide: false, 
 
-		stop: function(event, ui)  {
+		    stop: function(event, ui)  {
 		    if (verbose_resize) { 
-			console.log("resizable.stop() called, event:");
-			console.dir(event);
-			console.log("ui:");
-			console.dir(ui);
+		      console.log("resizable.stop() called, event:");
+		      console.dir(event);
+		      console.log("ui:");
+		      console.dir(ui);
 		    }
 		    var gview = track.gview;
 		    var oldPos = ui.originalPosition;
@@ -368,10 +361,10 @@ AnnotTrack.prototype.onAnnotMouseDown = function(event)  {
 		    var rightDeltaPixels = newRightEdge - oldRightEdge;
 		    var rightDeltaBases = Math.round(gview.pxToBp(rightDeltaPixels));
 		    if (verbose_resize)  {
-			console.log("left edge delta pixels: " + leftDeltaPixels);
-			console.log("left edge delta bases: " + leftDeltaBases);
-			console.log("right edge delta pixels: " + rightDeltaPixels);
-			console.log("right edge delta bases: " + rightDeltaBases);
+		      console.log("left edge delta pixels: " + leftDeltaPixels);
+		      console.log("left edge delta bases: " + leftDeltaBases);
+		      console.log("right edge delta pixels: " + rightDeltaPixels);
+		      console.log("right edge delta bases: " + rightDeltaBases);
 		    }
 		    var subfeat = ui.originalElement[0].subfeature;
 		    console.log(subfeat);
@@ -380,140 +373,145 @@ AnnotTrack.prototype.onAnnotMouseDown = function(event)  {
 		    console.log(subfeat);
 		    track.hideAll();
 		    track.changed();
-		}
-	    } );
+		  }
+		} );
 	    
-	}
-    }
-    event.stopPropagation();
-}
-
-
-/**
- *  feature click no-op (to override FeatureTrack.onFeatureClick, which conflicts with mouse-down selection
- */
-AnnotTrack.prototype.onFeatureClick = function(event) {
-    if (this.verbose_click)  { console.log("in AnnotTrack.onFeatureClick"); }
-    event = event || window.event;
-    var elem = (event.currentTarget || event.srcElement);
-    var featdiv = DraggableFeatureTrack.prototype.getLowestFeatureDiv(elem);
-    if (featdiv && (featdiv != null))  {
-	if (this.verbose_click)  { console.log(featdiv); }
-    }
-    // do nothing
-    //   event.stopPropagation();
-}
-
-AnnotTrack.prototype.addToAnnotation = function(annot, features)  {
-    var target_track = this;
-    var nclist = target_track.features;
-    
-    if (AnnotTrack.USE_LOCAL_EDITS) {
-    	if (this.verbose_add)  {
-    		console.log("adding to annot: ");
-    		console.log(annot);
-    		// console.log("removing annotation for modification");
-    	}
-    	// removing annotation from NCList (since need to re-add after modifications for proper repositioning)
-    	// not necessary, track.hideAll() / track.changed() at end forces rerendering
-    	//  nclist.deleteEntry(annot.uid);
-
-
-    	// flatten features (only add subfeats)
-    	var subfeats = [];
-
-    	var flength = features.length;
-    	for (var i=0; i<flength; i++)  { 
-    		var feat = features[i];
-    		var is_subfeature = (!!feat.parent);  // !! is shorthand for returning true if value is defined and non-null
-    		if (is_subfeature)  {
-    			subfeats.push(feat);
-    		}
-    		else  {
-    			var source_track = feat.track;
-    			if (source_track.fields["subfeatures"])  {
-    				var subs = feat[source_track.fields["subfeatures"]];
-    				$.merge(subfeats, subs);
-    			}
-    		}
-    	}
-    	if (this.verbose_add)  {
-    		console.log("flattened feats to add");
-    		console.log(subfeats);
-    	}
-
-    	var slength = subfeats.length;
-    	for (var k=0; k<slength; k++)  {
-    		var sfeat = subfeats[k];
-    		if (this.verbose_add)  {
-    			console.log("converting feature, is_subfeature = " + is_subfeature + ":");
-    			console.log(sfeat);
-    		}
-    		var source_track = sfeat.track;
-    		var newfeat = JSONUtils.convertToTrack(sfeat, true, source_track, target_track);
-    		var id = "annot_" + AnnotTrack.creation_count++;
-    		newfeat.parent = annot;
-    		if (target_track.subFields["id"])  { newfeat[target_track.subFields["id"]] = id; }
-    		if (target_track.subFields["name"])  { newfeat[target_track.fields["name"]] = id; }
-    		newfeat.uid = id;
-    		newfeat.track = target_track;  // done in convertToTrack, but just making sure...
-    		if (this.verbose_add)  {
-    			console.log("converted feature created: ");
-    			console.log(newfeat);
-    		}
-    		var annot_subs = annot[target_track.fields["subfeatures"]];
-    		annot_subs.push(newfeat);
-    		// hardwiring start as f[0], end as f[1] for now -- 
-    		//   to fix this need to whether newfeat is a subfeat, etc.
-    		if (newfeat[0] < annot[0])  {annot[0] = newfeat[0];}
-    		if (newfeat[1] > annot[1])  {annot[1] = newfeat[1];}
-    	}
-
-    	if (this.verbose_add)  {
-    		console.log("adding modified annotation back: ");
-    		console.log(annot.slice());
-    	}
-
-    	// adding modified annotation back to NCList 
-    	// no longer removing (relying on hideAll/changed calls), so don't need to add back
-    	//    nclist.add(annot, annot.uid);
-
-    	// force re-rendering
-    	this.hideAll();
-    	this.changed();
-    	if (this.verbose_add)  { console.log("finished adding to annot: "); }
-    }
-    else {
-    }
-}
-
-AnnotTrack.prototype.makeTrackDroppable = function() {
-    var target_track = this;
-    var target_trackdiv = target_track.div;
-    if (target_track.verbose_drop)  {
-	console.log("making track a droppable target: ");
-	console.log(this);
-	console.log(target_trackdiv);
-    }
-    $(target_trackdiv).droppable(  {
-	accept: ".selected-feature",   // only accept draggables that are selected feature divs
-	drop: function(event, ui)  { 
-	    // "this" is the div being dropped on, so same as target_trackdiv
-	    if (target_track.verbose_drop)  {
-		console.log("draggable dropped on AnnotTrack");
-		console.log(ui);
 	    }
-	    var dropped_feats = DraggableFeatureTrack.selectionManager.getSelection();
-	    // problem with making individual annotations droppable, so checking for "drop" on annotation here, 
-	    //    and if so re-routing to add to existing annotation
-	    if (AnnotTrack.annot_under_mouse != null)  {
-		console.log("dropped onto annot: ");
-		console.log(AnnotTrack.annot_under_mouse.feature);
-		target_track.addToAnnotation(AnnotTrack.annot_under_mouse.feature, dropped_feats);
+	  }
+	  event.stopPropagation();
+	}
+
+
+	/**
+	 *  feature click no-op (to override FeatureTrack.onFeatureClick, which conflicts with mouse-down selection
+	 */
+	  AnnotTrack.prototype.onFeatureClick = function(event) {
+	    if (this.verbose_click)  { console.log("in AnnotTrack.onFeatureClick"); }
+	    event = event || window.event;
+	    var elem = (event.currentTarget || event.srcElement);
+	    var featdiv = DraggableFeatureTrack.prototype.getLowestFeatureDiv(elem);
+	    if (featdiv && (featdiv != null))  {
+	      if (this.verbose_click)  { console.log(featdiv); }
+	    }
+	    // do nothing
+	    //   event.stopPropagation();
+	  }
+
+	    AnnotTrack.prototype.addToAnnotation = function(annot, features)  {
+	      var target_track = this;
+	      var nclist = target_track.features;
+    
+	      if (AnnotTrack.USE_LOCAL_EDITS) {
+		if (this.verbose_add)  {
+		  console.log("adding to annot: ");
+		  console.log(annot);
+		  // console.log("removing annotation for modification");
+		}
+		// removing annotation from NCList (since need to re-add after modifications for proper repositioning)
+		// not necessary, track.hideAll() / track.changed() at end forces rerendering
+		//  nclist.deleteEntry(annot.uid);
+
+
+		// flatten features (only add subfeats)
+		var subfeats = [];
+
+		var flength = features.length;
+		for (var i=0; i<flength; i++)  { 
+		  var feat = features[i];
+		  var is_subfeature = (!!feat.parent);  // !! is shorthand for returning true if value is defined and non-null
+		  if (is_subfeature)  {
+		    subfeats.push(feat);
+		  }
+		  else  {
+		    var source_track = feat.track;
+		    if (source_track.fields["subfeatures"])  {
+		      var subs = feat[source_track.fields["subfeatures"]];
+		      $.merge(subfeats, subs);
+		    }
+		  }
+		}
+		if (this.verbose_add)  {
+		  console.log("flattened feats to add");
+		  console.log(subfeats);
+		}
+
+		var slength = subfeats.length;
+		for (var k=0; k<slength; k++)  {
+		  var sfeat = subfeats[k];
+		  if (this.verbose_add)  {
+		    console.log("converting feature, is_subfeature = " + is_subfeature + ":");
+		    console.log(sfeat);
+		  }
+		  var source_track = sfeat.track;
+		  var newfeat = JSONUtils.convertToTrack(sfeat, true, source_track, target_track);
+		  var id = "annot_" + AnnotTrack.creation_count++;
+		  newfeat.parent = annot;
+		  if (target_track.subFields["id"])  { newfeat[target_track.subFields["id"]] = id; }
+		  if (target_track.subFields["name"])  { newfeat[target_track.fields["name"]] = id; }
+		  newfeat.uid = id;
+		  newfeat.track = target_track;  // done in convertToTrack, but just making sure...
+		  if (this.verbose_add)  {
+		    console.log("converted feature created: ");
+		    console.log(newfeat);
+		  }
+		  var annot_subs = annot[target_track.fields["subfeatures"]];
+		  annot_subs.push(newfeat);
+		  // hardwiring start as f[0], end as f[1] for now -- 
+		  //   to fix this need to whether newfeat is a subfeat, etc.
+		  if (newfeat[0] < annot[0])  {annot[0] = newfeat[0];}
+		  if (newfeat[1] > annot[1])  {annot[1] = newfeat[1];}
+		}
+
+		if (this.verbose_add)  {
+		  console.log("adding modified annotation back: ");
+		  console.log(annot.slice());
+		}
+
+		// adding modified annotation back to NCList 
+		// no longer removing (relying on hideAll/changed calls), so don't need to add back
+		//    nclist.add(annot, annot.uid);
+
+		// force re-rendering
+		this.hideAll();
+		this.changed();
+		if (this.verbose_add)  { console.log("finished adding to annot: "); }
+	      }
+	      else {
+	      }
+	    }
+
+	      AnnotTrack.prototype.makeTrackDroppable = function() {
+		var target_track = this;
+		var target_trackdiv = target_track.div;
+		if (target_track.verbose_drop)  {
+		  console.log("making track a droppable target: ");
+		  console.log(this);
+		  console.log(target_trackdiv);
+		}
+		$(target_trackdiv).droppable(  {
+		  accept: ".selected-feature",   // only accept draggables that are selected feature divs
+		      drop: function(event, ui)  { 
+		      // "this" is the div being dropped on, so same as target_trackdiv
+		      if (target_track.verbose_drop)  {
+			console.log("draggable dropped on AnnotTrack");
+			console.log(ui);
+		      }
+		      var dropped_feats = DraggableFeatureTrack.selectionManager.getSelection();
+		      // problem with making individual annotations droppable, so checking for "drop" on annotation here, 
+		      //    and if so re-routing to add to existing annotation
+		      if (target_track.annot_under_mouse != null)  {
+			if (target_track.verbose_drop)  {
+			  console.log("dropped onto annot: ");
+			  console.log(target_track.annot_under_mouse.feature);
+			}
+			target_track.addToAnnotation(target_track.annot_under_mouse.feature, dropped_feats);
 	    }
 	    else  {
 		target_track.createAnnotations(dropped_feats);
 	    }
+	    // making sure annot_under_mouse is cleared 
+	    //   (should do this in the drop?  but need to make sure _not_ null when 
+	    target_track.annot_under_mouse = null;
 	}    
     } );
     if (target_track.verbose_drop) { console.log("finished making droppable target"); }

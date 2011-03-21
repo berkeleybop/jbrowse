@@ -25,6 +25,7 @@ function DraggableFeatureTrack(trackMeta, url, refSeq, browserParams) {
 
     this.verbose = false;
     this.verbose_selection = false;
+    this.verbose_selection_notification = false;
     this.verbose_drag = false;
     this.verbose_edges = DraggableFeatureTrack.verbose_edges;
 
@@ -148,12 +149,16 @@ DraggableFeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
 DraggableFeatureTrack.prototype.selectionAdded = function(feat) {
     var track = this;
     if (feat.track === track)  {  
-	// console.log("DFT.selectionAdded(), changing featdiv style");
-	var featdiv = this.getFeatDiv(feat);
+	var featdiv = track.getFeatDiv(feat);
+	if (track.verbose_selection_notification)  {
+	    console.log("DFT.selectionAdded called: ");
+	    console.log(feat);
+	    console.log(featdiv);
+	}
 	if (featdiv)  {
 	    var jq_featdiv = $(featdiv);
-	    if (!jq_featdiv.hasClass(this.selectionClass))  {
-		jq_featdiv.addClass(this.selectionClass);
+	    if (!jq_featdiv.hasClass(track.selectionClass))  {
+		jq_featdiv.addClass(track.selectionClass);
 	    }
 	    //      track.showEdgeMatches(feat); 
 	}
@@ -162,21 +167,29 @@ DraggableFeatureTrack.prototype.selectionAdded = function(feat) {
 
 DraggableFeatureTrack.prototype.selectionCleared = function(selected) {
     var track = this;
+    if (track.verbose_selection_notification)  {
+	console.log("DFT.selectionCleared called");
+    }
     var slength = selected.length;
     for (var i=0; i<slength; i++)  {
 	var feat = selected[i];
-	this.selectionRemoved(feat);
+	track.selectionRemoved(feat);
     }
 };
 
 DraggableFeatureTrack.prototype.selectionRemoved = function(feat)  {
-    if (feat.track === this)  {
-	var featdiv = this.getFeatDiv(feat);
-	//	console.log("DFT.selectionRemoved(), changing featdiv style: ");
+    var track = this;
+    if (feat.track === track)  {
+	var featdiv = track.getFeatDiv(feat);
+	if (track.verbose_selection_notification)  {
+	    console.log("DFT.selectionRemoved called");
+	    console.log(feat);
+	    console.log(featdiv);
+	}
 	if (featdiv)  { 
 	    var jq_featdiv = $(featdiv);
-	    if (jq_featdiv.hasClass(this.selectionClass))  {
-		jq_featdiv.removeClass(this.selectionClass);
+	    if (jq_featdiv.hasClass(track.selectionClass))  {
+		jq_featdiv.removeClass(track.selectionClass);
 	    }
 	    if (jq_featdiv.hasClass("ui-draggable"))  {
 		jq_featdiv.draggable("destroy");
