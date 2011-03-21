@@ -50,6 +50,14 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
     	            }
     		}
     	    ));
+    annot_context_menu.addChild(new dijit.MenuItem(
+    		{
+    	    	    label: "Split",
+    	    	    onClick: function() {
+    	    		thisObj.splitSelectedFeatures();
+    	            }
+    		}
+    	    ));
     annot_context_menu.addChild(new dijit.MenuItem( 
 	{
     	    label: "..."
@@ -368,8 +376,34 @@ AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 		    }
 		    var subfeat = ui.originalElement[0].subfeature;
 		    console.log(subfeat);
-		    subfeat[track.subFields["start"]] += leftDeltaBases;
-		    subfeat[track.subFields["end"]] += rightDeltaBases;
+
+		    if (!AnnotTrack.USE_COMET || !track.comet_working) {
+		    	subfeat[track.subFields["start"]] += leftDeltaBases;
+		    	subfeat[track.subFields["end"]] += rightDeltaBases;
+		    }
+		    else {
+		    	var fmin = subfeat[track.subFields["start"]] + leftDeltaBases;
+		    	var fmax = subfeat[track.subFields["end"]] + rightDeltaBases;
+			    dojo.xhrPost( {
+			    	postData: '{ "track": "' + track.name + '", "features": [ { "uniquename": ' + subfeat[track.subFields["name"]] + ', "location": { "fmin": ' + fmin + ', "fmax": ' + fmax + ' } } ], "operation": "set_exon_boundaries" }',
+					url: context_path + "/AnnotationEditorService",
+					handleAs: "json",
+					timeout: 1000 * 1000, // Time in milliseconds
+					// The LOAD function will be called on a successful response.
+					load: function(response, ioArgs) { //
+						if (!AnnotTrack.USE_COMET || !track.comet_working)  {
+							//TODO
+						}
+					},
+					// The ERROR function will be called in an error case.
+					error: function(response, ioArgs) { //
+						console.log("Error creating annotation--maybe you forgot to log into the server?");
+						console.error("HTTP status code: ", ioArgs.xhr.status); //
+						//dojo.byId("replace").innerHTML = 'Loading the ressource from the server did not work'; //
+						return response;
+					}
+			    });
+		    }
 		    console.log(subfeat);
 		    track.hideAll();
 		    track.changed();
@@ -728,23 +762,94 @@ AnnotTrack.prototype.mergeAnnotations = function(annots) {
         //   if not, then don't try and delete them
         if (annot.track === track)  {
             var trackName = track.name;
-                if (leftAnnot == null || annot[track.fields["start"]] < leftAnnot[track.fields["start"]]) {
-                        leftAnnot = annot;
-                }
-                if (rightAnnot == null || annot[track.fields["end"]] > rightAnnot[track.fields["end"]]) {
-                    rightAnnot = annot;
-                }
+            if (leftAnnot == null || annot[track.fields["start"]] < leftAnnot[track.fields["start"]]) {
+            	leftAnnot = annot;
+            }
+            if (rightAnnot == null || annot[track.fields["end"]] > rightAnnot[track.fields["end"]]) {
+            	rightAnnot = annot;
+            }
         }
     }
     var features;
     var operation;
+    // merge exons
     if (leftAnnot.parent == rightAnnot.parent) {
         features = '"features": [ { "uniquename": "' + leftAnnot.uid + '" }, { "uniquename": "' + rightAnnot.uid + '" } ]';
         operation = "merge_exons";
     }
+    // merge transcripts
     else {
         features = '"features": [ { "uniquename": "' + leftAnnot.parent.uid + '" }, { "uniquename": "' + rightAnnot.parent.uid + '" } ]';
         operation = "merge_transcripts";
+    }
+    if (AnnotTrack.USE_LOCAL_EDITS)  {
+        // TODO
+        track.hideAll();
+        track.changed();
+    }
+    else  {
+    	dojo.xhrPost( {
+    		postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }',
+    		url: context_path + "/AnnotationEditorService",
+    		handleAs: "json",
+    		timeout: 5000 * 1000, // Time in milliseconds
+    		load: function(response, ioArgs) {
+    			// TODO
+    		},
+    		// The ERROR function will be called in an error case.
+    		error: function(response, ioArgs) { // 
+    			console.log("Annotation server error--maybe you forgot to login to the server?")
+    			console.error("HTTP status code: ", ioArgs.xhr.status); 
+    			//
+    			//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //  
+    			return response; // 
+    		}
+
+    	});
+    }
+}
+
+AnnotTrack.prototype.splitSelectedFeatures = function()  {
+    var selected = this.selectionManager.getSelection();
+    this.selectionManager.clearSelection();
+    this.splitAnnotations(selected);
+}
+
+AnnotTrack.prototype.splitAnnotations = function(annots) {
+	// can only split on max two elements
+	if (annots.length > 2) {
+		return;
+	}
+    var track = this;
+    var leftAnnot = null;
+    var rightAnnot = null;
+    for (var i in annots)  {
+        var annot = annots[i];
+        // just checking to ensure that all features in selection are from this track -- 
+        //   if not, then don't try and delete them
+        if (annot.track === track)  {
+            var trackName = track.name;
+            if (leftAnnot == null || annot[track.fields["start"]] < leftAnnot[track.fields["start"]]) {
+            	leftAnnot = annot;
+            }
+            if (rightAnnot == null || annot[track.fields["end"]] > rightAnnot[track.fields["end"]]) {
+            	rightAnnot = annot;
+            }
+        }
+    }
+    var features;
+    var operation;
+    // split exon
+    if (leftAnnot == rightAnnot) {
+    	//TODO
+    }
+    // split transcript
+    else if (leftAnnot.parent == rightAnnot.parent) {
+        features = '"features": [ { "uniquename": "' + leftAnnot.uid + '" }, { "uniquename": "' + rightAnnot.uid + '" } ]';
+        operation = "split_transcript";
+    }
+    else {
+    	return;
     }
     if (AnnotTrack.USE_LOCAL_EDITS)  {
         // TODO
