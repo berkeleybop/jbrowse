@@ -435,7 +435,7 @@ AnnotTrack.prototype.onFeatureClick = function(event) {
 AnnotTrack.prototype.addToAnnotation = function(annot, features)  {
     var target_track = this;
     var nclist = target_track.features;
-    
+
     if (AnnotTrack.USE_LOCAL_EDITS) {
 	if (this.verbose_add)  {
 	    console.log("adding to annot: ");
@@ -512,8 +512,27 @@ AnnotTrack.prototype.addToAnnotation = function(annot, features)  {
 	if (this.verbose_add)  { console.log("finished adding to annot: "); }
     }
     else {
+	var featuresString = "";
+	for (var i = 0; i < features.length; ++i) {
+	    var jsonFeature = JSONUtils.createApolloFeature(features[i], target_track.fields, target_track.subfield, "exon");
+	    featuresString += ", " + JSON.stringify(jsonFeature);
+	}
+	var parent = JSONUtils.createApolloFeature(annot, target_track.fields, target_track.subfields);
+	parent.uniquename = annot[target_track.fields["name"]];
+	dojo.xhrPost( {
+	    postData: '{ "track": "' + target_track.name + '", "features": [ ' + JSON.stringify(parent) + featuresString + '], "operation": "add_exon" }',
+	    url: context_path + "/AnnotationEditorService",
+	    handleAs: "json",
+	    timeout: 5000, // Time in milliseconds
+	    // The LOAD function will be called on a successful response.
+	    load: function(response, ioArgs) { //
+		if (!AnnotTrack.USE_COMET || !target_track.comet_working)  {
+		    //TODO
+		}
+	    }
+	});
     }
-};
+}
 
 AnnotTrack.prototype.makeTrackDroppable = function() {
     var target_track = this;
