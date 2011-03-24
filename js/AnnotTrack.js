@@ -31,7 +31,7 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
 
     this.annotMouseDown = function(event)  {
 	thisObj.onAnnotMouseDown(event);
-    }
+    };
 
     annot_context_menu = new dijit.Menu({});
     annot_context_menu.addChild(new dijit.MenuItem(
@@ -43,21 +43,21 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
 	}
     ));
     annot_context_menu.addChild(new dijit.MenuItem(
-    		{
-    	    	    label: "Merge",
-    	    	    onClick: function() {
-    	    		thisObj.mergeSelectedFeatures();
-    	            }
-    		}
-    	    ));
+    	{
+    	    label: "Merge",
+    	    onClick: function() {
+    	    	thisObj.mergeSelectedFeatures();
+    	    }
+    	}
+    ));
     annot_context_menu.addChild(new dijit.MenuItem(
-    		{
-    	    	    label: "Split",
-    	    	    onClick: function() {
-    	    		thisObj.splitSelectedFeatures();
-    	            }
-    		}
-    	    ));
+    	{
+    	    label: "Split",
+    	    onClick: function() {
+    	    	thisObj.splitSelectedFeatures();
+    	    }
+    	}
+    ));
     annot_context_menu.addChild(new dijit.MenuItem( 
 	{
     	    label: "..."
@@ -113,6 +113,7 @@ var context_path = "/ApolloWeb";
 dojo.addOnLoad( function()  {  /* add dijit menu stuff here? */ } );
 
 AnnotTrack.prototype.loadSuccess = function(trackInfo) {
+    
     DraggableFeatureTrack.prototype.loadSuccess.call(this, trackInfo);
     
     var track = this;
@@ -139,7 +140,7 @@ AnnotTrack.prototype.loadSuccess = function(trackInfo) {
 	    },
 	    // The ERROR function will be called in an error case.
 	    error: function(response, ioArgs) { //
-		console.log("Annotation server error--maybe you forgot to login to the server?")
+		console.log("Annotation server error--maybe you forgot to login to the server?");
 		console.error("HTTP status code: ", ioArgs.xhr.status); //
 		//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //
 		track.remote_edit_working = false;
@@ -152,7 +153,7 @@ AnnotTrack.prototype.loadSuccess = function(trackInfo) {
 	this.createAnnotationChangeListener();
     }
     this.makeTrackDroppable();
-}
+};
 
 AnnotTrack.prototype.createAnnotationChangeListener = function() {
     var track = this;
@@ -167,31 +168,31 @@ AnnotTrack.prototype.createAnnotationChangeListener = function() {
 	timeout: 1000 * 1000, // Time in milliseconds
 	// The LOAD function will be called on a successful response.
 	load: function(response, ioArgs) {
-		for (var i in response) {
-			var changeData = response[i];
-			if (changeData.operation == "ADD") {
-				console.log("ADD command from server: ");
-				console.log(changeData);
-				track.addFeatures(changeData.features);
-			}
-			else if (changeData.operation == "DELETE") {
-				console.log("DELETE command from server: ");
-				console.log(changeData);
-				track.deleteFeatures(changeData.features);
-			}
-			else if (changeData.operation == "UPDATE") {
-				console.log("UPDATE command from server: ");
-				console.log(changeData);
-				track.deleteFeatures(changeData.features);
-				track.addFeatures(changeData.features);
-			}
-			else  {
-				console.log("UNKNOWN command from server: ");
-				console.log(response);
-			}
+	    for (var i in response) {
+		var changeData = response[i];
+		if (changeData.operation == "ADD") {
+		    console.log("ADD command from server: ");
+		    console.log(changeData);
+		    track.addFeatures(changeData.features);
 		}
-		track.hideAll();
-		track.changed();
+		else if (changeData.operation == "DELETE") {
+		    console.log("DELETE command from server: ");
+		    console.log(changeData);
+		    track.deleteFeatures(changeData.features);
+		}
+		else if (changeData.operation == "UPDATE") {
+		    console.log("UPDATE command from server: ");
+		    console.log(changeData);
+		    track.deleteFeatures(changeData.features);
+		    track.addFeatures(changeData.features);
+		}
+		else  {
+		    console.log("UNKNOWN command from server: ");
+		    console.log(response);
+		}
+	    }
+	    track.hideAll();
+	    track.changed();
 	    track.createAnnotationChangeListener();
 	},
 	// The ERROR function will be called in an error case.
@@ -202,27 +203,27 @@ AnnotTrack.prototype.createAnnotationChangeListener = function() {
 	}
     });
 
-}
+};
 
 AnnotTrack.prototype.addFeatures = function(responseFeatures) {
-	var featureArray = JSONUtils.createJBrowseFeature(responseFeatures[0], this.fields, this.subFields);
+    var featureArray = JSONUtils.createJBrowseFeature(responseFeatures[0], this.fields, this.subFields);
 
-	var id = responseFeatures[0].uniquename;
-	if (this.features.featIdMap[id] == null) {
-		// note that proper handling of subfeatures requires annotation trackData.json resource to
-		//    set sublistIndex one past last feature array index used by other fields
-		//    (currently Annotations always have 6 fields (0-5), so sublistIndex = 6
-		this.features.add(featureArray, id);
-	}
+    var id = responseFeatures[0].uniquename;
+    if (this.features.featIdMap[id] == null) {
+	// note that proper handling of subfeatures requires annotation trackData.json resource to
+	//    set sublistIndex one past last feature array index used by other fields
+	//    (currently Annotations always have 6 fields (0-5), so sublistIndex = 6
+	this.features.add(featureArray, id);
+    }
 
-}
+};
 
 AnnotTrack.prototype.deleteFeatures = function(responseFeatures) {
-	for (var i = 0; i < responseFeatures.length; ++i) {
-		var id_to_delete = responseFeatures[i].uniquename;
-		this.features.deleteEntry(id_to_delete);
-	}
-}
+    for (var i = 0; i < responseFeatures.length; ++i) {
+	var id_to_delete = responseFeatures[i].uniquename;
+	this.features.deleteEntry(id_to_delete);
+    }
+};
 
 
 /**
@@ -245,30 +246,30 @@ AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 	    over: function(event, ui)  {
 		track.annot_under_mouse = event.target;
 	    }, 
-	      out: function(event, ui)  {
-	      track.annot_under_mouse = null;
+	    out: function(event, ui)  {
+		track.annot_under_mouse = null;
 	    }, 
-	      drop: function(event, ui)  {
-	      // ideally in the drop() on annot div is where would handle adding feature(s) to annot, 
-	      //   but JQueryUI droppable doesn't actually call drop unless draggable helper div is actually 
-	      //   over the droppable -- even if tolerance is set to pointer
-	      //      tolerance=pointer will trigger hover styling when over droppable, 
-	      //           as well as call to over method (and out when leave droppable)
-	      //      BUT location of pointer still does not influence actual dropping and drop() call
-	      // therefore getting around this by handling hover styling here based on pointer over annot, 
-	      //      but drop-to-add part is handled by whole-track droppable, and uses annot_under_mouse 
-	      //      tracking variable to determine if drop was actually on top of an annot instead of 
-	      //      track whitespace
-	      if (track.verbose_drop)  {
-		console.log("dropped feature on annot:");
-		console.log(featDiv);
-	      }
+	    drop: function(event, ui)  {
+		// ideally in the drop() on annot div is where would handle adding feature(s) to annot, 
+		//   but JQueryUI droppable doesn't actually call drop unless draggable helper div is actually 
+		//   over the droppable -- even if tolerance is set to pointer
+		//      tolerance=pointer will trigger hover styling when over droppable, 
+		//           as well as call to over method (and out when leave droppable)
+		//      BUT location of pointer still does not influence actual dropping and drop() call
+		// therefore getting around this by handling hover styling here based on pointer over annot, 
+		//      but drop-to-add part is handled by whole-track droppable, and uses annot_under_mouse 
+		//      tracking variable to determine if drop was actually on top of an annot instead of 
+		//      track whitespace
+		if (track.verbose_drop)  {
+		    console.log("dropped feature on annot:");
+		    console.log(featDiv);
+		}
 	    }
 	    
-	  } );
+	} );
     }
     return featDiv;
-}
+};
 
 /** AnnotTrack subfeatures are similar to DAS subfeatures, so handled similarly */
 /* AnnotTrack.prototype.handleSubFeatures = function(feature, featDiv,
@@ -281,81 +282,81 @@ AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
    }
 */
 
-  AnnotTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
-						   displayStart, displayEnd, block) {
+AnnotTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
+						 displayStart, displayEnd, block) {
     var subdiv = DraggableFeatureTrack.prototype.renderSubfeature.call(this, feature, featDiv, subfeature, 
 								       displayStart, displayEnd, block);
     if (subdiv && subdiv != null)  {
-      $(subdiv).bind("mousedown", this.annotMouseDown);
+	$(subdiv).bind("mousedown", this.annotMouseDown);
     }
-  }
+};
 
-    AnnotTrack.prototype.showRange = function(first, last, startBase, bpPerBlock, scale,
-					      containerStart, containerEnd) {
-      DraggableFeatureTrack.prototype.showRange.call(this, first, last, startBase, bpPerBlock, scale,
-						     containerStart, containerEnd);
-      //    console.log("after calling annot track.showRange(), block range: " + 
-      //		this.firstAttached + "--" + this.lastAttached + ",  " + (this.lastAttached - this.firstAttached));
+AnnotTrack.prototype.showRange = function(first, last, startBase, bpPerBlock, scale,
+					  containerStart, containerEnd) {
+    DraggableFeatureTrack.prototype.showRange.call(this, first, last, startBase, bpPerBlock, scale,
+						   containerStart, containerEnd);
+    //    console.log("after calling annot track.showRange(), block range: " + 
+    //		this.firstAttached + "--" + this.lastAttached + ",  " + (this.lastAttached - this.firstAttached));
+};
+
+AnnotTrack.prototype.onFeatureMouseDown = function(event) {
+    // _not_ calling DraggableFeatureTrack.prototyp.onFeatureMouseDown -- 
+    //     don't want to allow dragging (at least not yet)
+    // event.stopPropagation();
+    var ftrack = this;
+    if (ftrack.verbose_selection || ftrack.verbose_drag)  { 
+	console.log("AnnotTrack.onFeatureMouseDown called"); 
     }
 
-      AnnotTrack.prototype.onFeatureMouseDown = function(event) {
-	// _not_ calling DraggableFeatureTrack.prototyp.onFeatureMouseDown -- 
-	//     don't want to allow dragging (at least not yet)
-	// event.stopPropagation();
-	var ftrack = this;
-	if (ftrack.verbose_selection || ftrack.verbose_drag)  { 
-	  console.log("AnnotTrack.onFeatureMouseDown called"); 
-	}
 
-
-	// checking for whether this is part of drag setup retrigger of mousedown -- 
-	//     if so then don't do selection or re-setup draggability)
-	//     this keeps selection from getting confused, 
-	//     and keeps trigger(event) in draggable setup from causing infinite recursion 
-	//     in event handling calls to featMouseDown
-	if (ftrack.drag_create)  { 
-	  if (ftrack.verbose_selection || ftrack.verbose_drag)  {
+    // checking for whether this is part of drag setup retrigger of mousedown -- 
+    //     if so then don't do selection or re-setup draggability)
+    //     this keeps selection from getting confused, 
+    //     and keeps trigger(event) in draggable setup from causing infinite recursion 
+    //     in event handling calls to featMouseDown
+    if (ftrack.drag_create)  { 
+	if (ftrack.verbose_selection || ftrack.verbose_drag)  {
 	    console.log("DFT.featMouseDown re-triggered event for drag initiation, drag_create: " + ftrack.drag_create);
 	    console.log(ftrack);
-	  }
-	  ftrack.drag_create = null;
 	}
-	else  {
-	  this.handleFeatureSelection(event);
-	  // this.handleFeatureDragSetup(event);
-	}
-      }
+	ftrack.drag_create = null;
+    }
+    else  {
+	this.handleFeatureSelection(event);
+	// this.handleFeatureDragSetup(event);
+    }
+};
 
-	AnnotTrack.prototype.onAnnotMouseDown = function(event)  {
-	  var track = this;
-	  var verbose_resize = track.verbose_resize;
-	  if (verbose_resize)  { console.log("AnnotTrack.onAnnotMouseDown called"); }
-	  event = event || window.event;
-	  var elem = (event.currentTarget || event.srcElement);
-	  var featdiv = DraggableFeatureTrack.prototype.getLowestFeatureDiv(elem);
-	  if (featdiv && (featdiv != null))  {
-	    if (dojo.hasClass(featdiv, "ui-resizable"))  {
-	      if (verbose_resize)  {
+AnnotTrack.prototype.onAnnotMouseDown = function(event)  {
+    var track = this;
+    var verbose_resize = track.verbose_resize;
+    if (verbose_resize)  { console.log("AnnotTrack.onAnnotMouseDown called"); }
+    event = event || window.event;
+    var elem = (event.currentTarget || event.srcElement);
+    var featdiv = DraggableFeatureTrack.prototype.getLowestFeatureDiv(elem);
+    if (featdiv && (featdiv != null))  {
+	if (dojo.hasClass(featdiv, "ui-resizable"))  {
+	    if (verbose_resize)  {
 		console.log("already resizable");
 		console.log(featdiv);
-	      }
 	    }
-	    else {
-	      if (verbose_resize)  {
+	}
+	else {
+	    if (verbose_resize)  {
 		console.log("making annotation resizable");
 		console.log(featdiv);
-	      }
-	      $(featdiv).resizable( {
+	    }
+	    $(featdiv).resizable( {
 		handles: "e, w",
-		    helper: "ui-resizable-helper",
-		    autohide: false, 
+		helper: "ui-resizable-helper",
+		autohide: false, 
 
-		    stop: function(event, ui)  {
+		stop: function(event, ui)  {
 		    if (verbose_resize) { 
-		      console.log("resizable.stop() called, event:");
-		      console.dir(event);
-		      console.log("ui:");
-		      console.dir(ui);
+			console.log("resizable.stop() called, event:");
+			console.dir(event);
+			console.log("ui:");
+			console.dir(ui);
 		    }
 		    var gview = track.gview;
 		    var oldPos = ui.originalPosition;
@@ -369,10 +370,10 @@ AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 		    var rightDeltaPixels = newRightEdge - oldRightEdge;
 		    var rightDeltaBases = Math.round(gview.pxToBp(rightDeltaPixels));
 		    if (verbose_resize)  {
-		      console.log("left edge delta pixels: " + leftDeltaPixels);
-		      console.log("left edge delta bases: " + leftDeltaBases);
-		      console.log("right edge delta pixels: " + rightDeltaPixels);
-		      console.log("right edge delta bases: " + rightDeltaBases);
+			console.log("left edge delta pixels: " + leftDeltaPixels);
+			console.log("left edge delta bases: " + leftDeltaBases);
+			console.log("right edge delta pixels: " + rightDeltaPixels);
+			console.log("right edge delta bases: " + rightDeltaBases);
 		    }
 		    var subfeat = ui.originalElement[0].subfeature;
 		    console.log(subfeat);
@@ -384,161 +385,161 @@ AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 		    else {
 		    	var fmin = subfeat[track.subFields["start"]] + leftDeltaBases;
 		    	var fmax = subfeat[track.subFields["end"]] + rightDeltaBases;
-			    dojo.xhrPost( {
-			    	postData: '{ "track": "' + track.name + '", "features": [ { "uniquename": ' + subfeat[track.subFields["name"]] + ', "location": { "fmin": ' + fmin + ', "fmax": ' + fmax + ' } } ], "operation": "set_exon_boundaries" }',
-					url: context_path + "/AnnotationEditorService",
-					handleAs: "json",
-					timeout: 1000 * 1000, // Time in milliseconds
-					// The LOAD function will be called on a successful response.
-					load: function(response, ioArgs) { //
-						if (!AnnotTrack.USE_COMET || !track.comet_working)  {
-							//TODO
-						}
-					},
-					// The ERROR function will be called in an error case.
-					error: function(response, ioArgs) { //
-						console.log("Error creating annotation--maybe you forgot to log into the server?");
-						console.error("HTTP status code: ", ioArgs.xhr.status); //
-						//dojo.byId("replace").innerHTML = 'Loading the ressource from the server did not work'; //
-						return response;
-					}
-			    });
+			dojo.xhrPost( {
+			    postData: '{ "track": "' + track.name + '", "features": [ { "uniquename": ' + subfeat[track.subFields["name"]] + ', "location": { "fmin": ' + fmin + ', "fmax": ' + fmax + ' } } ], "operation": "set_exon_boundaries" }',
+			    url: context_path + "/AnnotationEditorService",
+			    handleAs: "json",
+			    timeout: 1000 * 1000, // Time in milliseconds
+			    // The LOAD function will be called on a successful response.
+			    load: function(response, ioArgs) { //
+				if (!AnnotTrack.USE_COMET || !track.comet_working)  {
+				    //TODO
+				}
+			    },
+			    // The ERROR function will be called in an error case.
+			    error: function(response, ioArgs) { //
+				console.log("Error creating annotation--maybe you forgot to log into the server?");
+				console.error("HTTP status code: ", ioArgs.xhr.status); //
+				//dojo.byId("replace").innerHTML = 'Loading the ressource from the server did not work'; //
+				return response;
+			    }
+			});
 		    }
 		    console.log(subfeat);
 		    track.hideAll();
 		    track.changed();
-		  }
-		} );
+		}
+	    } );
 	    
+	}
+    }
+    event.stopPropagation();
+};
+
+
+/**
+ *  feature click no-op (to override FeatureTrack.onFeatureClick, which conflicts with mouse-down selection
+ */
+AnnotTrack.prototype.onFeatureClick = function(event) {
+    if (this.verbose_click)  { console.log("in AnnotTrack.onFeatureClick"); }
+    event = event || window.event;
+    var elem = (event.currentTarget || event.srcElement);
+    var featdiv = DraggableFeatureTrack.prototype.getLowestFeatureDiv(elem);
+    if (featdiv && (featdiv != null))  {
+	if (this.verbose_click)  { console.log(featdiv); }
+    }
+    // do nothing
+    //   event.stopPropagation();
+};
+
+AnnotTrack.prototype.addToAnnotation = function(annot, features)  {
+    var target_track = this;
+    var nclist = target_track.features;
+    
+    if (AnnotTrack.USE_LOCAL_EDITS) {
+	if (this.verbose_add)  {
+	    console.log("adding to annot: ");
+	    console.log(annot);
+	    // console.log("removing annotation for modification");
+	}
+	// removing annotation from NCList (since need to re-add after modifications for proper repositioning)
+	// not necessary, track.hideAll() / track.changed() at end forces rerendering
+	//  nclist.deleteEntry(annot.uid);
+
+
+	// flatten features (only add subfeats)
+	var subfeats = [];
+
+	var flength = features.length;
+	for (var i=0; i<flength; i++)  { 
+	    var feat = features[i];
+	    var is_subfeature = (!!feat.parent);  // !! is shorthand for returning true if value is defined and non-null
+	    if (is_subfeature)  {
+		subfeats.push(feat);
 	    }
-	  }
-	  event.stopPropagation();
+	    else  {
+		var source_track = feat.track;
+		if (source_track.fields["subfeatures"])  {
+		    var subs = feat[source_track.fields["subfeatures"]];
+		    $.merge(subfeats, subs);
+		}
+	    }
+	}
+	if (this.verbose_add)  {
+	    console.log("flattened feats to add");
+	    console.log(subfeats);
 	}
 
-
-	/**
-	 *  feature click no-op (to override FeatureTrack.onFeatureClick, which conflicts with mouse-down selection
-	 */
-	  AnnotTrack.prototype.onFeatureClick = function(event) {
-	    if (this.verbose_click)  { console.log("in AnnotTrack.onFeatureClick"); }
-	    event = event || window.event;
-	    var elem = (event.currentTarget || event.srcElement);
-	    var featdiv = DraggableFeatureTrack.prototype.getLowestFeatureDiv(elem);
-	    if (featdiv && (featdiv != null))  {
-	      if (this.verbose_click)  { console.log(featdiv); }
+	var slength = subfeats.length;
+	for (var k=0; k<slength; k++)  {
+	    var sfeat = subfeats[k];
+	    if (this.verbose_add)  {
+		console.log("converting feature, is_subfeature = " + is_subfeature + ":");
+		console.log(sfeat);
 	    }
-	    // do nothing
-	    //   event.stopPropagation();
-	  }
-
-	    AnnotTrack.prototype.addToAnnotation = function(annot, features)  {
-	      var target_track = this;
-	      var nclist = target_track.features;
-    
-	      if (AnnotTrack.USE_LOCAL_EDITS) {
-		if (this.verbose_add)  {
-		  console.log("adding to annot: ");
-		  console.log(annot);
-		  // console.log("removing annotation for modification");
-		}
-		// removing annotation from NCList (since need to re-add after modifications for proper repositioning)
-		// not necessary, track.hideAll() / track.changed() at end forces rerendering
-		//  nclist.deleteEntry(annot.uid);
-
-
-		// flatten features (only add subfeats)
-		var subfeats = [];
-
-		var flength = features.length;
-		for (var i=0; i<flength; i++)  { 
-		  var feat = features[i];
-		  var is_subfeature = (!!feat.parent);  // !! is shorthand for returning true if value is defined and non-null
-		  if (is_subfeature)  {
-		    subfeats.push(feat);
-		  }
-		  else  {
-		    var source_track = feat.track;
-		    if (source_track.fields["subfeatures"])  {
-		      var subs = feat[source_track.fields["subfeatures"]];
-		      $.merge(subfeats, subs);
-		    }
-		  }
-		}
-		if (this.verbose_add)  {
-		  console.log("flattened feats to add");
-		  console.log(subfeats);
-		}
-
-		var slength = subfeats.length;
-		for (var k=0; k<slength; k++)  {
-		  var sfeat = subfeats[k];
-		  if (this.verbose_add)  {
-		    console.log("converting feature, is_subfeature = " + is_subfeature + ":");
-		    console.log(sfeat);
-		  }
-		  var source_track = sfeat.track;
-		  var newfeat = JSONUtils.convertToTrack(sfeat, true, source_track, target_track);
-		  var id = "annot_" + AnnotTrack.creation_count++;
-		  newfeat.parent = annot;
-		  if (target_track.subFields["id"])  { newfeat[target_track.subFields["id"]] = id; }
-		  if (target_track.subFields["name"])  { newfeat[target_track.fields["name"]] = id; }
-		  newfeat.uid = id;
-		  newfeat.track = target_track;  // done in convertToTrack, but just making sure...
-		  if (this.verbose_add)  {
-		    console.log("converted feature created: ");
-		    console.log(newfeat);
-		  }
-		  var annot_subs = annot[target_track.fields["subfeatures"]];
-		  annot_subs.push(newfeat);
-		  // hardwiring start as f[0], end as f[1] for now -- 
-		  //   to fix this need to whether newfeat is a subfeat, etc.
-		  if (newfeat[0] < annot[0])  {annot[0] = newfeat[0];}
-		  if (newfeat[1] > annot[1])  {annot[1] = newfeat[1];}
-		}
-
-		if (this.verbose_add)  {
-		  console.log("adding modified annotation back: ");
-		  console.log(annot.slice());
-		}
-
-		// adding modified annotation back to NCList 
-		// no longer removing (relying on hideAll/changed calls), so don't need to add back
-		//    nclist.add(annot, annot.uid);
-
-		// force re-rendering
-		this.hideAll();
-		this.changed();
-		if (this.verbose_add)  { console.log("finished adding to annot: "); }
-	      }
-	      else {
-	      }
+	    var source_track = sfeat.track;
+	    var newfeat = JSONUtils.convertToTrack(sfeat, true, source_track, target_track);
+	    var id = "annot_" + AnnotTrack.creation_count++;
+	    newfeat.parent = annot;
+	    if (target_track.subFields["id"])  { newfeat[target_track.subFields["id"]] = id; }
+	    if (target_track.subFields["name"])  { newfeat[target_track.fields["name"]] = id; }
+	    newfeat.uid = id;
+	    newfeat.track = target_track;  // done in convertToTrack, but just making sure...
+	    if (this.verbose_add)  {
+		console.log("converted feature created: ");
+		console.log(newfeat);
 	    }
+	    var annot_subs = annot[target_track.fields["subfeatures"]];
+	    annot_subs.push(newfeat);
+	    // hardwiring start as f[0], end as f[1] for now -- 
+	    //   to fix this need to whether newfeat is a subfeat, etc.
+	    if (newfeat[0] < annot[0])  {annot[0] = newfeat[0];}
+	    if (newfeat[1] > annot[1])  {annot[1] = newfeat[1];}
+	}
 
-	      AnnotTrack.prototype.makeTrackDroppable = function() {
-		var target_track = this;
-		var target_trackdiv = target_track.div;
+	if (this.verbose_add)  {
+	    console.log("adding modified annotation back: ");
+	    console.log(annot.slice());
+	}
+
+	// adding modified annotation back to NCList 
+	// no longer removing (relying on hideAll/changed calls), so don't need to add back
+	//    nclist.add(annot, annot.uid);
+
+	// force re-rendering
+	this.hideAll();
+	this.changed();
+	if (this.verbose_add)  { console.log("finished adding to annot: "); }
+    }
+    else {
+    }
+};
+
+AnnotTrack.prototype.makeTrackDroppable = function() {
+    var target_track = this;
+    var target_trackdiv = target_track.div;
+    if (target_track.verbose_drop)  {
+	console.log("making track a droppable target: ");
+	console.log(this);
+	console.log(target_trackdiv);
+    }
+    $(target_trackdiv).droppable(  {
+	accept: ".selected-feature",   // only accept draggables that are selected feature divs
+	drop: function(event, ui)  { 
+	    // "this" is the div being dropped on, so same as target_trackdiv
+	    if (target_track.verbose_drop)  {
+		console.log("draggable dropped on AnnotTrack");
+		console.log(ui);
+	    }
+	    var dropped_feats = DraggableFeatureTrack.selectionManager.getSelection();
+	    // problem with making individual annotations droppable, so checking for "drop" on annotation here, 
+	    //    and if so re-routing to add to existing annotation
+	    if (target_track.annot_under_mouse != null)  {
 		if (target_track.verbose_drop)  {
-		  console.log("making track a droppable target: ");
-		  console.log(this);
-		  console.log(target_trackdiv);
+		    console.log("dropped onto annot: ");
+		    console.log(target_track.annot_under_mouse.feature);
 		}
-		$(target_trackdiv).droppable(  {
-		  accept: ".selected-feature",   // only accept draggables that are selected feature divs
-		      drop: function(event, ui)  { 
-		      // "this" is the div being dropped on, so same as target_trackdiv
-		      if (target_track.verbose_drop)  {
-			console.log("draggable dropped on AnnotTrack");
-			console.log(ui);
-		      }
-		      var dropped_feats = DraggableFeatureTrack.selectionManager.getSelection();
-		      // problem with making individual annotations droppable, so checking for "drop" on annotation here, 
-		      //    and if so re-routing to add to existing annotation
-		      if (target_track.annot_under_mouse != null)  {
-			if (target_track.verbose_drop)  {
-			  console.log("dropped onto annot: ");
-			  console.log(target_track.annot_under_mouse.feature);
-			}
-			target_track.addToAnnotation(target_track.annot_under_mouse.feature, dropped_feats);
+		target_track.addToAnnotation(target_track.annot_under_mouse.feature, dropped_feats);
 	    }
 	    else  {
 		target_track.createAnnotations(dropped_feats);
@@ -549,7 +550,7 @@ AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 	}    
     } );
     if (target_track.verbose_drop) { console.log("finished making droppable target"); }
-}
+};
 
 AnnotTrack.prototype.createAnnotations = function(feats)  {
     var target_track = this;
@@ -604,7 +605,7 @@ AnnotTrack.prototype.createAnnotations = function(feats)  {
 		timeout: 5000, // Time in milliseconds
 		// The LOAD function will be called on a successful response.
 		load: function(response, ioArgs) { //
-		    if (this.verbose_create)  { console.log("Successfully created annotation object: " + response) }
+		    if (this.verbose_create)  { console.log("Successfully created annotation object: " + response); }
 		    // response processing is now handled by the long poll thread (when using servlet 3.0)
 		    //  if comet-style long pollling is not working, then create annotations based on 
 		    //     AnnotationEditorResponse
@@ -633,7 +634,7 @@ AnnotTrack.prototype.createAnnotations = function(feats)  {
 	    });
 	}
     }
-}
+};
 
 /**
  *  If there are multiple AnnotTracks, each has a separate FeatureSelectionManager 
@@ -643,74 +644,74 @@ AnnotTrack.prototype.deleteSelectedFeatures = function()  {
     var selected = this.selectionManager.getSelection();
     this.selectionManager.clearSelection();
     this.deleteAnnotations(selected);
-}
+};
 
 AnnotTrack.prototype.deleteAnnotations = function(annots) {
-	var track = this;
-	var features_nclist = track.features;
-	var features = '"features": [';
-	var uniqueNames = [];
-	for (var i in annots)  {
-		var annot = annots[i];
-		var uniqueName = annot.uid;
-		// just checking to ensure that all features in selection are from this track -- 
-		//   if not, then don't try and delete them
-		if (annot.track === track)  {
-			var trackdiv = track.div;
-			var trackName = track.name;
+    var track = this;
+    var features_nclist = track.features;
+    var features = '"features": [';
+    var uniqueNames = [];
+    for (var i in annots)  {
+	var annot = annots[i];
+	var uniqueName = annot.uid;
+	// just checking to ensure that all features in selection are from this track -- 
+	//   if not, then don't try and delete them
+	if (annot.track === track)  {
+	    var trackdiv = track.div;
+	    var trackName = track.name;
 
-			if (i > 0) {
-				features += ',';
-			}
-			features += ' { "uniquename": "' + uniqueName + '" } ';
-			uniqueNames.push(uniqueName);
-		}
+	    if (i > 0) {
+		features += ',';
+	    }
+	    features += ' { "uniquename": "' + uniqueName + '" } ';
+	    uniqueNames.push(uniqueName);
 	}
-	features += ']';
-	if (this.verbose_delete)  {
-		console.log("annotations to delete:");
-		console.log(features);
-	}
+    }
+    features += ']';
+    if (this.verbose_delete)  {
+	console.log("annotations to delete:");
+	console.log(features);
+    }
 
-	if (AnnotTrack.USE_LOCAL_EDITS)  {
-		// need to sort into top-level features (which need to get deleted from nclist) and non-top-level 
-		//   (which need to get removed from their parent feature)
-		for (var k in annots)  {
-			var annot = annots[k];
-			var id_to_delete = annot.uid;
-			if (this.verbose_delete)  { 
-				console.log("trying to delete: " + id_to_delete); 
-				console.log(annot);
-				// console.dir(annot);
-			}
-			// console.log(features_nclist);
-			if (features_nclist.contains(id_to_delete))  {
-				if (this.verbose_delete)  { console.log("found in nclist, calling nclist.deleteEntry()"); }
-				features_nclist.deleteEntry(id_to_delete);
-			}
-			else  {
-				if (this.verbose_delete)  { console.log("not found in nclist, trying to remove from parent: "); }
-				var parent = annot.parent;
-				if (this.verbose_delete)  { console.log(parent); }
-				if (parent)  {
-					// var modparent = BioFeatureUtils.removeChild(annot);
-					var modparent = BioFeatureUtils.removeChild(annot);
-					if (this.verbose_delete)  { console.log(parent); }
-					if (modparent)  {  // child removed, removeChild returned parent 
-						features_nclist.deleteEntry(parent.uid);
-						features_nclist.add(parent, parent.uid);
-					}
-					else  {   // child removed, but removeChild returned null, indicating parent has no more children
-						if (this.verbose_delete)  { console.log("no more children, so removing parent too"); }
-						features_nclist.deleteEntry(parent.uid);
-					}
-				}
-			}
+    if (AnnotTrack.USE_LOCAL_EDITS)  {
+	// need to sort into top-level features (which need to get deleted from nclist) and non-top-level 
+	//   (which need to get removed from their parent feature)
+	for (var k in annots)  {
+	    var annot = annots[k];
+	    var id_to_delete = annot.uid;
+	    if (this.verbose_delete)  { 
+		console.log("trying to delete: " + id_to_delete); 
+		console.log(annot);
+		// console.dir(annot);
+	    }
+	    // console.log(features_nclist);
+	    if (features_nclist.contains(id_to_delete))  {
+		if (this.verbose_delete)  { console.log("found in nclist, calling nclist.deleteEntry()"); }
+		features_nclist.deleteEntry(id_to_delete);
+	    }
+	    else  {
+		if (this.verbose_delete)  { console.log("not found in nclist, trying to remove from parent: "); }
+		var parent = annot.parent;
+		if (this.verbose_delete)  { console.log(parent); }
+		if (parent)  {
+		    // var modparent = BioFeatureUtils.removeChild(annot);
+		    var modparent = BioFeatureUtils.removeChild(annot);
+		    if (this.verbose_delete)  { console.log(parent); }
+		    if (modparent)  {  // child removed, removeChild returned parent 
+			features_nclist.deleteEntry(parent.uid);
+			features_nclist.add(parent, parent.uid);
+		    }
+		    else  {   // child removed, but removeChild returned null, indicating parent has no more children
+			if (this.verbose_delete)  { console.log("no more children, so removing parent too"); }
+			features_nclist.deleteEntry(parent.uid);
+		    }
 		}
-		if (this.verbose_delete)  { console.log("re-rendering track"); }
-		track.hideAll();
-		track.changed();
+	    }
 	}
+	if (this.verbose_delete)  { console.log("re-rendering track"); }
+	track.hideAll();
+	track.changed();
+    }
     else {
 	dojo.xhrPost( {
 	    postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "delete_feature" }',
@@ -736,7 +737,7 @@ AnnotTrack.prototype.deleteAnnotations = function(annots) {
 	    },
 	    // The ERROR function will be called in an error case.
 	    error: function(response, ioArgs) { // 
-		console.log("Annotation server error--maybe you forgot to login to the server?")
+		console.log("Annotation server error--maybe you forgot to login to the server?");
 		console.error("HTTP status code: ", ioArgs.xhr.status); //
 		//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //  
 		return response; // 
@@ -744,13 +745,13 @@ AnnotTrack.prototype.deleteAnnotations = function(annots) {
 	    
 	});
     }
-}
+};
 
 AnnotTrack.prototype.mergeSelectedFeatures = function()  {
     var selected = this.selectionManager.getSelection();
     this.selectionManager.clearSelection();
     this.mergeAnnotations(selected);
-}
+};
 
 AnnotTrack.prototype.mergeAnnotations = function(annots) {
     var track = this;
@@ -789,37 +790,37 @@ AnnotTrack.prototype.mergeAnnotations = function(annots) {
     }
     else  {
     	dojo.xhrPost( {
-    		postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }',
-    		url: context_path + "/AnnotationEditorService",
-    		handleAs: "json",
-    		timeout: 5000 * 1000, // Time in milliseconds
-    		load: function(response, ioArgs) {
-    			// TODO
-    		},
-    		// The ERROR function will be called in an error case.
-    		error: function(response, ioArgs) { // 
-    			console.log("Annotation server error--maybe you forgot to login to the server?")
-    			console.error("HTTP status code: ", ioArgs.xhr.status); 
-    			//
-    			//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //  
-    			return response; // 
-    		}
+    	    postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }',
+    	    url: context_path + "/AnnotationEditorService",
+    	    handleAs: "json",
+    	    timeout: 5000 * 1000, // Time in milliseconds
+    	    load: function(response, ioArgs) {
+    		// TODO
+    	    },
+    	    // The ERROR function will be called in an error case.
+    	    error: function(response, ioArgs) { // 
+    		console.log("Annotation server error--maybe you forgot to login to the server?");
+    		console.error("HTTP status code: ", ioArgs.xhr.status); 
+    		//
+    		//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //  
+    		return response; // 
+    	    }
 
     	});
     }
-}
+};
 
 AnnotTrack.prototype.splitSelectedFeatures = function()  {
     var selected = this.selectionManager.getSelection();
     this.selectionManager.clearSelection();
     this.splitAnnotations(selected);
-}
+};
 
 AnnotTrack.prototype.splitAnnotations = function(annots) {
-	// can only split on max two elements
-	if (annots.length > 2) {
-		return;
-	}
+    // can only split on max two elements
+    if (annots.length > 2) {
+	return;
+    }
     var track = this;
     var leftAnnot = null;
     var rightAnnot = null;
@@ -858,29 +859,29 @@ AnnotTrack.prototype.splitAnnotations = function(annots) {
     }
     else  {
     	dojo.xhrPost( {
-    		postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }',
-    		url: context_path + "/AnnotationEditorService",
-    		handleAs: "json",
-    		timeout: 5000 * 1000, // Time in milliseconds
-    		load: function(response, ioArgs) {
-    			// TODO
-    		},
-    		// The ERROR function will be called in an error case.
-    		error: function(response, ioArgs) { // 
-    			console.log("Annotation server error--maybe you forgot to login to the server?")
-    			console.error("HTTP status code: ", ioArgs.xhr.status); 
-    			//
-    			//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //  
-    			return response; // 
-    		}
+    	    postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }',
+    	    url: context_path + "/AnnotationEditorService",
+    	    handleAs: "json",
+    	    timeout: 5000 * 1000, // Time in milliseconds
+    	    load: function(response, ioArgs) {
+    		// TODO
+    	    },
+    	    // The ERROR function will be called in an error case.
+    	    error: function(response, ioArgs) { // 
+    		console.log("Annotation server error--maybe you forgot to login to the server?");
+    		console.error("HTTP status code: ", ioArgs.xhr.status); 
+    		//
+    		//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //  
+    		return response; // 
+    	    }
 
     	});
     }
-}
+};
 
 AnnotTrack.prototype.createAnnotation = function()  {
 
-}
+};
 
 // AnnotTrack.prototype.addToAnnotation
 
@@ -889,11 +890,11 @@ AnnotTrack.prototype.createAnnotation = function()  {
 // handle potential effect on parent?
 AnnotTrack.prototype.deleteAnnotation = function()  {
 
-}
+};
 
 AnnotTrack.prototype.changeAnnotationLocation = function()  {
 
-}
+};
 
 
 /*
