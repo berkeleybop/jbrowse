@@ -51,4 +51,4 @@ BioFeatureUtils.removeChild = function(child)  {
 	// console.log("returning from BioFeatureUtils.removeChild");
 	return parent;
     }
-}
+};

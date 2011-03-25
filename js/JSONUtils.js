@@ -10,13 +10,13 @@ JSONUtils.convertJsonToFeatureArray = function(jsonFeature) {
 	featureArray[2] = jsonFeature.location.strand;
 	featureArray[3] = jsonFeature.uniquename;
 	return featureArray;
-}
+};
 
 // Create a JSON object
 JSONUtils.createJsonFeature = function(fmin, fmax, strand, cv, cvterm) {
 	var feature = {"location": {"fmin": fmin, "fmax": fmax, "strand": strand}, "type": {"cv": {"name": cv}, "name": cvterm}};
 	return feature;
-}
+};
 
 /**
 *  creates a feature in JBrowse JSON format
@@ -51,7 +51,7 @@ JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
     }
     jfeature.uid = uid;
     return jfeature;
-}
+};
 
 /** 
 *  creates a feature in ApolloEditorService JSON format
@@ -113,7 +113,7 @@ JSONUtils.createApolloFeature = function(jfeature, fields, subfields, specified_
 	}
     }
     return afeature;
-}
+};
 
 /*
 JSONUtils.createJBrowseFeature = function(apollo_feature, fields)  {
@@ -171,4 +171,4 @@ JSONUtils.convertToTrack = function(feat, is_subfeat, source_track, target_track
     newfeat.track = target_track;
     newfeat.uid = feat.uid;
     return newfeat;
-}
+};

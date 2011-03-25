@@ -264,7 +264,7 @@ NCList.prototype.deleteEntry = function(id) {
 
 NCList.prototype.contains = function(id)  {
     return (!!this.featIdMap[id]);  
-}
+};
 
 /*
 

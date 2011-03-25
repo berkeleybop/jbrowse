@@ -39,7 +39,7 @@ function FeatureTrack(trackMeta, url, refSeq, browserParams) {
                                  param.displayStart, param.displayEnd);
         };
     */	
-    this.featureClick = function(event) {thisObj.onFeatureClick(event);}
+    this.featureClick = function(event) { thisObj.onFeatureClick(event); };
 }
 
 FeatureTrack.prototype = new Track("");
@@ -437,7 +437,7 @@ FeatureTrack.prototype.getSubfeatId = function(subfeat, index, parentId)  {
 	subfeat.uid = id;
     }
     return id;
-}
+};
 
 FeatureTrack.prototype.measureStyles = function() {
     //determine dimensions of labels (height, per-character width)
@@ -719,7 +719,7 @@ FeatureTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
 
     // if the feature has been truncated to where it doesn't cover
     // this subfeature anymore, just skip this subfeature
-    if ((subEnd <= displayStart) || (subStart >= displayEnd)) return;
+    if ((subEnd <= displayStart) || (subStart >= displayEnd)) return undefined;
 
     if (Util.is_ie6) subDiv.appendChild(document.createComment());
     subDiv.style.cssText =
@@ -761,7 +761,7 @@ FeatureTrack.prototype.getFeatDiv = function(feature)  {
     
     // nothing found in any blocks
     return undefined;
-}
+};
 
 /*
 

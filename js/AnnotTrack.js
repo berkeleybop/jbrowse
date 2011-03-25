@@ -532,7 +532,7 @@ AnnotTrack.prototype.addToAnnotation = function(annot, features)  {
 	    }
 	});
     }
-}
+};
 
 AnnotTrack.prototype.makeTrackDroppable = function() {
     var target_track = this;

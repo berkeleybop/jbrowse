@@ -5,8 +5,8 @@ function DraggableFeatureTrack(trackMeta, url, refSeq, browserParams) {
     //  console.log("DragableFeatureTrack constructor called");
 
     var thisObj = this;
-    this.featMouseDown = function(event) { thisObj.onFeatureMouseDown(event); }
-    this.featDoubleClick = function(event) { thisObj.onFeatureDoubleClick(event); }
+    this.featMouseDown = function(event) { thisObj.onFeatureMouseDown(event); };
+    this.featDoubleClick = function(event) { thisObj.onFeatureDoubleClick(event); };
     
     // DraggableFeatureTracks all share the same FeatureSelectionManager
     //    if want subclasses to have different selection manager, 
@@ -220,7 +220,7 @@ DraggableFeatureTrack.prototype.renderFeature = function(feature, uniqueId, bloc
 	$featdiv.bind("dblclick", this.featDoubleClick);
     }
     return featdiv;
-}
+};
 
 DraggableFeatureTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
 							    displayStart, displayEnd, block )  {
@@ -402,7 +402,7 @@ DraggableFeatureTrack.prototype.handleFeatureDragSetup = function(event)  {
 				var sleft = soffset.left;
 				$divclone.width(swidth);
 				$divclone.height(sheight);
-				var delta_top = seltop - ftop
+				var delta_top = seltop - ftop;
 				var delta_left = sleft - fleft;
 				if (this.verbose_drag)  { 
 				    console.log(sfeatdiv);

@@ -213,7 +213,7 @@ Track.prototype._showBlock = function(blockIndex, startBase, endBase, scale,
     }
     if (this.empty) {
         this.heightUpdate(this.labelHeight, blockIndex);
-        return;  // or return null?
+        return undefined;  // or return null?
     }
 
     // GAH Refactored block div creation into it's own method to allow for overriding in subclasses
@@ -254,7 +254,7 @@ Track.prototype.createBlock = function(blockIndex, startBase, endBase, scale, co
     blockDiv.startBase = startBase;
     blockDiv.endBase = endBase;
     return blockDiv;
-}
+};
 
 Track.prototype.moveBlocks = function(delta) {
     var newBlocks = new Array(this.numBlocks);

@@ -43,7 +43,7 @@ FeatureSelectionManager.prototype.addToSelection = function(feat)  {
 	listener.selectionAdded(feat);
     }
     //    console.log("done calling FeatureselectionManager.addToSelection()");
-}
+};
 
 /**
  *  attempting to remove a feature that isn't selected does nothing (and doesn't trigger listener calls)
@@ -53,7 +53,7 @@ FeatureSelectionManager.prototype.removeFromSelection = function(feat)  {
     if (index >= 0)  {
 	this._removeSelectionAt(index, feat);
     }
-}
+};
 
 FeatureSelectionManager.prototype._removeSelectionAt = function(index, feat)  {
     this.selected.splice(index, 1);
@@ -62,7 +62,7 @@ FeatureSelectionManager.prototype._removeSelectionAt = function(index, feat)  {
 	var listener = this.listeners[lindex];
 	listener.selectionRemoved(feat);
     }
-}
+};
 
 /**
  *  clearing an empty selection does nothing (and doesn't trigger listener calls)
@@ -89,11 +89,11 @@ FeatureSelectionManager.prototype.clearSelection = function()  {
       }
     */
     //  console.log("done calling FeatureselectionManager.clearSelection()");
-}
+};
 
 FeatureSelectionManager.prototype.isSelected = function(feat)  {
     return (this.selected.indexOf(feat) >= 0);
-}
+};
 
 /**
  * returns array of currently selected features
