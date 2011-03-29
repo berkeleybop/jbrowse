@@ -154,6 +154,37 @@ Finisher.prototype.finish = function() {
     if ((this.count <= 0) && this.fun) this.fun();
 };
 
+/**
+ *  return object with x/y coord for any mouse event, relative to the given element (treat elem top left corner as (0,0))
+ *        { x:  relativeX, 
+ *          y:  relativeY } 
+ *  elem can also be wrapped jquery result set (jquery object), in which case result is based on first elem in result set
+ *  currently assumes:
+ *      event is a mouse event (plain Javascript event or JQuery event)
+ *      elem is displayed  (see JQuery.offset() docs)
+ *      no border/margin/padding set on the doc <body> element  (see JQuery.offset() docs)
+ *      if in IE<9, either page is not scrollable (in the HTML page sense) OR event is JQuery event
+ *         (currently JBrowse index.html page is not scrollable (JBrowse internal scrolling is NOT same as HTML page scrolling))
+ */
+Util.relativeXY = function(event, elem)  {
+    var $elem;
+    if (elem instanceof jQuery)  { $elem = elem; }
+    else  { $elem = $(elem); }
+    var offset = $elem.offset();
+    var mousex = event.pageX;
+    var mousey = event.pageY;
+    if (!mousex || !mousey)  {  // special case mainly for (IE<9 && event not JQuery event)
+	mousex = event.clientX;
+	mousey = event.clientY;
+	if (!mousex || !mousey)  { return undefined; }  // bail if can't find mouse coords
+    }
+    var x = mousex - offset.left;
+    var y = mousey - offset.top;
+    // console.log("x: " + x + ", y: " + y + ", mousex: " + mousex + ", mousey = " + mousey);
+    return { 'x': x, 'y': y };
+};
+
+
 /*
 
 Copyright (c) 2007-2010 The Evolutionary Software Foundation
