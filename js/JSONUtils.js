@@ -26,31 +26,114 @@ JSONUtils.createJsonFeature = function(fmin, fmax, strand, cv, cvterm) {
 *      subfields:  array specifying order of fields for subfeatures of JBrowse feature 
 */
 JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
-    var jfeature = new Array();
-    var loc = afeature.location;
-    var uid = afeature.uniquename; 
-    jfeature[fields["start"]] = loc.fmin;
-    jfeature[fields["end"]] = loc.fmax;
-    jfeature[fields["strand"]] = loc.strand;
-    if (fields["id"])  {jfeature[fields["id"]] = uid; }
-    if (fields["name"])  {jfeature[fields["name"]] = uid; }
-    if (fields["type"])  { 
-	var type = afeature.type.name;
-	if (type == "exon")  {type = "UTR";}
-	jfeature[fields["type"]] = type;
-    }
-    var children = afeature.children;
-    if (fields["subfeatures"] && children)  {
-	jfeature[fields["subfeatures"]] = new Array();
-	var clength = children.length;
-	for (var i = 0; i<clength; i++)  {
-	    var achild = children[i];
-	    var jchild =  JSONUtils.createJBrowseFeature(achild, subfields, subfields);
-	    jfeature[fields["subfeatures"]][i] =jchild;
+	var PROCESS_CDS = false;
+	var jfeature = new Array();
+	var loc = afeature.location;
+	var uid = afeature.uniquename; 
+	jfeature[fields["start"]] = loc.fmin;
+	jfeature[fields["end"]] = loc.fmax;
+	jfeature[fields["strand"]] = loc.strand;
+	if (fields["id"])  {jfeature[fields["id"]] = uid; }
+	if (fields["name"])  {jfeature[fields["name"]] = uid; }
+	if (fields["type"])  { 
+		var type = afeature.type.name;
+		if (type == "exon")  {type = "UTR";}
+		jfeature[fields["type"]] = type;
 	}
-    }
-    jfeature.uid = uid;
-    return jfeature;
+	var children = afeature.children;
+	if (fields["subfeatures"] && children)  {
+		jfeature[fields["subfeatures"]] = new Array();
+		var clength = children.length;
+
+		var cds = null;
+		for (var i = 0; i < clength; ++i) {
+			var achild = children[i];
+			if (achild.type.name == "CDS") {
+				cds = achild;
+				break;
+			}
+		}
+		
+		for (var i = 0; i<clength; i++)  {
+			var achild = children[i];
+			if (achild.type.name == "CDS") {
+				continue;
+			}
+			
+			if (PROCESS_CDS && cds != null) {
+				// full CDS overlap (CDS longer than exon)
+				if (achild.location.fmin >= cds.location.fmin && achild.location.fmax <= cds.location.fmax) {
+					achild.type.name = "CDS";
+					var jchild =  JSONUtils.createJBrowseFeature(achild, subfields, subfields);
+					jfeature[fields["subfeatures"]].push(jchild);
+				}
+				// full CDS overlap (exon longer than CDS)
+				else if (cds.location.fmin >= achild.location.fmin && cds.location.fmax <= achild.location.fmax) {
+					var utr1Start = achild.location.fmin;
+					var utr1End = cds.location.fmin;
+					var cdsStart = cds.location.fmin;
+					var cdsEnd = cds.location.fmax;
+					var utr2Start = cds.location.fmax;
+					var utr2End = achild.location.fmax;
+					var jutr1 = JSONUtils.createJBrowseFeature(achild, subfields, subfields);
+					var jcds = JSONUtils.createJBrowseFeature(achild, subfields, subfields);
+					var jutr2 = JSONUtils.createJBrowseFeature(achild, subfields, subfields);
+					jutr1[subfields["start"]] = utr1Start;
+					jutr1[subfields["end"]] = utr1End;
+					jcds[subfields["start"]] = cdsStart;
+					jcds[subfields["end"]] = cdsEnd;
+					jcds[subfields["type"]] = "CDS";
+					jutr2[subfields["start"]] = utr2Start;
+					jutr2[subfields["end"]] = utr2End;
+					jfeature[fields["subfeatures"]].push(jutr1);
+					jfeature[fields["subfeatures"]].push(jcds);
+					jfeature[fields["subfeatures"]].push(jutr2);
+				}
+				else if (achild.location.fmin <= cds.location.fmin && achild.location.fmax >= cds.location.fmin) {
+					var utrStart = achild.location.fmin;
+					var utrEnd = cds.location.fmin;
+					var cdsStart = cds.location.fmin;
+					var cdsEnd = achild.location.fmax;
+					var jutr = JSONUtils.createJBrowseFeature(achild, subfields, subfields);
+					var jcds = JSONUtils.createJBrowseFeature(achild, subfields, subfields);
+					jutr[subfields["start"]] = utrStart;
+					jutr[subfields["end"]] = utrEnd;
+					jcds[subfields["start"]] = cdsStart;
+					jcds[subfields["end"]] = cdsEnd;
+					jcds[subfields["type"]] = "CDS";
+					jfeature[fields["subfeatures"]].push(jutr);
+					jfeature[fields["subfeatures"]].push(jcds);
+				}
+				else if (achild.location.fmax >= cds.location.fmax && achild.location.fmin <= cds.location.fmax) {
+					var utrStart = cds.location.fmax;
+					var utrEnd = achild.location.fmax;
+					var cdsStart = achild.location.fmin;
+					var cdsEnd = cds.location.fmax;
+					var jutr = JSONUtils.createJBrowseFeature(achild, subfields, subfields);
+					var jcds = JSONUtils.createJBrowseFeature(achild, subfields, subfields);
+					jutr[subfields["start"]] = utrStart;
+					jutr[subfields["end"]] = utrEnd;
+					jcds[subfields["start"]] = cdsStart;
+					jcds[subfields["end"]] = cdsEnd;
+					jcds[subfields["type"]] = "CDS";
+					jfeature[fields["subfeatures"]].push(jcds);
+					jfeature[fields["subfeatures"]].push(jutr);
+				}
+				else {
+					achild.type.name = "exon";
+					var jchild =  JSONUtils.createJBrowseFeature(achild, subfields, subfields);
+					jfeature[fields["subfeatures"]].push(jchild);
+				}
+			}
+			else {
+				achild.type.name = "exon";
+				var jchild =  JSONUtils.createJBrowseFeature(achild, subfields, subfields);
+				jfeature[fields["subfeatures"]].push(jchild);
+			}
+		}
+	}
+	jfeature.uid = uid;
+	return jfeature;
 };
 
 /** 
