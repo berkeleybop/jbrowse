@@ -53,11 +53,19 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
     annot_context_menu.addChild(new dijit.MenuItem(
     	{
     	    label: "Split",
-    	    onClick: function() {
-    	    	thisObj.splitSelectedFeatures();
+    	    onClick: function(event) {
+    	    	thisObj.splitSelectedFeatures(event);
     	    }
     	}
     ));
+    annot_context_menu.addChild(new dijit.MenuItem(
+        	{
+        	    label: "Make intron",
+        	    onClick: function(event) {
+        	    	thisObj.makeIntron(event);
+        	    }
+        	}
+        ));
     annot_context_menu.addChild(new dijit.MenuItem( 
 	{
     	    label: "..."
@@ -829,13 +837,13 @@ AnnotTrack.prototype.mergeAnnotations = function(annots) {
     }
 };
 
-AnnotTrack.prototype.splitSelectedFeatures = function()  {
+AnnotTrack.prototype.splitSelectedFeatures = function(event)  {
     var selected = this.selectionManager.getSelection();
     this.selectionManager.clearSelection();
-    this.splitAnnotations(selected);
+    this.splitAnnotations(selected, event);
 };
 
-AnnotTrack.prototype.splitAnnotations = function(annots) {
+AnnotTrack.prototype.splitAnnotations = function(annots, event) {
     // can only split on max two elements
     if (annots.length > 2) {
 	return;
@@ -861,7 +869,9 @@ AnnotTrack.prototype.splitAnnotations = function(annots) {
     var operation;
     // split exon
     if (leftAnnot == rightAnnot) {
-    	//TODO
+    	var coordinate = this.gview.getGenomeCoord(event);
+        features = '"features": [ { "uniquename": "' + leftAnnot.uid + '", "location": { "fmax": ' + (coordinate - 1) + ', "fmin": ' + (coordinate + 1) + ' } } ]';
+        operation = "split_exon";
     }
     // split transcript
     else if (leftAnnot.parent == rightAnnot.parent) {
@@ -892,6 +902,50 @@ AnnotTrack.prototype.splitAnnotations = function(annots) {
     		//
     		//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //  
     		return response; // 
+    	    }
+
+    	});
+    }
+};
+
+AnnotTrack.prototype.makeIntron = function(event)  {
+    var selected = this.selectionManager.getSelection();
+    this.selectionManager.clearSelection();
+    this.makeIntronInExon(selected, event);
+};
+
+AnnotTrack.prototype.makeIntronInExon = function(annots, event) {
+    // can only split on one element
+    if (annots.length > 1) {
+    	return;
+    }
+    var track = this;
+    var annot = annots[0];
+    var coordinate = this.gview.getGenomeCoord(event);
+    var features = '"features": [ { "uniquename": "' + annot.uid + '", "location": { "fmin": ' + coordinate + ' } } ]';
+    var operation = "make_intron";
+    var trackName = track.name;
+    if (AnnotTrack.USE_LOCAL_EDITS)  {
+        // TODO
+        track.hideAll();
+        track.changed();
+    }
+    else  {
+    	dojo.xhrPost( {
+    	    postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }',
+    	    url: context_path + "/AnnotationEditorService",
+    	    handleAs: "json",
+    	    timeout: 5000 * 1000, // Time in milliseconds
+    	    load: function(response, ioArgs) {
+    	    	// TODO
+    	    },
+    	    // The ERROR function will be called in an error case.
+    	    error: function(response, ioArgs) { // 
+    	    	console.log("Annotation server error--maybe you forgot to login to the server?");
+    	    	console.error("HTTP status code: ", ioArgs.xhr.status); 
+    	    	//
+    	    	//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //  
+    	    	return response; // 
     	    }
 
     	});
