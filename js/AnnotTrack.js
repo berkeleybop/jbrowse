@@ -54,7 +54,9 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
     	{
     	    label: "Split",
     	    onClick: function(event) {
-    	    	thisObj.splitSelectedFeatures(event);
+		// use annot_context_mousedown instead of current event, since want to split 
+		//    at mouse position of event that triggered annot_context_menu popup
+    	    	thisObj.splitSelectedFeatures(thisObj.annot_context_mousedown);
     	    }
     	}
     ));
@@ -71,6 +73,13 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
     	    label: "..."
 	}
     ));
+
+    annot_context_menu.onOpen = function(event) {
+	// keeping track of mousedown event that triggered annot_context_menu popup, 
+	//   because need mouse position of that event for some actions
+	thisObj.annot_context_mousedown = thisObj.last_mousedown_event;
+    };
+	
     annot_context_menu.startup();
 
     this.verbose_create = false;
@@ -79,6 +88,7 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
     this.verbose_drop = false;
     this.verbose_click = false;
     this.verbose_resize = false;
+    this.verbose_mousedown = false;
     this.verbose_mouseenter = false;
     this.verbose_mouseleave = false;
 }
@@ -337,8 +347,9 @@ AnnotTrack.prototype.onFeatureMouseDown = function(event) {
 
 AnnotTrack.prototype.onAnnotMouseDown = function(event)  {
     var track = this;
+    track.last_mousedown_event = event;
     var verbose_resize = track.verbose_resize;
-    if (verbose_resize)  { console.log("AnnotTrack.onAnnotMouseDown called"); }
+    if (verbose_resize || track.verbose_mousedown)  { console.log("AnnotTrack.onAnnotMouseDown called"); }
     event = event || window.event;
     var elem = (event.currentTarget || event.srcElement);
     var featdiv = DraggableFeatureTrack.prototype.getLowestFeatureDiv(elem);
