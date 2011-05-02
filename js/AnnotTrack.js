@@ -63,8 +63,10 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
     annot_context_menu.addChild(new dijit.MenuItem(
         	{
         	    label: "Make intron",
+		    // use annot_context_mousedown instead of current event, since want to split 
+		    //    at mouse position of event that triggered annot_context_menu popup
         	    onClick: function(event) {
-        	    	thisObj.makeIntron(event);
+        	    	thisObj.makeIntron(thisObj.annot_context_mousedown);
         	    }
         	}
         ));
