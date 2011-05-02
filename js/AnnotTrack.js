@@ -61,15 +61,33 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
     	}
     ));
     annot_context_menu.addChild(new dijit.MenuItem(
-        	{
-        	    label: "Make intron",
-		    // use annot_context_mousedown instead of current event, since want to split 
-		    //    at mouse position of event that triggered annot_context_menu popup
-        	    onClick: function(event) {
-        	    	thisObj.makeIntron(thisObj.annot_context_mousedown);
-        	    }
-        	}
-        ));
+    	{
+            label: "Make intron",
+	    // use annot_context_mousedown instead of current event, since want to split 
+	    //    at mouse position of event that triggered annot_context_menu popup
+            onClick: function(event) {
+        	thisObj.makeIntron(thisObj.annot_context_mousedown);
+            }
+
+    	}
+    ));
+    annot_context_menu.addChild(new dijit.MenuItem(
+        {
+            label: "Undo",
+            onClick: function(event) {
+        	thisObj.undo();
+            }
+        }
+    ));
+    annot_context_menu.addChild(new dijit.MenuItem(
+        {
+            label: "Redo",
+            onClick: function(event) {
+        	thisObj.redo();
+            }
+        }
+    ));
+
     annot_context_menu.addChild(new dijit.MenuItem( 
 	{
     	    label: "..."
@@ -928,15 +946,130 @@ AnnotTrack.prototype.makeIntron = function(event)  {
 };
 
 AnnotTrack.prototype.makeIntronInExon = function(annots, event) {
-    // can only split on one element
     if (annots.length > 1) {
     	return;
     }
     var track = this;
     var annot = annots[0];
-    var coordinate = this.gview.getGenomeCoord(event);
+	var coordinate = this.gview.getGenomeCoord(event);
     var features = '"features": [ { "uniquename": "' + annot.uid + '", "location": { "fmin": ' + coordinate + ' } } ]';
     var operation = "make_intron";
+    var trackName = track.name;
+    if (AnnotTrack.USE_LOCAL_EDITS)  {
+        // TODO
+        track.hideAll();
+        track.changed();
+    }
+    else  {
+    	dojo.xhrPost( {
+    	    postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }',
+    	    url: context_path + "/AnnotationEditorService",
+    	    handleAs: "json",
+    	    timeout: 5000 * 1000, // Time in milliseconds
+    	    load: function(response, ioArgs) {
+    	    	// TODO
+    	    },
+    	    // The ERROR function will be called in an error case.
+    	    error: function(response, ioArgs) { // 
+    	    	console.log("Annotation server error--maybe you forgot to login to the server?");
+    	    	console.error("HTTP status code: ", ioArgs.xhr.status); 
+    	    	//
+    	    	//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //  
+    	    	return response; // 
+    	    }
+
+    	});
+    }
+};
+
+AnnotTrack.prototype.undo = function()  {
+    var selected = this.selectionManager.getSelection();
+    this.selectionManager.clearSelection();
+    this.undoSelectedFeatures(selected);
+};
+
+AnnotTrack.prototype.undoSelectedFeatures = function(annots) {
+    var track = this;
+    var features_nclist = track.features;
+    var features = '"features": [';
+    for (var i in annots)  {
+    	var annot = annots[i];
+    	// get top level feature
+    	while (annot.parent) {
+    		annot = annot.parent;
+    	}
+    	var uniqueName = annot.uid;
+    	// just checking to ensure that all features in selection are from this track
+    	if (annot.track === track)  {
+    	    var trackdiv = track.div;
+    	    var trackName = track.name;
+
+    	    if (i > 0) {
+    	    	features += ',';
+    	    }
+    	    features += ' { "uniquename": "' + uniqueName + '" } ';
+    	}
+    }
+    features += ']';
+    var operation = "undo";
+    var trackName = track.name;
+    if (AnnotTrack.USE_LOCAL_EDITS)  {
+        // TODO
+        track.hideAll();
+        track.changed();
+    }
+    else  {
+    	dojo.xhrPost( {
+    	    postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }',
+    	    url: context_path + "/AnnotationEditorService",
+    	    handleAs: "json",
+    	    timeout: 5000 * 1000, // Time in milliseconds
+    	    load: function(response, ioArgs) {
+    	    	// TODO
+    	    },
+    	    // The ERROR function will be called in an error case.
+    	    error: function(response, ioArgs) { // 
+    	    	console.log("Annotation server error--maybe you forgot to login to the server?");
+    	    	console.error("HTTP status code: ", ioArgs.xhr.status); 
+    	    	//
+    	    	//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //  
+    	    	return response; // 
+    	    }
+
+    	});
+    }
+};
+
+AnnotTrack.prototype.redo = function()  {
+    var selected = this.selectionManager.getSelection();
+    this.selectionManager.clearSelection();
+    this.redoSelectedFeatures(selected);
+};
+
+AnnotTrack.prototype.redoSelectedFeatures = function(annots) {
+    var track = this;
+    var features_nclist = track.features;
+    var features = '"features": [';
+    for (var i in annots)  {
+    	var annot = annots[i];
+    	// get top level feature
+    	while (annot.parent) {
+    		annot = annot.parent;
+    	}
+    	var uniqueName = annot.uid;
+    	// just checking to ensure that all features in selection are from this track
+    	if (annot.track === track)  {
+    	    var trackdiv = track.div;
+    	    var trackName = track.name;
+
+    	    if (i > 0) {
+    	    	features += ',';
+    	    }
+    	    features += ' { "uniquename": "' + uniqueName + '" } ';
+    	}
+    }
+    features += ']';
+    var operation = "redo";
     var trackName = track.name;
     if (AnnotTrack.USE_LOCAL_EDITS)  {
         // TODO
