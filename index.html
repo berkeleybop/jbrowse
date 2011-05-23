@@ -65,16 +65,33 @@
     <script type="text/javascript" src="js/UITracks.js"></script>
     <script type="text/javascript" src="js/ImageTrack.js"></script>
     <!-- for testing CanvasTrack -->
-    <!--    <script type="text/javascript" src="js/CanvasTrack.js"></script> -->
+    <script type="text/javascript" src="js/CanvasTrack.js"></script>
+<!--    <script type="text/javascript" src="js/WigTree.js"></script>  -->
+    <script type="text/javascript" src="js/WigStack.js"></script>
+    <script type="text/javascript" src="js/canvas_track_renderers/AvgBar_Renderer.js"></script>  
+    <script type="text/javascript" src="js/canvas_track_renderers/AvgBar_MaxBar_Renderer.js"></script>  
+    <script type="text/javascript" src="js/canvas_track_renderers/AvgBar_MinPoint_MaxPoint_Renderer.js"></script>
+    <script type="text/javascript" src="js/canvas_track_renderers/AvgRange_MinMaxRange_Renderer.js"></script>  
+    <script type="text/javascript" src="js/canvas_track_renderers/AvgLine_Renderer.js"></script>  
+    
     <script type="text/javascript" src="js/GenomeView.js"></script>
     <script type="text/javascript" src="js/JSONUtils.js"></script>
     <script type="text/javascript" src="js/BioFeatureUtils.js"></script>
     <script type="text/javascript" src="js/FeatureEdgeMatchManager.js"></script>
-    <!--    <script type="text/javascript" src="js/FileLoader.js"></script> -->
+    <!-- for testing file loading -->
+    <!-- <script type="text/javascript" src="js/FileLoader.js"></script> -->
 <!-- js_source_files -->
 
     <script type="text/javascript" src="data/refSeqs.js"></script>
     <script type="text/javascript" src="data/trackInfo.js"></script>
+
+    <script type="text/javascript" src="jslib/colour/jquery.color.js"></script>
+    <script type="text/javascript" src="jslib/farbtastic/mod-farbtastic.js"></script>
+<!--    <script type="text/javascript" src="jslib/jlayout/jquery.jlayout.js"></script> -->
+<!--    <script type="text/javascript" src="jslib/jlayout/jlayout.grid.js"></script> -->
+<!--    <script type="text/javascript" src="jslib/jlayout/jlayout.flexgrid.js"></script> -->
+ <link rel="stylesheet" href="jslib/farbtastic/farbtastic.css" type="text/css" />
+
 
     <script type="text/javascript">
       /* <![CDATA[ */
@@ -104,6 +121,9 @@
   
   <body>
     <div id="GenomeBrowser" style="height: 100%; width: 100%; padding: 0; border: 0;"></div>
-<!--    <input type="file" id="files1" name="files1[]" multiple /> -->
-  </body>
+<!--
+    Graph Load: 
+    <input type="file" id="files1" name="files1[]" multiple > </input>
+ -->
+ </body>
 </html>
