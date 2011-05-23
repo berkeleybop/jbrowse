@@ -160,6 +160,8 @@ function GenomeView(elem, stripeWidth, refseq, zoomLevel) {
     // we have a separate zoomContainer as a child of the scrollContainer.
     // they used to be the same element, but making zoomContainer separate
     // enables it to be narrower than this.elem.
+    //
+    // GAH zoomContainer is the container that track divs get added to, 
     this.zoomContainer = document.createElement("div");
     this.zoomContainer.id = "zoomContainer";
     this.zoomContainer.style.cssText =
@@ -638,6 +640,15 @@ GenomeView.prototype.getGenomeCoord = function(event)  {
     var relXY = Util.relativeXY(event, this.zoomContainer);
     var relX = relXY.x - this.x; // adjust for diff between zoomContainer and GenomeView 
     return Math.round(this._locationPixToBp(relX));
+    // equivalent:
+    //    this.minVisible() + this.pxToBp(relX);
+    //    this.pxToBp(this.x + this.offset) + this.pxToBp(relXY.x - this.x);
+    //    (this.x + this.offset)/this.pxPerBp + (relXY.x - this.x)/this.pxPerBp;
+    //    (this.offset + relXY.x) / this.pxPerBp
+    //    this.pxToBp(this.offset + relXY.x)
+    // 
+    // so could be rewritten as:
+    // return Math.round(this.pxToBp(this.offset + relXY.x));
 };
 
 GenomeView.prototype.showFine = function() {
@@ -1079,6 +1090,7 @@ GenomeView.prototype.showVisibleBlocks = function(updateHeight, pos, startX, end
 };
 
 GenomeView.prototype.addTrack = function(track) {
+    console.log("adding track: " + track.name);
     var trackNum = this.tracks.length;
     var labelDiv = document.createElement("div");
     labelDiv.className = "track-label dojoDndHandle";
