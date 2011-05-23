@@ -60,6 +60,7 @@ var Browser = function(params) {
             var viewElem = document.createElement("div");
             brwsr.container.appendChild(viewElem);
             viewElem.className = "dragWindow";
+	    $(viewElem).addClass("main-viewport");
 
             var containerWidget = new dijit.layout.BorderContainer({
                 liveSplitters: false,
@@ -68,6 +69,7 @@ var Browser = function(params) {
             }, brwsr.container);
             var contentWidget = new dijit.layout.ContentPane({region: "top"}, topPane);
             var browserWidget = new dijit.layout.ContentPane({region: "center"}, viewElem);
+
 
             //create location trapezoid
             brwsr.locationTrap = document.createElement("div");
@@ -238,7 +240,8 @@ Browser.prototype.createTrackList = function(parent, params) {
 						accept: ["track"],
 						withHandles: false});
 
-    var trackCreate = function(track, hint) {
+    this.trackCreate = function(track, hint) {
+	console.log("called Browser.trackCreate() for track: " + track.name);
         var node;
         if ("avatar" == hint) {
             return trackListCreate(track, hint);
@@ -260,7 +263,7 @@ Browser.prototype.createTrackList = function(parent, params) {
     };
     this.viewDndWidget = new dojo.dnd.Source(this.view.zoomContainer,
                                        {
-                                           creator: trackCreate,
+                                           creator: brwsr.trackCreate,
                                            accept: ["track"],
                                            withHandles: true
                                        });
@@ -453,6 +456,8 @@ Browser.prototype.showTracks = function(trackNameList) {
     for (var n = 0; n < trackNames.length; n++) {
         this.trackListWidget.forInItems(function(obj, id, map) {
                 if (trackNames[n] == obj.data.label) {
+		    console.log("calling vieDndWidget.insertNodes");
+		    console.log(obj);
                     brwsr.viewDndWidget.insertNodes(false, [obj.data]);
                     removeFromList.push(id);
                 }
