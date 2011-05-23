@@ -142,6 +142,12 @@ DraggableFeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
 	}
 	track.prev_selection = null;
     } );
+
+
+    $div.bind("click", function(e) {
+	console.log("track click, base position: " + track.gview.getGenomeCoord(e));
+    } );
+
 };
 
 
