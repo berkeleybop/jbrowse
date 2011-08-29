@@ -23,12 +23,14 @@ FeatureEdgeMatchManager.prototype.selectionCleared = function(selected)  {
 	$(".left-edge-match").removeClass("left-edge-match");
 	$(".right-edge-match").removeClass("right-edge-match");
 	var fselected = this.featSelectionManager.getSelection();
-	for (var i in fselected)  {
+	for (var i = 0; i < fselected.length; ++i) {
+//	for (var i in fselected)  {
 	    var selfeat = fselected[i];
 	    this.selectionAdded(selfeat);
 	}
 	var aselected = this.annotSelectionManager.getSelection();
-	for (var i in aselected)  {
+//	for (var i in aselected)  {
+	for (var i = 0; i < aselected.length; ++i) {
 	    var selannot = aselected[i];
 	    this.selectionAdded(selannot);
 	}

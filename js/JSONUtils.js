@@ -26,6 +26,9 @@ JSONUtils.createJsonFeature = function(fmin, fmax, strand, cv, cvterm) {
 *      subfields:  array specifying order of fields for subfeatures of JBrowse feature 
 */
 JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
+	
+	console.log("JSON: " + JSON.stringify(afeature));
+	
 	var PROCESS_CDS = false;
 	var jfeature = new Array();
 	var loc = afeature.location;
@@ -39,6 +42,9 @@ JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
 		var type = afeature.type.name;
 		if (type == "exon")  {type = "UTR";}
 		jfeature[fields["type"]] = type;
+	}
+	if (fields["parent_id"] && afeature.parent_id) {
+		jfeature[fields["parent_id"]] = afeature.parent_id;
 	}
 	var children = afeature.children;
 	if (fields["subfeatures"] && children)  {

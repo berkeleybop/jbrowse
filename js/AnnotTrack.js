@@ -33,75 +33,6 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
 	thisObj.onAnnotMouseDown(event);
     };
 
-    annot_context_menu = new dijit.Menu({});
-    annot_context_menu.addChild(new dijit.MenuItem(
-	{
-    	    label: "Delete",
-    	    onClick: function() {
-    		thisObj.deleteSelectedFeatures();
-            }
-	}
-    ));
-    annot_context_menu.addChild(new dijit.MenuItem(
-    	{
-    	    label: "Merge",
-    	    onClick: function() {
-    	    	thisObj.mergeSelectedFeatures();
-    	    }
-    	}
-    ));
-    annot_context_menu.addChild(new dijit.MenuItem(
-    	{
-    	    label: "Split",
-    	    onClick: function(event) {
-		// use annot_context_mousedown instead of current event, since want to split 
-		//    at mouse position of event that triggered annot_context_menu popup
-    	    	thisObj.splitSelectedFeatures(thisObj.annot_context_mousedown);
-    	    }
-    	}
-    ));
-    annot_context_menu.addChild(new dijit.MenuItem(
-    	{
-            label: "Make intron",
-	    // use annot_context_mousedown instead of current event, since want to split 
-	    //    at mouse position of event that triggered annot_context_menu popup
-            onClick: function(event) {
-        	thisObj.makeIntron(thisObj.annot_context_mousedown);
-            }
-
-    	}
-    ));
-    annot_context_menu.addChild(new dijit.MenuItem(
-        {
-            label: "Undo",
-            onClick: function(event) {
-        	thisObj.undo();
-            }
-        }
-    ));
-    annot_context_menu.addChild(new dijit.MenuItem(
-        {
-            label: "Redo",
-            onClick: function(event) {
-        	thisObj.redo();
-            }
-        }
-    ));
-
-    annot_context_menu.addChild(new dijit.MenuItem( 
-	{
-    	    label: "..."
-	}
-    ));
-
-    annot_context_menu.onOpen = function(event) {
-	// keeping track of mousedown event that triggered annot_context_menu popup, 
-	//   because need mouse position of that event for some actions
-	thisObj.annot_context_mousedown = thisObj.last_mousedown_event;
-    };
-	
-    annot_context_menu.startup();
-
     this.verbose_create = false;
     this.verbose_add = false;
     this.verbose_delete = false;
@@ -156,6 +87,8 @@ AnnotTrack.prototype.loadSuccess = function(trackInfo) {
     
     var track = this;
     var features = this.features;
+
+    this.initContextMenu();
     
     if (! AnnotTrack.USE_LOCAL_EDITS)  {
 	dojo.xhrPost( {
@@ -178,6 +111,7 @@ AnnotTrack.prototype.loadSuccess = function(trackInfo) {
 	    },
 	    // The ERROR function will be called in an error case.
 	    error: function(response, ioArgs) { //
+	    	track.handleError(response);
 		console.log("Annotation server error--maybe you forgot to login to the server?");
 		console.error("HTTP status code: ", ioArgs.xhr.status); //
 		//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //
@@ -203,7 +137,7 @@ AnnotTrack.prototype.createAnnotationChangeListener = function() {
 	    track: track.name
 	},
 	handleAs: "json",
-	timeout: 1000 * 1000, // Time in milliseconds
+//	timeout: 1000 * 1000, // Time in milliseconds
 	// The LOAD function will be called on a successful response.
 	load: function(response, ioArgs) {
 	    for (var i in response) {
@@ -235,6 +169,7 @@ AnnotTrack.prototype.createAnnotationChangeListener = function() {
 	},
 	// The ERROR function will be called in an error case.
 	error: function(response, ioArgs) { //
+		track.handleError(response);
 	    console.error("HTTP status code: ", ioArgs.xhr.status); //
 	    track.comet_working = false;
 	    return response;
@@ -437,6 +372,7 @@ AnnotTrack.prototype.onAnnotMouseDown = function(event)  {
 			    },
 			    // The ERROR function will be called in an error case.
 			    error: function(response, ioArgs) { //
+					track.handleError(response);
 				console.log("Error creating annotation--maybe you forgot to log into the server?");
 				console.error("HTTP status code: ", ioArgs.xhr.status); //
 				//dojo.byId("replace").innerHTML = 'Loading the ressource from the server did not work'; //
@@ -657,7 +593,7 @@ AnnotTrack.prototype.createAnnotations = function(feats)  {
 	    }
 	    
 	    dojo.xhrPost( {
-		postData: '{ "track": "' + target_track.name + '", "features": [ ' + JSON.stringify(afeat) + '], "operation": "add_feature" }',
+		postData: '{ "track": "' + target_track.name + '", "features": [ ' + JSON.stringify(afeat) + '], "operation": "add_transcript" }',
 		url: context_path + "/AnnotationEditorService",
 		handleAs: "json",
 		timeout: 5000, // Time in milliseconds
@@ -684,6 +620,7 @@ AnnotTrack.prototype.createAnnotations = function(feats)  {
 		},
 		// The ERROR function will be called in an error case.
 		error: function(response, ioArgs) { //
+			target_track.handleError(response);
 		    console.log("Error creating annotation--maybe you forgot to log into the server?");
 		    console.error("HTTP status code: ", ioArgs.xhr.status); //
 		    //dojo.byId("replace").innerHTML = 'Loading the ressource from the server did not work'; //
@@ -795,6 +732,7 @@ AnnotTrack.prototype.deleteAnnotations = function(annots) {
 	    },
 	    // The ERROR function will be called in an error case.
 	    error: function(response, ioArgs) { // 
+	    	track.handleError(response);
 		console.log("Annotation server error--maybe you forgot to login to the server?");
 		console.error("HTTP status code: ", ioArgs.xhr.status); //
 		//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //  
@@ -857,6 +795,7 @@ AnnotTrack.prototype.mergeAnnotations = function(annots) {
     	    },
     	    // The ERROR function will be called in an error case.
     	    error: function(response, ioArgs) { // 
+    			track.handleError(response);
     		console.log("Annotation server error--maybe you forgot to login to the server?");
     		console.error("HTTP status code: ", ioArgs.xhr.status); 
     		//
@@ -928,6 +867,7 @@ AnnotTrack.prototype.splitAnnotations = function(annots, event) {
     	    },
     	    // The ERROR function will be called in an error case.
     	    error: function(response, ioArgs) { // 
+    			track.handleError(response);
     		console.log("Annotation server error--maybe you forgot to login to the server?");
     		console.error("HTTP status code: ", ioArgs.xhr.status); 
     		//
@@ -971,6 +911,7 @@ AnnotTrack.prototype.makeIntronInExon = function(annots, event) {
     	    },
     	    // The ERROR function will be called in an error case.
     	    error: function(response, ioArgs) { // 
+    			track.handleError(response);
     	    	console.log("Annotation server error--maybe you forgot to login to the server?");
     	    	console.error("HTTP status code: ", ioArgs.xhr.status); 
     	    	//
@@ -1025,15 +966,29 @@ AnnotTrack.prototype.undoSelectedFeatures = function(annots) {
     	    handleAs: "json",
     	    timeout: 5000 * 1000, // Time in milliseconds
     	    load: function(response, ioArgs) {
-    	    	// TODO
+    	    	if (response.confirm) {
+    	    		if (track.handleConfirm(response.confirm)) {
+        		    	dojo.xhrPost( {
+        		    		sync: true,
+        		    	    postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '", "confirm": true }',
+        		    	    url: context_path + "/AnnotationEditorService",
+        		    	    handleAs: "json",
+        		    	    timeout: 5000 * 1000, // Time in milliseconds
+        		    	    load: function(response, ioArgs) {
+        		    	    	// TODO
+        		    	    },
+        		    	    error: function(response, ioArgs) { // 
+        		    	    	track.handleError(response);
+        		    	    	return response;
+        		    	    }
+        		    	});
+    	    		}
+    	    	}
     	    },
     	    // The ERROR function will be called in an error case.
     	    error: function(response, ioArgs) { // 
-    	    	console.log("Annotation server error--maybe you forgot to login to the server?");
-    	    	console.error("HTTP status code: ", ioArgs.xhr.status); 
-    	    	//
-    	    	//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //  
-    	    	return response; // 
+    	    	track.handleError(response);
+    	    	return response;
     	    }
 
     	});
@@ -1087,6 +1042,7 @@ AnnotTrack.prototype.redoSelectedFeatures = function(annots) {
     	    },
     	    // The ERROR function will be called in an error case.
     	    error: function(response, ioArgs) { // 
+    			track.handleError(response);
     	    	console.log("Annotation server error--maybe you forgot to login to the server?");
     	    	console.error("HTTP status code: ", ioArgs.xhr.status); 
     	    	//
@@ -1097,6 +1053,76 @@ AnnotTrack.prototype.redoSelectedFeatures = function(annots) {
     	});
     }
 };
+
+AnnotTrack.prototype.getInformation = function()  {
+    var selected = this.selectionManager.getSelection();
+    this.selectionManager.clearSelection();
+    this.getInformationForSelectedFeatures(selected);
+};
+
+AnnotTrack.prototype.getInformationForSelectedFeatures = function(annots) {
+    var track = this;
+    var features = '"features": [';
+    for (var i in annots)  {
+    	var annot = annots[i];
+    	// get top level feature
+    	while (annot.parent) {
+    		annot = annot.parent;
+    	}
+    	var uniqueName = annot.uid;
+    	// just checking to ensure that all features in selection are from this track
+    	if (annot.track === track)  {
+    	    var trackdiv = track.div;
+    	    var trackName = track.name;
+
+    	    if (i > 0) {
+    	    	features += ',';
+    	    }
+    	    features += ' { "uniquename": "' + uniqueName + '" } ';
+    	}
+    }
+    features += ']';
+    var operation = "get_information";
+    var trackName = track.name;
+	var information = "";
+    if (AnnotTrack.USE_LOCAL_EDITS)  {
+        // TODO
+        track.hideAll();
+        track.changed();
+    }
+    else  {
+    	dojo.xhrPost( {
+    	    postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }',
+    	    url: context_path + "/AnnotationEditorService",
+    	    handleAs: "json",
+    	    timeout: 5000 * 1000, // Time in milliseconds
+    	    load: function(response, ioArgs) {
+    	    	for (var i = 0; i < response.features.length; ++i) {
+    	    		var feature = response.features[i];
+    	    		if (i > 0) {
+    	    			information += "============\n";
+    	    		}
+    	    		information += "Uniquename: " + feature.uniquename + "\n";
+    	    		information += "Date of creation: " + feature.time_accessioned + "\n";
+    	    		information += "Owner: " + feature.owner + "\n";
+    	    		information += "Parent ids: " + feature.parent_ids + "\n";
+    	    	}
+    	    	alert(information);
+    	    },
+    	    // The ERROR function will be called in an error case.
+    	    error: function(response, ioArgs) { // 
+    			track.handleError(response);
+    	    	console.log("Annotation server error--maybe you forgot to login to the server?");
+    	    	console.error("HTTP status code: ", ioArgs.xhr.status); 
+    	    	//
+    	    	//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //  
+    	    	return response; // 
+    	    }
+
+    	});
+    }
+};
+
 
 AnnotTrack.prototype.createAnnotation = function()  {
 
@@ -1115,6 +1141,98 @@ AnnotTrack.prototype.changeAnnotationLocation = function()  {
 
 };
 
+AnnotTrack.prototype.handleError = function(response) {
+	var error = eval('(' + response.responseText + ')');
+	if (error.error) {
+		alert(error.error);
+		return false;
+	}
+}
+
+AnnotTrack.prototype.handleConfirm = function(response) {
+	return confirm(response);
+}
+
+AnnotTrack.prototype.initContextMenu = function() {
+
+    var thisObj = this;
+    
+    annot_context_menu = new dijit.Menu({});
+	dojo.xhrPost( {
+		sync: true,
+		postData: '{ "track": "' + thisObj.name + '", "operation": "get_user_permission" }',
+		url: context_path + "/AnnotationEditorService",
+		handleAs: "json",
+		timeout: 5 * 1000, // Time in milliseconds
+		// The LOAD function will be called on a successful response.
+		load: function(response, ioArgs) { //
+			var permission = response.permission;
+			if (permission & Permission.WRITE) {
+				annot_context_menu.addChild(new dijit.MenuItem( {
+					label: "Delete",
+					onClick: function() {
+						thisObj.deleteSelectedFeatures();
+					}
+				} ));
+				annot_context_menu.addChild(new dijit.MenuItem( {
+					label: "Merge",
+					onClick: function() {
+						thisObj.mergeSelectedFeatures();
+					}
+				} ));
+				annot_context_menu.addChild(new dijit.MenuItem( {
+					label: "Split",
+					onClick: function(event) {
+						// use annot_context_mousedown instead of current event, since want to split 
+						//    at mouse position of event that triggered annot_context_menu popup
+						thisObj.splitSelectedFeatures(thisObj.annot_context_mousedown);
+					}
+				} ));
+				annot_context_menu.addChild(new dijit.MenuItem( {
+					label: "Make intron",
+					// use annot_context_mousedown instead of current event, since want to split 
+					//    at mouse position of event that triggered annot_context_menu popup
+					onClick: function(event) {
+						thisObj.makeIntron(thisObj.annot_context_mousedown);
+					}
+				} ));
+				annot_context_menu.addChild(new dijit.MenuItem( {
+					label: "Undo",
+					onClick: function(event) {
+						thisObj.undo();
+					}
+				} ));
+				annot_context_menu.addChild(new dijit.MenuItem( {
+					label: "Redo",
+					onClick: function(event) {
+						thisObj.redo();
+					}
+				} ));
+			}
+			annot_context_menu.addChild(new dijit.MenuItem( {
+				label: "Information",
+				onClick: function(event) {
+					thisObj.getInformation();
+				}
+			} ));
+			annot_context_menu.addChild(new dijit.MenuItem( {
+				label: "..."
+			} ));
+		},
+		// The ERROR function will be called in an error case.
+		error: function(response, ioArgs) { //
+//			thisObj.handleError(response);
+		}
+	});
+
+    annot_context_menu.onOpen = function(event) {
+	// keeping track of mousedown event that triggered annot_context_menu popup, 
+	//   because need mouse position of that event for some actions
+	thisObj.annot_context_mousedown = thisObj.last_mousedown_event;
+    };
+	
+    annot_context_menu.startup();
+}
 
 /*
   Copyright (c) 2010-2011 Berkeley Bioinformatics Open Projects (BBOP)

@@ -1080,11 +1080,13 @@ GenomeView.prototype.showVisibleBlocks = function(updateHeight, pos, startX, end
     var selected = DraggableFeatureTrack.selectionManager.getSelection();
     var annot_selected = AnnotTrack.annotSelectionManager.getSelection();
     FeatureEdgeMatchManager.singleton.selectionCleared();
-    for (var i in selected)  {
-	FeatureEdgeMatchManager.singleton.selectionAdded(selected[i]);
+//    for (var i in selected)  {
+    for (var i = 0; i < selected.length; ++i) {
+    	FeatureEdgeMatchManager.singleton.selectionAdded(selected[i]);
     }
-    for (var i in annot_selected)   {
-	FeatureEdgeMatchManager.singleton.selectionAdded(annot_selected[i]);
+//    for (var i in annot_selected)   {
+	for (var i = 0; i < annot_selected.length; ++i) {
+		FeatureEdgeMatchManager.singleton.selectionAdded(annot_selected[i]);
     }
 
 };

@@ -104,18 +104,18 @@ FeatureSelectionManager.prototype.isSelected = function(feat)  {
 FeatureSelectionManager.prototype.getSelection = function()  {
     //    return this.selected;
     //    return this.selected.slice(0);  // return shallow copy of array
-    return this.selected.slice();  // return shallow copy of array
+    return this.selected.slice(0, this.selected.length);  // return shallow copy of array
 };
 
 FeatureSelectionManager.prototype.addListener = function(listener)  {
-    var index = this.listeners.indexOf(listener);
-    if (index < 0)  {  // only add if not already in listener list
-	this.listeners.push(listener);
-    }
+	var index = dojo.indexOf(this.listeners, listener);
+	if (index < 0)  {  // only add if not already in listener list
+		this.listeners.push(listener);
+	}
 };
 
 FeatureSelectionManager.prototype.removeListener = function(listener)  {
-    var index = this.listeners.indexOf(listener);
+    var index = dojo.indexOf(this.listeners, listener);
     if (index >= 0)  {  // only remove if already in listener list
 	this.listeners.splice(index, 1);
     }
