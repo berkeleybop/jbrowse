@@ -137,7 +137,17 @@ var Browser = function(params) {
             var oldLocMap = dojo.fromJson(dojo.cookie(brwsr.container.id + "-location")) || {};
 
             if (params.location) {
-                brwsr.navigateTo(params.location);
+            	if (params.location.indexOf(":") > 0) {
+            		brwsr.navigateTo(params.location);
+            	}
+            	else {
+            		var refSeq = brwsr.allRefs[params.location];
+            		var coords = oldLocMap[refSeq.name] ? oldLocMap[refSeq.name] :
+            				(((refSeq.start + refSeq.end) * 0.4) | 0)
+                            + " .. "
+                            + (((refSeq.start + refSeq.end) * 0.6) | 0);
+                    brwsr.navigateTo(params.location + ":" + coords);
+            	}
             } else if (oldLocMap[brwsr.refSeq.name]) {
                 brwsr.navigateTo(brwsr.refSeq.name
                                  + ":"

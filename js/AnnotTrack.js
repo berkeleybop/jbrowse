@@ -44,7 +44,7 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
     this.verbose_mouseleave = false;
 }
 
-
+AnnotTrack.listeners = new Array();
 
 // Inherit from DraggableFeatureTrack 
 AnnotTrack.prototype = new DraggableFeatureTrack();
@@ -75,6 +75,7 @@ AnnotTrack.creation_count = 0;
 
 dojo.require("dijit.Menu");
 dojo.require("dijit.MenuItem");
+dojo.require("dijit.Dialog");
 var annot_context_menu;
 var context_path = "/ApolloWeb";
 // var context_path = "";
@@ -89,10 +90,11 @@ AnnotTrack.prototype.loadSuccess = function(trackInfo) {
     var features = this.features;
 
     this.initContextMenu();
+    this.initPopupDialog();
     
     if (! AnnotTrack.USE_LOCAL_EDITS)  {
 	dojo.xhrPost( {
-	    postData: '{ "track": "' + track.name + '", "operation": "get_features" }',
+	    postData: '{ "track": "' + track.getUniqueTrackName() + '", "operation": "get_features" }',
 	    url: context_path + "/AnnotationEditorService",
 	    handleAs: "json",
 	    timeout: 5 * 1000, // Time in milliseconds
@@ -130,11 +132,17 @@ AnnotTrack.prototype.loadSuccess = function(trackInfo) {
 AnnotTrack.prototype.createAnnotationChangeListener = function() {
     var track = this;
     var features = this.features;
-
-    dojo.xhrGet( {
+    
+    if (AnnotTrack.listeners[track.getUniqueTrackName()]) {
+    	if (AnnotTrack.listeners[track.getUniqueTrackName()].fired == -1) {
+    		AnnotTrack.listeners[track.getUniqueTrackName()].cancel();
+    	}
+    }
+    
+    var listener = dojo.xhrGet( {
 	url: context_path + "/AnnotationChangeNotificationService",
 	content: {
-	    track: track.name
+	    track: track.getUniqueTrackName()
 	},
 	handleAs: "json",
 //	timeout: 1000 * 1000, // Time in milliseconds
@@ -169,12 +177,17 @@ AnnotTrack.prototype.createAnnotationChangeListener = function() {
 	},
 	// The ERROR function will be called in an error case.
 	error: function(response, ioArgs) { //
+		if (response.dojoType == "cancel") {
+			return;
+		}
 		track.handleError(response);
 	    console.error("HTTP status code: ", ioArgs.xhr.status); //
 	    track.comet_working = false;
 	    return response;
-	}
+	},
+	failOk: true
     });
+    AnnotTrack.listeners[track.getUniqueTrackName()] = listener;
 
 };
 
@@ -360,7 +373,7 @@ AnnotTrack.prototype.onAnnotMouseDown = function(event)  {
 		    	var fmin = subfeat[track.subFields["start"]] + leftDeltaBases;
 		    	var fmax = subfeat[track.subFields["end"]] + rightDeltaBases;
 			dojo.xhrPost( {
-			    postData: '{ "track": "' + track.name + '", "features": [ { "uniquename": ' + subfeat[track.subFields["name"]] + ', "location": { "fmin": ' + fmin + ', "fmax": ' + fmax + ' } } ], "operation": "set_exon_boundaries" }',
+			    postData: '{ "track": "' + track.getUniqueTrackName() + '", "features": [ { "uniquename": ' + subfeat[track.subFields["name"]] + ', "location": { "fmin": ' + fmin + ', "fmax": ' + fmax + ' } } ], "operation": "set_exon_boundaries" }',
 			    url: context_path + "/AnnotationEditorService",
 			    handleAs: "json",
 			    timeout: 1000 * 1000, // Time in milliseconds
@@ -495,7 +508,7 @@ AnnotTrack.prototype.addToAnnotation = function(annot, features)  {
 	var parent = JSONUtils.createApolloFeature(annot, target_track.fields, target_track.subfields);
 	parent.uniquename = annot[target_track.fields["name"]];
 	dojo.xhrPost( {
-	    postData: '{ "track": "' + target_track.name + '", "features": [ ' + JSON.stringify(parent) + featuresString + '], "operation": "add_exon" }',
+	    postData: '{ "track": "' + target_track.getUniqueTrackName() + '", "features": [ ' + JSON.stringify(parent) + featuresString + '], "operation": "add_exon" }',
 	    url: context_path + "/AnnotationEditorService",
 	    handleAs: "json",
 	    timeout: 5000, // Time in milliseconds
@@ -593,7 +606,7 @@ AnnotTrack.prototype.createAnnotations = function(feats)  {
 	    }
 	    
 	    dojo.xhrPost( {
-		postData: '{ "track": "' + target_track.name + '", "features": [ ' + JSON.stringify(afeat) + '], "operation": "add_transcript" }',
+		postData: '{ "track": "' + target_track.getUniqueTrackName() + '", "features": [ ' + JSON.stringify(afeat) + '], "operation": "add_transcript" }',
 		url: context_path + "/AnnotationEditorService",
 		handleAs: "json",
 		timeout: 5000, // Time in milliseconds
@@ -653,7 +666,7 @@ AnnotTrack.prototype.deleteAnnotations = function(annots) {
 	//   if not, then don't try and delete them
 	if (annot.track === track)  {
 	    var trackdiv = track.div;
-	    var trackName = track.name;
+	    var trackName = track.getUniqueTrackName();
 
 	    if (i > 0) {
 		features += ',';
@@ -758,7 +771,7 @@ AnnotTrack.prototype.mergeAnnotations = function(annots) {
         // just checking to ensure that all features in selection are from this track -- 
         //   if not, then don't try and delete them
         if (annot.track === track)  {
-            var trackName = track.name;
+            var trackName = track.getUniqueTrackName();
             if (leftAnnot == null || annot[track.fields["start"]] < leftAnnot[track.fields["start"]]) {
             	leftAnnot = annot;
             }
@@ -826,7 +839,7 @@ AnnotTrack.prototype.splitAnnotations = function(annots, event) {
         // just checking to ensure that all features in selection are from this track -- 
         //   if not, then don't try and delete them
         if (annot.track === track)  {
-            var trackName = track.name;
+            var trackName = track.getUniqueTrackName();
             if (leftAnnot == null || annot[track.fields["start"]] < leftAnnot[track.fields["start"]]) {
             	leftAnnot = annot;
             }
@@ -894,7 +907,7 @@ AnnotTrack.prototype.makeIntronInExon = function(annots, event) {
 	var coordinate = this.gview.getGenomeCoord(event);
     var features = '"features": [ { "uniquename": "' + annot.uid + '", "location": { "fmin": ' + coordinate + ' } } ]';
     var operation = "make_intron";
-    var trackName = track.name;
+    var trackName = track.getUniqueTrackName();
     if (AnnotTrack.USE_LOCAL_EDITS)  {
         // TODO
         track.hideAll();
@@ -943,7 +956,7 @@ AnnotTrack.prototype.undoSelectedFeatures = function(annots) {
     	// just checking to ensure that all features in selection are from this track
     	if (annot.track === track)  {
     	    var trackdiv = track.div;
-    	    var trackName = track.name;
+    	    var trackName = track.getUniqueTrackName();
 
     	    if (i > 0) {
     	    	features += ',';
@@ -953,7 +966,7 @@ AnnotTrack.prototype.undoSelectedFeatures = function(annots) {
     }
     features += ']';
     var operation = "undo";
-    var trackName = track.name;
+    var trackName = track.getUniqueTrackName();
     if (AnnotTrack.USE_LOCAL_EDITS)  {
         // TODO
         track.hideAll();
@@ -1015,7 +1028,7 @@ AnnotTrack.prototype.redoSelectedFeatures = function(annots) {
     	// just checking to ensure that all features in selection are from this track
     	if (annot.track === track)  {
     	    var trackdiv = track.div;
-    	    var trackName = track.name;
+    	    var trackName = track.getUniqueTrackName();
 
     	    if (i > 0) {
     	    	features += ',';
@@ -1025,7 +1038,7 @@ AnnotTrack.prototype.redoSelectedFeatures = function(annots) {
     }
     features += ']';
     var operation = "redo";
-    var trackName = track.name;
+    var trackName = track.getUniqueTrackName();
     if (AnnotTrack.USE_LOCAL_EDITS)  {
         // TODO
         track.hideAll();
@@ -1073,7 +1086,7 @@ AnnotTrack.prototype.getInformationForSelectedFeatures = function(annots) {
     	// just checking to ensure that all features in selection are from this track
     	if (annot.track === track)  {
     	    var trackdiv = track.div;
-    	    var trackName = track.name;
+    	    var trackName = track.getUniqueTrackName();
 
     	    if (i > 0) {
     	    	features += ',';
@@ -1083,7 +1096,7 @@ AnnotTrack.prototype.getInformationForSelectedFeatures = function(annots) {
     }
     features += ']';
     var operation = "get_information";
-    var trackName = track.name;
+    var trackName = track.getUniqueTrackName();
 	var information = "";
     if (AnnotTrack.USE_LOCAL_EDITS)  {
         // TODO
@@ -1100,14 +1113,14 @@ AnnotTrack.prototype.getInformationForSelectedFeatures = function(annots) {
     	    	for (var i = 0; i < response.features.length; ++i) {
     	    		var feature = response.features[i];
     	    		if (i > 0) {
-    	    			information += "============\n";
+    	    			information += "<hr/>";
     	    		}
-    	    		information += "Uniquename: " + feature.uniquename + "\n";
-    	    		information += "Date of creation: " + feature.time_accessioned + "\n";
-    	    		information += "Owner: " + feature.owner + "\n";
-    	    		information += "Parent ids: " + feature.parent_ids + "\n";
+    	    		information += "Uniquename: " + feature.uniquename + "<br/>";
+    	    		information += "Date of creation: " + feature.time_accessioned + "<br/>";
+    	    		information += "Owner: " + feature.owner + "<br/>";
+    	    		information += "Parent ids: " + feature.parent_ids + "<br/>";
     	    	}
-    	    	alert(information);
+    	    	track.openDialog("Feature information", information);
     	    },
     	    // The ERROR function will be called in an error case.
     	    error: function(response, ioArgs) { // 
@@ -1123,6 +1136,156 @@ AnnotTrack.prototype.getInformationForSelectedFeatures = function(annots) {
     }
 };
 
+AnnotTrack.prototype.getSequence = function()  {
+    var selected = this.selectionManager.getSelection();
+    this.selectionManager.clearSelection();
+    this.getSequenceForSelectedFeatures(selected);
+};
+
+AnnotTrack.prototype.getSequenceForSelectedFeatures = function(annots) {
+	var track = this;
+
+	var content = dojo.create("div");
+	var textArea = dojo.create("textarea", { class: "sequence_area", readonly: true }, content);
+	var form = dojo.create("form", { }, content);
+	var peptideButtonDiv = dojo.create("div", { class: "first_button_div" }, form);
+	var peptideButton = dojo.create("input", { type: "radio", name: "type", checked: true }, peptideButtonDiv);
+	var peptideButtonLabel = dojo.create("label", { innerHTML: "Peptide sequence", class: "button_label" }, peptideButtonDiv);
+	var cdnaButtonDiv = dojo.create("div", { class: "button_div" }, form);
+	var cdnaButton = dojo.create("input", { type: "radio", name: "type" }, cdnaButtonDiv);
+	var cdnaButtonLabel = dojo.create("label", { innerHTML: "cDNA sequence", class: "button_label" }, cdnaButtonDiv);
+	var cdsButtonDiv = dojo.create("div", { class: "button_div" }, form);
+	var cdsButton = dojo.create("input", { type: "radio", name: "type" }, cdsButtonDiv);
+	var cdsButtonLabel = dojo.create("label", { innerHTML: "CDS sequence", class: "button_label" }, cdsButtonDiv);
+	var genomicButtonDiv = dojo.create("div", { class: "button_div" }, form);
+	var genomicButton = dojo.create("input", { type: "radio", name: "type" }, genomicButtonDiv);
+	var genomicButtonLabel = dojo.create("label", { innerHTML: "Genomic sequence", class: "button_label" }, genomicButtonDiv);
+	var genomicWithFlankButtonDiv = dojo.create("div", { class: "button_div" }, form);
+	var genomicWithFlankButton = dojo.create("input", { type: "radio", name: "type" }, genomicWithFlankButtonDiv);
+	var genomicWithFlankButtonLabel = dojo.create("label", { innerHTML: "Genomic sequence +/-", class: "button_label" }, genomicWithFlankButtonDiv);
+	var genomicWithFlankField = dojo.create("input", { type: "text", size: 5, class: "button_field", value: "500" }, genomicWithFlankButtonDiv);
+	var genomicWithFlankFieldLabel = dojo.create("label", { innerHTML: "bases", class: "button_label" }, genomicWithFlankButtonDiv);
+
+	var fetchSequence = function(type) {
+	    var features = '"features": [';
+	    for (var i = 0; i < annots.length; ++i)  {
+	    	var annot = annots[i];
+	    	var uniqueName = annot.uid;
+	    	// just checking to ensure that all features in selection are from this track
+	    	if (annot.track === track)  {
+	    	    var trackdiv = track.div;
+	    	    var trackName = track.getUniqueTrackName();
+
+	    	    if (i > 0) {
+	    	    	features += ',';
+	    	    }
+	    	    features += ' { "uniquename": "' + uniqueName + '" } ';
+	    	}
+	    }
+	    features += ']';
+	    var operation = "get_sequence";
+	    var trackName = track.getUniqueTrackName();
+	    if (AnnotTrack.USE_LOCAL_EDITS)  {
+	        // TODO
+	        track.hideAll();
+	        track.changed();
+	    }
+	    else  {
+	    	var postData = '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '"';
+	    	var flank = 0;
+	    	if (type == "genomic_with_flank") {
+	    		flank = dojo.attr(genomicWithFlankField, "value");
+	    		postData += ', "flank": ' + flank;
+	    		type = "genomic";
+	    	}
+	    	postData += ', "type": "' + type + '" }';
+	    	dojo.xhrPost( {
+	    	    postData: postData,
+	    	    url: context_path + "/AnnotationEditorService",
+	    	    handleAs: "json",
+	    	    timeout: 5000 * 1000, // Time in milliseconds
+	    	    load: function(response, ioArgs) {
+	    	    	var textAreaContent = "";
+	    	    	for (var i = 0; i < response.features.length; ++i) {
+	    	    		var feature = response.features[i];
+	    	    		var cvterm = feature.type;
+	    	    		var residues = feature.residues;
+	    	    		textAreaContent += "&gt;" + feature.uniquename + " (" + cvterm.cv.name + ":" + cvterm.name + ") " + residues.length + " residues [" + type + (flank > 0 ? " +/- " + flank + " bases" : "") + "]\n";
+	    	    		var lineLength = 70;
+	    	    		for (var j = 0; j < residues.length; j += lineLength) {
+	    	    			textAreaContent += residues.substr(j, lineLength) + "\n";
+	    	    		}
+	    	    	}
+	    	    	textArea.innerHTML = textAreaContent;
+	    	    },
+	    	    // The ERROR function will be called in an error case.
+	    	    error: function(response, ioArgs) { // 
+	    			track.handleError(response);
+	    	    	console.log("Annotation server error--maybe you forgot to login to the server?");
+	    	    	console.error("HTTP status code: ", ioArgs.xhr.status); 
+	    	    	//
+	    	    	//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //  
+	    	    	return response; // 
+	    	    }
+
+	    	});
+	    }
+
+
+	};
+	
+	var callback = function(event) {
+		var type;
+		var target = event.target || event.srcElement;
+		if (target == peptideButton || target == peptideButtonLabel) {
+			if (dojo.attr(peptideButton, "checked")) {
+				return;
+			}
+			dojo.attr(peptideButton, "checked", true);
+			type = "peptide";
+		}
+		else if (target == cdnaButton || target == cdnaButtonLabel) {
+			if (dojo.attr(cdnaButton, "checked")) {
+				return;
+			}
+			dojo.attr(cdnaButton, "checked", true);
+			type = "cdna";
+		}
+		else if (target == cdsButton || target == cdsButtonLabel) {
+			if (dojo.attr(cdsButton, "checked")) {
+				return;
+			}
+			dojo.attr(cdsButton, "checked", true);
+			type = "cds";
+		}
+		else if (target == genomicButton || target == genomicButtonLabel) {
+			if (dojo.attr(genomicButton, "checked")) {
+				return;
+			}
+			dojo.attr(genomicButton, "checked", true);
+			type = "genomic";
+		}
+		else if (target == genomicWithFlankButton || target == genomicWithFlankButtonLabel) {
+			dojo.attr(genomicWithFlankButton, "checked", true);
+			type = "genomic_with_flank";
+		}
+		fetchSequence(type);
+	};
+	
+	peptideButton.onchange = callback;
+	peptideButtonLabel.onclick = callback;
+	cdnaButton.onchange = callback;
+	cdnaButtonLabel.onclick = callback;
+	cdsButton.onchange = callback;
+	cdsButtonLabel.onclick = callback;
+	genomicButton.onchange = callback;
+	genomicButtonLabel.onclick = callback;
+	genomicWithFlankButton.onchange = callback;
+	genomicWithFlankButtonLabel.onclick = callback;
+	
+	fetchSequence("peptide");
+	this.openDialog("Sequence", content);
+};
 
 AnnotTrack.prototype.createAnnotation = function()  {
 
@@ -1147,11 +1310,11 @@ AnnotTrack.prototype.handleError = function(response) {
 		alert(error.error);
 		return false;
 	}
-}
+};
 
 AnnotTrack.prototype.handleConfirm = function(response) {
 	return confirm(response);
-}
+};
 
 AnnotTrack.prototype.initContextMenu = function() {
 
@@ -1160,7 +1323,7 @@ AnnotTrack.prototype.initContextMenu = function() {
     annot_context_menu = new dijit.Menu({});
 	dojo.xhrPost( {
 		sync: true,
-		postData: '{ "track": "' + thisObj.name + '", "operation": "get_user_permission" }',
+		postData: '{ "track": "' + thisObj.getUniqueTrackName() + '", "operation": "get_user_permission" }',
 		url: context_path + "/AnnotationEditorService",
 		handleAs: "json",
 		timeout: 5 * 1000, // Time in milliseconds
@@ -1216,6 +1379,12 @@ AnnotTrack.prototype.initContextMenu = function() {
 				}
 			} ));
 			annot_context_menu.addChild(new dijit.MenuItem( {
+				label: "Get sequence",
+				onClick: function(event) {
+					thisObj.getSequence();
+				}
+			} ));
+			annot_context_menu.addChild(new dijit.MenuItem( {
 				label: "..."
 			} ));
 		},
@@ -1232,6 +1401,34 @@ AnnotTrack.prototype.initContextMenu = function() {
     };
 	
     annot_context_menu.startup();
+};
+
+AnnotTrack.prototype.initPopupDialog = function() {
+	var track = this;
+	var id = "popup_dialog";
+
+	// deregister widget (needed if changing refseq without reloading page)
+	var widget = dijit.registry.byId(id);
+	if (widget) {
+		widget.destroy();
+	}
+	track.popupDialog = new dijit.Dialog({
+		preventCache: true,
+		id: id
+	});
+	track.popupDialog.startup();
+
+};
+
+AnnotTrack.prototype.getUniqueTrackName = function() {
+	return this.name + "-" + this.refSeq.name;
+};
+
+AnnotTrack.prototype.openDialog = function(title, data) {
+	this.popupDialog.set("title", title);
+	this.popupDialog.set("content", data);
+    this.popupDialog.show();
+    this.popupDialog.placeAt("GenomeBrowser", "first");
 }
 
 /*
