@@ -27,7 +27,7 @@ JSONUtils.createJsonFeature = function(fmin, fmax, strand, cv, cvterm) {
 	    "name": cvterm
 	}
     };
-return feature;
+    return feature;
 };
 
 /**
@@ -44,7 +44,11 @@ return feature;
 */
 JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
     // console.log("JSON: " + JSON.stringify(afeature));
-    var PROCESS_CDS = false;
+    // console.log("JSONUtils.createJBrowseFeature, input feature:");
+    // console.log(afeature);
+    var PASSTHROUGH = false;
+    var PROCESS_CDS = true;
+
     var jfeature = new Array();
     var loc = afeature.location;
     var uid = afeature.uniquename; 
@@ -57,6 +61,54 @@ JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
     if (fields["name"])  {
 	jfeature[fields["name"]] = uid;
     }
+    jfeature.uid = uid;
+
+    // rename "CDS" to "wholeCDS", pass through other type names (currently only other type is "exon")
+    if (fields["type"])  { 
+	var type = afeature.type.name;
+	if (type == "CDS")  { type =  "wholeCDS"; }
+//	if (type == "exon")  { type = "exon"; }
+	jfeature[fields["type"]] = type;
+    }
+    // may not need parent_id? including for now just in case
+    if (fields["parent_id"] && afeature.parent_id) {
+	jfeature[fields["parent_id"]] = afeature.parent_id;
+    }
+    var children = afeature.children;
+    if (fields["subfeatures"] && children)  {
+	jfeature[fields["subfeatures"]] = new Array();
+	var clength = children.length;
+	for (var i = 0; i<clength; i++)  {
+	    var achild = children[i];
+	    var jchild =  JSONUtils.createJBrowseFeature(achild, subfields, subfields);
+	    jfeature[fields["subfeatures"]].push(jchild);
+	}
+    }
+    // console.log("JSONUtils.createJBrowseFeature, output feature:");
+    // console.log(jfeature);
+    return jfeature;
+};
+
+/*
+ JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
+    // console.log("JSON: " + JSON.stringify(afeature));
+    console.log(afeature);
+    var PASSTHROUGH = false;
+    var PROCESS_CDS = true;
+    var jfeature = new Array();
+    var loc = afeature.location;
+    var uid = afeature.uniquename; 
+    jfeature[fields["start"]] = loc.fmin;
+    jfeature[fields["end"]] = loc.fmax;
+    jfeature[fields["strand"]] = loc.strand;
+ 
+   if (fields["id"])  {
+	jfeature[fields["id"]] = uid;
+    }
+    if (fields["name"])  {
+	jfeature[fields["name"]] = uid;
+    }
+
     if (fields["type"])  { 
 	var type = afeature.type.name;
 	if (type == "exon")  {
@@ -70,7 +122,9 @@ JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
     var children = afeature.children;
     if (fields["subfeatures"] && children)  {
 	jfeature[fields["subfeatures"]] = new Array();
+	
 	var clength = children.length;
+
 
 	var cds = null;
 	for (var i = 0; i < clength; ++i) {
@@ -158,10 +212,12 @@ JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
 		jfeature[fields["subfeatures"]].push(jchild);
 	    }
 	}
+
     }
     jfeature.uid = uid;
     return jfeature;
 };
+*/
 
 /** 
 *  creates a feature in ApolloEditorService JSON format
@@ -197,7 +253,7 @@ JSONUtils.createApolloFeature = function(jfeature, fields, subfields, specified_
 	"fmin": jfeature[fields["start"]], 
 	"fmax": jfeature[fields["end"]], 
 	"strand": jfeature[fields["strand"]]
-	};
+    };
 
     var typename;
     if (specified_type)  {
@@ -212,26 +268,26 @@ JSONUtils.createApolloFeature = function(jfeature, fields, subfields, specified_
 		"name": "SO"
 	    }
 	};
-    afeature.type.name = typename;
-}
-if (fields["subfeatures"])  {
-    var subfeats = jfeature[fields["subfeatures"]];
-    if (subfeats && subfeats.length > 0 && (subfeats[0] instanceof Array))  {
-	afeature.children = new Array();
-	var slength = subfeats.length;
-	for (var i=0; i<slength; i++)  {
-	    var subfeat = subfeats[i];
-	    if (subfields)  {
-		// afeature.children[i] = JSONUtils.createApolloFeature(subfeat, subfields); 
-		afeature.children[i] = JSONUtils.createApolloFeature(subfeat, subfields, subfields, "exon"); 
-	    }
-	    else  {
-		afeature.children[i] = JSONUtils.createApolloFeature(subfeat, fields, fields); 
+	afeature.type.name = typename;
+    }
+    if (fields["subfeatures"])  {
+	var subfeats = jfeature[fields["subfeatures"]];
+	if (subfeats && subfeats.length > 0 && (subfeats[0] instanceof Array))  {
+	    afeature.children = new Array();
+	    var slength = subfeats.length;
+	    for (var i=0; i<slength; i++)  {
+		var subfeat = subfeats[i];
+		if (subfields)  {
+		    // afeature.children[i] = JSONUtils.createApolloFeature(subfeat, subfields); 
+		    afeature.children[i] = JSONUtils.createApolloFeature(subfeat, subfields, subfields, "exon"); 
+		}
+		else  {
+		    afeature.children[i] = JSONUtils.createApolloFeature(subfeat, fields, fields); 
+		}
 	    }
 	}
     }
-}
-return afeature;
+    return afeature;
 };
 
 /*
