@@ -76,6 +76,8 @@ div.track {
     position: absolute;
     left: 0px;
     width: 100%;
+/*    outline: 1px solid orange; */
+/*    border: 1px solid green */
 /*    z-index: 5; */
 }
 
@@ -227,6 +229,9 @@ div.tracklist-container {
     cursor: pointer;
 }
 
+/*  does not appear to be used yet, annotations are 
+*    still using .feature-label for label styling
+*/
 .annot-label {
     position: absolute;
     font-family: monospace;
@@ -412,49 +417,6 @@ div.est-hist {
     z-index: 10;
 }
 
-/* previous annotation style -- blue fill with black border
-.plus-annot,
-.minus-annot {
-    position: absolute;
-    height: 10px;
-    background-color: #3333FF;
-    border-style: solid;
-    border-color: #007;
-    border-width: 2px;
-    cursor: pointer;
-    z-index: 100;
-}
-*/
-
-.plus-annot,
-.minus-annot {
-    position: absolute;
-    height: 4px;
-    margin-top: 6px;
-    margin-bottom: 6px;
-    background-color: #99F;
-    z-index: 6;
-    min-width: 1px;
-    cursor: pointer;
-}
-
-.plus-annot-arrowhead {
-    position: absolute;
-    margin-top: -4px;
-    width: 12px;
-    height: 12px;
-    background-image: url('img/plus-transcript-head.png');
-    background-repeat: no-repeat;
-}
-
-.minus-annot-arrowhead {
-    position: absolute;
-    margin-top: -4px;
-    width: 12px;
-    height: 12px;
-    background-image: url('img/minus-transcript-head.png');
-    background-repeat: no-repeat;
-}
 
 
 .plus-dblhelix,
@@ -765,13 +727,98 @@ div.generic_parent-hist {
     cursor: pointer;
 }
 
+/**
+*  visual rendering of annot as line centered within the annot
+*/
+.annotline {
+    position: absolute;
+    height: 4px;
+    margin-top: 6px;
+    margin-bottom: 6px;  /* don't think this actually is needed */
+    background-color: green;
+    /* annotline div may be added to annot div _after_ child feature divs, so 
+       if want child divs in front of annotline, make sure has lower 
+       z-index than child divs */
+    z-index: 2;  
+    min-width: 1px;
+    cursor: pointer;
+    width: 100%;
+}
+
+/**
+*  annot div is just a holder for any children, and annotline div
+*  this allows proper outlining of selected annots
+*/
+.plus-annot,
+.minus-annot {
+    position: absolute;
+    height: 16px;
+    margin-top: 0px;
+    /* margin-bottom: 0px; 
+       margin-bottom is ignored, since nothing else is positioned relative to bottom of margin?
+       though probably should be factored into label placement?
+       
+    */
+/*    background-color: #99F; */
+    z-index: 6;
+    min-width: 1px;
+    cursor: pointer;
+   /* outline: 2px solid black */
+}
+/*
+.plus-annot,
+.minus-annot {
+    position: absolute;
+    height: 4px;
+    margin-top: 6px;
+    margin-bottom: 6px;
+    background-color: #99F;
+    z-index: 6;
+    min-width: 1px;
+    cursor: pointer;
+}
+*/
+
+/**
+*  annotation exon divs are container for UTR and CDS divs, and also allows selection of 
+*     whole exon rather than just UTR or CDS
+*/
+.plus-annot-exon, 
+.minus-annot-exon  {
+    position: absolute;
+    height: 16px;
+    margin-top: 0px;
+    /* margin-bottom: 0px; 
+       margin-bottom is ignored, since nothing else is positioned relative to bottom of margin?
+       though probably should be factored into label placement?
+       
+    */
+/*    background-color: #99F; */
+/*    border: 1px solid blac;k */
+    z-index: 6;
+    min-width: 1px;
+    cursor: pointer;
+
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+.plus-annot-wholeCDS, 
+.minus-annot-wholeCDS {
+    position: absolute;
+    background-color: pink;
+    height: 7px;
+}
 
 /** styles for annotations (features in AnnotTracks) */
+.annot-CDS, sub
 .plus-annot-CDS,
 .minus-annot-CDS {
     position: absolute;
     height: 16px;
-    margin-top: -6px; 
+/*    margin-top: -6px;  */
     background-color: #30AAFF;
     border-style: solid;
     border-color: #01F;
@@ -785,11 +832,13 @@ div.generic_parent-hist {
     -ms-box-sizing: border-box;
 }
 
+.annot-UTR, 
 .plus-annot-UTR, 
 .minus-annot-UTR {
     position: absolute;
     height: 12px; 
-    margin-top: -4px; 
+/*    margin-top: -4px; */
+    margin-top: 2px;
     background-color: #2088FF;
     /*
     height: 6px; 
@@ -806,6 +855,29 @@ div.generic_parent-hist {
     -webkit-box-sizing: border-box;
     -ms-box-sizing: border-box;
 }
+
+
+.plus-annot-arrowhead {
+    position: absolute;
+/*    margin-top: -4px; */
+    margin-top: 2px;
+    width: 12px;
+    height: 12px;
+    background-image: url('img/plus-transcript-head.png');
+    background-repeat: no-repeat;
+}
+
+.minus-annot-arrowhead {
+    position: absolute;
+/*   margin-top: -4px; */
+    margin-top: 2px;
+    width: 12px;
+    height: 12px;
+    background-image: url('img/minus-transcript-head.png');
+    background-repeat: no-repeat;
+}
+
+
 
 /**
 *   appearance of resizing box when dragging annotation edges
