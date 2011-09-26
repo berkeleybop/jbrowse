@@ -361,6 +361,7 @@ FeatureTrack.prototype.fillFeatures = function(blockIndex, block,
     }
 
     var curTrack = this;
+    // NOT same as featureCallback in track.featureCallback
     var featCallback = function(feature, path) {
 	// refactored ID retrieval/construction into getId() function 
 	//    to allow easier FeatureTrack subclassing
@@ -368,7 +369,7 @@ FeatureTrack.prototype.fillFeatures = function(blockIndex, block,
 	if (!uniqueId)  {  
 	    uniqueId = curTrack.getId(feature, path);
 	    // feature.uniqueId = uniqueId;  // should be set in getId(), but just making sure
-	}
+	} 
         //console.log("ID " + uniqueId + (layouter.hasSeen(uniqueId) ? " (seen)" : " (new)"));
         if (layouter.hasSeen(uniqueId)) {
             //console.log("this layouter has seen " + uniqueId);
@@ -574,7 +575,7 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
         + "top:" + top + "px;"
         + " width:" + (100 * ((displayEnd - displayStart) / blockWidth)) + "%;"
         + (this.featureCss ? this.featureCss : "");
-
+    
     if (this.featureCallback) this.featureCallback(feature, fields, featDiv);
 
     if (this.arrowheadClass) {
@@ -642,16 +643,6 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 //   handle differently
 FeatureTrack.prototype.handleSubFeatures = function(feature, featDiv, 
 						    displayStart, displayEnd, block)  {
-//    var fields = this.fields;
-/*
-    var featParam = {
-        feature: feature,
-        featDiv: featDiv,
-        displayStart: displayStart,
-        displayEnd: displayEnd
-    };
-*/
-
     // only way to get here is via renderFeature(parent,...), 
     //   so parent guaranteed to have unique ID set by now
     var parentId = feature.uid;  
@@ -694,28 +685,38 @@ FeatureTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
     var subEnd = subfeature[this.subFields["end"]];
     var featLength = displayEnd - displayStart;
 
-    var subDiv = document.createElement("div");
-
-    block.featureNodes[subfeature.uid] = subDiv;
-
     if (!subfeature.track)  {
 	subfeature.track = this;
     }
 
+    var className = null;
     if (this.subfeatureClasses) {
-        var className = this.subfeatureClasses[subfeature[this.subFields["type"]]];
-        switch (subfeature[this.subFields["strand"]]) {
-        case 1:
-            subDiv.className = "plus-" + className;break;
-        case 0:
-        case null:
-        case undefined:
-            subDiv.className = className;break;
-        case -1:
-            subDiv.className = "minus-" + className;break;
-        }
-
+        var tempName = this.subfeatureClasses[subfeature[this.subFields["type"]]];
+	if (tempName)  {
+            switch (subfeature[this.subFields["strand"]]) {
+            case 1:
+		// subDiv.className = "plus-" + className;break;
+		className = "plus-" + tempName;break;
+            case 0:
+            case null:
+            case undefined:
+		// subDiv.className = className;break;
+		className = tempName;break;
+            case -1:
+		// subDiv.className = "minus-" + className;break;
+		className = "minus-" + tempName;break;
+            }
+	}
     }
+
+    // if no mapping of subfeature to a CSS class name for styling, then don't render the feature
+    if (!className)  {
+	return null;
+    }
+
+    var subDiv = document.createElement("div");
+    subDiv.className = className;
+    block.featureNodes[subfeature.uid] = subDiv;
 
     // if the feature has been truncated to where it doesn't cover
     // this subfeature anymore, just skip this subfeature
