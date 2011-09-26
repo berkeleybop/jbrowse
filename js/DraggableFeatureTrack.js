@@ -27,11 +27,7 @@ function DraggableFeatureTrack(trackMeta, url, refSeq, browserParams) {
     this.verbose_selection = false;
     this.verbose_selection_notification = false;
     this.verbose_drag = false;
-    this.verbose_edges = DraggableFeatureTrack.verbose_edges;
-
 }
-
-// DraggableFeatureTrack.verbose_edges = true;
 
 // Inherit from FeatureTrack
 DraggableFeatureTrack.prototype = new FeatureTrack();
@@ -166,6 +162,7 @@ DraggableFeatureTrack.prototype.selectionAdded = function(feat) {
 	    if (!jq_featdiv.hasClass(track.selectionClass))  {
 		jq_featdiv.addClass(track.selectionClass);
 	    }
+	    
 	    //      track.showEdgeMatches(feat); 
 	}
     }

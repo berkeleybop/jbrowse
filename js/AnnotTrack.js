@@ -42,6 +42,7 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
     this.verbose_mousedown = false;
     this.verbose_mouseenter = false;
     this.verbose_mouseleave = false;
+    this.verbose_render = false;
 }
 
 AnnotTrack.listeners = new Array();
@@ -223,6 +224,15 @@ AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
     var track = this;
     var featDiv = DraggableFeatureTrack.prototype.renderFeature.call(this, feature, uniqueId, block, scale,
 								     containerStart, containerEnd);
+
+    if (this.className == "annot")  {
+	// console.log("in FeatureTrack.renderFeature, creating annot div");
+	var lineDiv = document.createElement("div");
+	lineDiv.className = "annotline";
+	if (Util.is_ie6) lineDiv.appendChild(document.createComment());
+	featDiv.appendChild(lineDiv);
+    }
+
     if (featDiv && featDiv != null)  {
 	annot_context_menu.bindDomNode(featDiv);
 	$(featDiv).droppable(  {
@@ -257,25 +267,215 @@ AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
     return featDiv;
 };
 
-/** AnnotTrack subfeatures are similar to DAS subfeatures, so handled similarly */
-/* AnnotTrack.prototype.handleSubFeatures = function(feature, featDiv,
-   displayStart, displayEnd, block)  {
-   var subfeatures = this.fields["subfeatures"];
-   for (var i = 0; i < feature[subfeatures].length; i++) {
-   var subfeature = feature[subfeatures][i];
-   this.renderSubfeature(feature, featDiv, subfeature, displayStart, displayEnd, block);
-   }
-   }
+
+/**
+ * overriding handleSubFeatures for customized handling of UTR/CDS-segment rendering within exon divs
+ */
+AnnotTrack.prototype.handleSubFeatures = function(feature, featDiv, 
+						    displayStart, displayEnd, block)  {
+    // only way to get here is via renderFeature(parent,...), 
+    //   so parent guaranteed to have unique ID set by now
+    var parentId = feature.uid;  
+    var subfeats = feature[this.fields["subfeatures"]];
+    var slength = subfeats.length;
+    var subfeat;
+    var wholeCDS = null;
+    var subtype;
+    var i;
+    for (i=0; i < slength; i++)  {
+	subfeat = subfeats[i];
+	subtype = subfeat[this.subFields["type"]];
+	if (subtype == "wholeCDS") {
+	    wholeCDS = subfeat;
+	    break;
+	}
+    }
+    if (wholeCDS) {
+	var cdsStart = wholeCDS[this.subFields["start"]];
+	var cdsEnd = wholeCDS[this.subFields["end"]];
+	//    current convention is start = min and end = max regardless of strand, but checking just in case
+	var cdsMin = Math.min(cdsStart, cdsEnd);
+	var cdsMax = Math.max(cdsStart, cdsEnd);
+	if (this.verbose_render)  { console.log("wholeCDS:"); console.log(wholeCDS); }
+    }
+
+    for (i = 0; i < slength; i++) {
+	subfeat = subfeats[i];
+	var uid = subfeat.uid;
+	if (!uid)  {
+	    uid = this.getSubfeatId(subfeat, i, parentId);
+	    subfeat.uid= uid;
+	}
+	subtype = subfeat[this.subFields["type"]];
+	// don't render "wholeCDS" type
+	// although if subfeatureClases is properly set up, wholeCDS would also be filtered out in renderFeature?
+	if (subtype == "wholeCDS")  {  continue; }
+        var subDiv = this.renderSubfeature(feature, featDiv, subfeat, displayStart, displayEnd, block);
+	// if subfeat is of type "exon", add CDS/UTR rendering
+	if (subDiv && (subtype == "exon"))  {
+	    this.renderExonSegments(subfeat, subDiv, cdsMin, cdsMax, displayStart, displayEnd);
+	}
+	if (this.verbose_render)  { 
+	    console.log("in AnnotTrack.handleSubFeatures, subDiv: ");
+	    console.log(subDiv);
+	}
+    }
+};
+
+
+/**
+ *  TODO: still need to factor in truncation based on displayStart and displayEnd???
+ */
+AnnotTrack.prototype.renderExonSegments = function(subfeature, subDiv, cdsMin, cdsMax, displayStart, displayEnd)  {
+    var subStart = subfeature[this.subFields["start"]];
+    var subEnd = subfeature[this.subFields["end"]];
+    var subLength = subEnd - subStart;
+
+    // if the feature has been truncated to where it doesn't cover
+    // this subfeature anymore, just skip this subfeature
+    if ((subEnd <= displayStart) || (subStart >= displayEnd)) return undefined;
+
+    var segDiv;
+    // whole exon is untranslated
+    if (cdsMax <= subStart || cdsMin >= subEnd)  {
+	segDiv = document.createElement("div");
+	// not worrying about appending "plus-"/"minus-" based on strand yet
+	segDiv.className = "annot-UTR";
+	
+	if (Util.is_ie6) segDiv.appendChild(document.createComment());
+	segDiv.style.cssText =
+            "left: " + (100 * ((subStart - subStart) / subLength)) + "%;"
+            + "top: 0px;"
+            + "width: " + (100 * ((subEnd - subStart) / subLength)) + "%;";
+	subDiv.appendChild(segDiv);
+    }
+    // whole exon is translated
+    else if (cdsMin <= subStart && cdsMax >= subEnd) {
+	segDiv = document.createElement("div");
+	// not worrying about appending "plus-"/"minus-" based on strand yet
+	segDiv.className = "annot-CDS";
+	
+	if (Util.is_ie6) segDiv.appendChild(document.createComment());
+	segDiv.style.cssText =
+            "left: " + (100 * ((subStart - subStart) / subLength)) + "%;"
+            + "top: 0px;"
+            + "width: " + (100 * ((subEnd - subStart) / subLength)) + "%;";
+	subDiv.appendChild(segDiv);
+    }
+    // partial translation of exon
+    else  {
+	// calculate 5'UTR, CDS segment, 3'UTR
+	var cdsSegStart = Math.max(cdsMin, subStart);
+	var cdsSegEnd = Math.min(cdsMax, subEnd);
+	var utrStart;
+	var utrEnd
+	// make left UTR (if needed)
+	if (cdsMin > subStart) {
+	    utrStart = subStart;
+	    utrEnd = cdsSegStart;
+	    segDiv = document.createElement("div");
+	    // not worrying about appending "plus-"/"minus-" based on strand yet
+	    segDiv.className = "annot-UTR";
+	    if (Util.is_ie6) segDiv.appendChild(document.createComment());
+	    segDiv.style.cssText =
+		"left: " + (100 * ((utrStart - subStart) / subLength)) + "%;"
+		+ "top: 0px;"
+		+ "width: " + (100 * ((utrEnd - utrStart) / subLength)) + "%;";
+	    subDiv.appendChild(segDiv);
+	}
+	// make CDS segment
+	segDiv = document.createElement("div");
+	// not worrying about appending "plus-"/"minus-" based on strand yet
+	segDiv.className = "annot-CDS";
+	if (Util.is_ie6) segDiv.appendChild(document.createComment());
+	segDiv.style.cssText =
+            "left: " + (100 * ((cdsSegStart - subStart) / subLength)) + "%;"
+            + "top: 0px;"
+            + "width: " + (100 * ((cdsSegEnd - cdsSegStart) / subLength)) + "%;";
+	subDiv.appendChild(segDiv);
+
+	// make right UTR  (if needed)
+	if (cdsMax < subEnd)  {
+	    utrStart = cdsSegEnd;
+	    utrEnd = subEnd;
+	    segDiv = document.createElement("div");
+	    // not worrying about appending "plus-"/"minus-" based on strand yet
+	    segDiv.className = "annot-UTR";
+	    if (Util.is_ie6) segDiv.appendChild(document.createComment());
+	    segDiv.style.cssText =
+		"left: " + (100 * ((utrStart - subStart) / subLength)) + "%;"
+		+ "top: 0px;"
+		+ "width: " + (100 * ((utrEnd - utrStart) / subLength)) + "%;";
+	    subDiv.appendChild(segDiv);
+	}
+    }
+    return null;
+};
+
+
+
+/*
+FeatureTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
+                                                   displayStart, displayEnd, block) {
+
+    if (!subfeature.parent)  { subfeature.parent = feature; }
+    var subStart = subfeature[this.subFields["start"]];
+    var subEnd = subfeature[this.subFields["end"]];
+    var featLength = displayEnd - displayStart;
+
+    var subDiv = document.createElement("div");
+
+    block.featureNodes[subfeature.uid] = subDiv;
+
+    if (!subfeature.track)  {
+	subfeature.track = this;
+    }
+
+    if (this.subfeatureClasses) {
+        var className = this.subfeatureClasses[subfeature[this.subFields["type"]]];
+        switch (subfeature[this.subFields["strand"]]) {
+        case 1:
+            subDiv.className = "plus-" + className;break;
+        case 0:
+        case null:
+        case undefined:
+            subDiv.className = className;break;
+        case -1:
+            subDiv.className = "minus-" + className;break;
+        }
+
+    }
+
+    // if the feature has been truncated to where it doesn't cover
+    // this subfeature anymore, just skip this subfeature
+    if ((subEnd <= displayStart) || (subStart >= displayEnd)) return undefined;
+
+    if (Util.is_ie6) subDiv.appendChild(document.createComment());
+    subDiv.style.cssText =
+        "left: " + (100 * ((subStart - displayStart) / featLength)) + "%;"
+        + "top: 0px;"
+        + "width: " + (100 * ((subEnd - subStart) / featLength)) + "%;";
+    subDiv.subfeature = subfeature;
+    if (this.featureCallback)
+        this.featureCallback(subfeature, this.subFields, subDiv);
+    featDiv.appendChild(subDiv);
+    return subDiv;
+};
 */
 
 AnnotTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
 						 displayStart, displayEnd, block) {
     var subdiv = DraggableFeatureTrack.prototype.renderSubfeature.call(this, feature, featDiv, subfeature, 
 								       displayStart, displayEnd, block);
+    /**
+     *  setting up annotation resizing via pulling of left/right edges
+     */
     if (subdiv && subdiv != null)  {
 	$(subdiv).bind("mousedown", this.annotMouseDown);
     }
+    return subdiv;
 };
+
 
 AnnotTrack.prototype.showRange = function(first, last, startBase, bpPerBlock, scale,
 					  containerStart, containerEnd) {
@@ -313,6 +513,10 @@ AnnotTrack.prototype.onFeatureMouseDown = function(event) {
     }
 };
 
+/** 
+ *   handles mouse down on an annotation
+ *   to make the annotation resizable by pulling the left/right edges
+ */
 AnnotTrack.prototype.onAnnotMouseDown = function(event)  {
     var track = this;
     track.last_mousedown_event = event;
