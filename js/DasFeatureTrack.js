@@ -46,16 +46,6 @@ DasFeatureTrack.prototype.fillBlock = function(blockIndex, block,
 };
 */
 
-/*
- *DasFeatureTrack.prototype.handleSubFeatures = function(feature, featDiv,
-						     displayStart, displayEnd, block)  {
-    var subfeatures = this.fields["subfeatures"];
-    for (var i = 0; i < feature[subfeatures].length; i++) {
-	var subfeature = feature[subfeatures][i];
-	this.renderSubfeature(feature, featDiv, subfeature, displayStart, displayEnd, block);
-    }
-}
-*/
 
 /*
 Copyright (c) 2007-2010 The Evolutionary Software Foundation & BerkeleyBOP
