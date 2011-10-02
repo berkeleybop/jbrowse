@@ -1216,7 +1216,7 @@ AnnotTrack.prototype.getSequenceForSelectedFeatures = function(annots) {
 	    	    			textAreaContent += residues.substr(j, lineLength) + "\n";
 	    	    		}
 	    	    	}
-	    	    	textArea.innerHTML = textAreaContent;
+	    	    	dojo.attr(textArea, "innerHTML", textAreaContent);
 	    	    },
 	    	    // The ERROR function will be called in an error case.
 	    	    error: function(response, ioArgs) { // 
@@ -1238,30 +1238,18 @@ AnnotTrack.prototype.getSequenceForSelectedFeatures = function(annots) {
 		var type;
 		var target = event.target || event.srcElement;
 		if (target == peptideButton || target == peptideButtonLabel) {
-			if (dojo.attr(peptideButton, "checked")) {
-				return;
-			}
 			dojo.attr(peptideButton, "checked", true);
 			type = "peptide";
 		}
 		else if (target == cdnaButton || target == cdnaButtonLabel) {
-			if (dojo.attr(cdnaButton, "checked")) {
-				return;
-			}
 			dojo.attr(cdnaButton, "checked", true);
 			type = "cdna";
 		}
 		else if (target == cdsButton || target == cdsButtonLabel) {
-			if (dojo.attr(cdsButton, "checked")) {
-				return;
-			}
 			dojo.attr(cdsButton, "checked", true);
 			type = "cds";
 		}
 		else if (target == genomicButton || target == genomicButtonLabel) {
-			if (dojo.attr(genomicButton, "checked")) {
-				return;
-			}
 			dojo.attr(genomicButton, "checked", true);
 			type = "genomic";
 		}
@@ -1272,16 +1260,16 @@ AnnotTrack.prototype.getSequenceForSelectedFeatures = function(annots) {
 		fetchSequence(type);
 	};
 	
-	peptideButton.onchange = callback;
-	peptideButtonLabel.onclick = callback;
-	cdnaButton.onchange = callback;
-	cdnaButtonLabel.onclick = callback;
-	cdsButton.onchange = callback;
-	cdsButtonLabel.onclick = callback;
-	genomicButton.onchange = callback;
-	genomicButtonLabel.onclick = callback;
-	genomicWithFlankButton.onchange = callback;
-	genomicWithFlankButtonLabel.onclick = callback;
+	dojo.connect(peptideButton, "onchange", null, callback);
+	dojo.connect(peptideButtonLabel, "onclick", null, callback);
+	dojo.connect(cdnaButton, "onchange", null, callback);
+	dojo.connect(cdnaButtonLabel, "onclick", null, callback);
+	dojo.connect(cdsButton, "onchange", null, callback);
+	dojo.connect(cdsButtonLabel, "onclick", null, callback);
+	dojo.connect(genomicButton, "onchange", null, callback);
+	dojo.connect(genomicButtonLabel, "onclick", null, callback);
+	dojo.connect(genomicWithFlankButton, "onchange", null, callback);
+	dojo.connect(genomicWithFlankButtonLabel, "onclick", null, callback);
 	
 	fetchSequence("peptide");
 	this.openDialog("Sequence", content);
