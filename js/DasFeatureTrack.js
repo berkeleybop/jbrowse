@@ -1,32 +1,33 @@
 /* 
-   DasFeatureTrack ==> FeatureTrack ==> Track
-   extending / "subclassing" FeatureTrack to modify a few methods to handle differences 
-   between standard JBrowse features and DAS features (and their corresponding NCLists)
-   Main differences:
-        DAS features have full subfeature info embedded in same JSON, 
-	     whereas JBrowse features have pointers into other JSON files 
-	     for subfeature data
-	DAS features use the DAS feature id for determining uniqueness, 
-	     whereas JBrowse features use path in their NCList 
-	     due to way DAS is queried, the same DAS feature could be in two different
-	     NCLists and have different paths in those different NCLists, so 
-	     can't use same mechanism.
-	     And JBrowse features aren't guaranteed to have a uniques id/name, 
-	     so can't use same method as DAS either
+   DasFeatureTrack ==> DraggableFeatureTrack ==> FeatureTrack ==> Track
+   most of the previous differences between DAS tracks and DraggableFeatureTracks have 
+      been refactored and pushed down into DraggableFeatureTrack or FeatureTrack
+      only remaining difference is suppression of switch to histogram rendering 
+      when zoomed out -- DAS feature loading does not yet support histogram summaries
 
-   For object-oriented correctness, 
-        may want to split these same methods off for standard JBrowse features into 
-	a subclass too, instead of being in the base class and being overriden here:
-	StandardFeatureTrack ==> FeatureTrack ==> Track
+   Unique Identity, DAS features, and NCLists:
+      The NCLists used in DAS tracks do not strictly meet the full requirements 
+      for nested containment lists.  In particular, the same DAS feature can be in 
+      two (or more) different NCList containers (whereas in a strict nested containment 
+      list each feature could only be in one container)
+
+      Standard JBrowse features aren't guaranteed to have a unique id/name field, but are 
+          each feature is guaranteed to have a unique path through the NCLists to that feature.  
+          Therefore unique IDs are generated for JBrowse features based on the features path 
+          in the NCLists.
+          But can't do this for DAS features because two different NCList paths could lead to 
+          the same feature.  However DAS features _are_ guaranteed to have a unique id
+          Therefore instead of NCList path, DAS features use the DAS feature id for determining uniqueness
+      Code for this is now pushed down into FeatureTrack.getId(), and unique id field is 
+          indicated for a DAS track (or other tracks with unique ids for each features) in 
+          the trackData.json with the "uniqueIdField" setting
  */
 
 function DasFeatureTrack(trackMeta, url, refSeq, browserParams) {
     DraggableFeatureTrack.call(this, trackMeta, url, refSeq, browserParams);
-    // FeatureTrack.call(this, trackMeta, url, refSeq, browserParams);
 }
 
 DasFeatureTrack.prototype = new DraggableFeatureTrack();
-//DasFeatureTrack.prototype = new FeatureTrack();
 
 DasFeatureTrack.prototype.fillBlock = function(blockIndex, block,
                                             leftBlock, rightBlock,
@@ -45,7 +46,6 @@ DasFeatureTrack.prototype.fillBlock = function(blockIndex, block,
     return feature[fid];
 };
 */
-
 
 /*
 Copyright (c) 2007-2010 The Evolutionary Software Foundation & BerkeleyBOP
