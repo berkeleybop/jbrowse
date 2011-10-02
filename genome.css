@@ -632,6 +632,7 @@ div.transcript-hist {
     background-repeat: no-repeat;
 }
 
+.transcript-CDS, 
 .plus-transcript-CDS,
 .minus-transcript-CDS {
     position: absolute;
@@ -651,10 +652,12 @@ div.transcript-hist {
     min-width: 1px;
 }
 
+.transcript-exon, 
 .plus-transcript-exon,
 .minus-transcript-exon,
 .plus-transcript-UTR, 
 .minus-transcript-UTR,
+.transcript-UTR, 
 .plus-transcript-five_prime_UTR,
 .minus-transcript-five_prime_UTR,
 .plus-transcript-three_prime_UTR,
@@ -727,10 +730,13 @@ div.generic_parent-hist {
     cursor: pointer;
 }
 
+
+
 /**
 *  visual rendering of annot as line centered within the annot
 */
-.annotline {
+.newtrans-visual, 
+.annot-visual {
     position: absolute;
     height: 4px;
     margin-top: 6px;
@@ -749,6 +755,10 @@ div.generic_parent-hist {
 *  annot div is just a holder for any children, and annotline div
 *  this allows proper outlining of selected annots
 */
+.newtrans, 
+.plus-newtrans, 
+.minus-newtrans, 
+.annot,  
 .plus-annot,
 .minus-annot {
     position: absolute;
@@ -765,6 +775,7 @@ div.generic_parent-hist {
     cursor: pointer;
    /* outline: 2px solid black */
 }
+
 /*
 .plus-annot,
 .minus-annot {
@@ -783,6 +794,10 @@ div.generic_parent-hist {
 *  annotation exon divs are container for UTR and CDS divs, and also allows selection of 
 *     whole exon rather than just UTR or CDS
 */
+.newtrans-exon,
+.plus-newtrans-exon, 
+.minus-newtrans-exon, 
+.annot-exon, 
 .plus-annot-exon, 
 .minus-annot-exon  {
     position: absolute;
@@ -813,7 +828,10 @@ div.generic_parent-hist {
 }
 
 /** styles for annotations (features in AnnotTracks) */
-.annot-CDS, sub
+.newtrans-CDS, 
+.plus-newtrans-CDS, 
+.minus-newtrans-CDS, 
+.annot-CDS, 
 .plus-annot-CDS,
 .minus-annot-CDS {
     position: absolute;
@@ -832,6 +850,9 @@ div.generic_parent-hist {
     -ms-box-sizing: border-box;
 }
 
+.newtrans-UTR, 
+.plus-newtrans-UTR, 
+.minus-newtrans-UTR, 
 .annot-UTR, 
 .plus-annot-UTR, 
 .minus-annot-UTR {
@@ -856,7 +877,27 @@ div.generic_parent-hist {
     -ms-box-sizing: border-box;
 }
 
+.unknown, 
+.plus-unknown, 
+.minus-unknown  {
+    position:absolute;
+    height: 12px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    background: gray;
+    border: 1px solid black;
+    z-index: 8;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
 
+
+
+.plus-newtrans-arrowhead, 
 .plus-annot-arrowhead {
     position: absolute;
 /*    margin-top: -4px; */
@@ -867,6 +908,7 @@ div.generic_parent-hist {
     background-repeat: no-repeat;
 }
 
+.minus-newtrans-arrowhead, 
 .minus-annot-arrowhead {
     position: absolute;
 /*   margin-top: -4px; */
