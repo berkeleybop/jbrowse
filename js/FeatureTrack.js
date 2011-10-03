@@ -71,13 +71,23 @@ FeatureTrack.prototype.loadSuccess = function(trackInfo) {
             this.subFields[trackInfo.subfeatureHeaders[i]] = i;
         }
     }
-    var importBaseUrl = this.trackBaseUrl;
+    var importBaseUrl; 
+    /* ignoreTrackBaseUrl is deprecated (eventually TO BE REMOVED) */
     if (trackInfo.ignoreTrackBaseUrl)  {
-	console.log("ignoring trackBaseUrl: " + this.trackBaseUrl);
+	console.log("ignoreTrackBaseUrl param true, so ignoring trackBaseUrl: " + this.trackBaseUrl);
+	importBaseUrl = "";
+    }
+    // if lazyfeatureUrlTemplate is full URI, then don't prepend trackBaseUrl
+    //     else if ( /^http:/.test(trackInfo.lazyfeatureUrlTemplate) || 
+    //               /^file:/.test(trackInfo.lazyfeatureUrlTemplate) )  {
+    else if (Util.startsWith(trackInfo.lazyfeatureUrlTemplate, "http:") || 
+	     Util.startsWith(trackInfo.lazyfeatureUrlTemplate, "file:")) {
+	console.log("lazyfeatureUrlTemplate is full URI, so ignoring trackBaseUrl: " + this.trackBaseUrl);
 	importBaseUrl = "";
     }
     else  {
 	console.log("trackBaseUrl: " + this.trackBaseUrl);
+	importBaseUrl = this.trackBaseUrl;
     }
     console.log("url_template: " + trackInfo.lazyfeatureUrlTemplate);
     this.features.importExisting(trackInfo.featureNCList,
