@@ -185,8 +185,23 @@ Util.relativeXY = function(event, elem)  {
 };
 
 
-/*
+/* returns true if string str starts with string prefix (exact match)
+ * returns false otherwise
+ * (not sure if needed though, in most cases /^prefix/.test(str) does same thing?
+ */
+Util.startsWith = function(str, prefix)  {
+    return (str.lastIndexOf(prefix, 0) === 0);
+}
 
+/* returns true if string str ends with string suffix (exact match)
+ *
+ * (not sure if needed though, in most cases /^prefix/.test(str) does same thing?
+ */
+Util.endsWith = function(str, suffix)  {
+    return (str.indexOf(suffix, str.length - suffix.length) !== -1);
+}
+
+/*
 Copyright (c) 2007-2010 The Evolutionary Software Foundation
 
 Created by Mitchell Skinner <mitch_skinner@berkeley.edu>
