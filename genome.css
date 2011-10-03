@@ -732,16 +732,49 @@ div.generic_parent-hist {
 
 
 
+.unknown, 
+.plus-unknown, 
+.minus-unknown  {
+    position:absolute;
+    height: 12px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    background: gray;
+    border: 1px solid black;
+    z-index: 8;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+/**
+*  trellis-transcript div is just a holder for any subfeature divs, as 
+*     well as arrowhead and trellis-transcript-render divs/decorations
+*  this allows proper outlining of selected annots
+*/
+.trellis-transcript, 
+.plus-trellis-transcript, 
+.minus-trellis-transcript  {
+    position: absolute;
+    height: 16px;
+    margin-top: 0px;
+    z-index: 6;
+    min-width: 1px;
+    cursor: pointer;
+}
+
 /**
 *  visual rendering of annot as line centered within the annot
 */
-.newtrans-visual, 
-.annot-visual {
+.trellis-transcript-render  {
     position: absolute;
     height: 4px;
     margin-top: 6px;
     margin-bottom: 6px;  /* don't think this actually is needed */
-    background-color: green;
+    background-color: #AA86B7;
     /* annotline div may be added to annot div _after_ child feature divs, so 
        if want child divs in front of annotline, make sure has lower 
        z-index than child divs */
@@ -752,12 +785,62 @@ div.generic_parent-hist {
 }
 
 /**
-*  annot div is just a holder for any children, and annotline div
-*  this allows proper outlining of selected annots
+*  annotation exon divs are container for UTR and CDS divs, and also allows selection of 
+*     whole exon rather than just UTR or CDS
 */
-.newtrans, 
-.plus-newtrans, 
-.minus-newtrans, 
+.trellis-exon,
+.plus-trellis-exon, 
+.minus-trellis-exon {
+    position: absolute;
+    height: 16px;
+    margin-top: 0px;
+    z-index: 6;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+/*   CDS derived from transcript/exon/wholeCDS annotations served from trellis */
+.trellis-CDS, 
+.plus-trellis-CDS, 
+.minus-trellis-CDS  {
+    position: absolute;
+    height: 12px;
+    margin-top: 2px;
+    background-color: #D8BDEB;
+    border-style: solid;
+    border-color: #01F;
+    border-width: 1px;
+    cursor: pointer;
+    z-index: 10;
+    min-width: 1px;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+/**  UTR derived from transcript/exon/wholeCDS annotations served from trellis */
+.trellis-UTR, 
+.plus-trellis-UTR, 
+.minus-trellis-UTR {
+    position: absolute;
+    height: 8px; 
+    margin-top: 4px;
+    background-color: #8F408F;
+    z-index: 8;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+/** container */
 .annot,  
 .plus-annot,
 .minus-annot {
@@ -765,11 +848,11 @@ div.generic_parent-hist {
     height: 16px;
     margin-top: 0px;
     /* margin-bottom: 0px; 
-       margin-bottom is ignored, since nothing else is positioned relative to bottom of margin?
+       margin-bottom is ignored, 
+       since nothing else is positioned relative to bottom of margin?
        though probably should be factored into label placement?
        
     */
-/*    background-color: #99F; */
     z-index: 6;
     min-width: 1px;
     cursor: pointer;
@@ -789,48 +872,37 @@ div.generic_parent-hist {
     cursor: pointer;
 }
 */
+.annot-render {
+    position: absolute;
+    height: 4px;
+    margin-top: 6px;
+    margin-bottom: 6px;  /* don't think this actually is needed */
+    background-color: blue;
+    /* annotline div may be added to annot div _after_ child feature divs, so 
+       if want child divs in front of annotline, make sure has lower 
+       z-index than child divs */
+    z-index: 2;  
+    min-width: 1px;
+    cursor: pointer;
+    width: 100%;
+}
 
-/**
-*  annotation exon divs are container for UTR and CDS divs, and also allows selection of 
-*     whole exon rather than just UTR or CDS
-*/
-.newtrans-exon,
-.plus-newtrans-exon, 
-.minus-newtrans-exon, 
 .annot-exon, 
 .plus-annot-exon, 
 .minus-annot-exon  {
     position: absolute;
     height: 16px;
     margin-top: 0px;
-    /* margin-bottom: 0px; 
-       margin-bottom is ignored, since nothing else is positioned relative to bottom of margin?
-       though probably should be factored into label placement?
-       
-    */
-/*    background-color: #99F; */
-/*    border: 1px solid blac;k */
     z-index: 6;
     min-width: 1px;
     cursor: pointer;
-
     box-sizing: border-box;
     -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;
     -ms-box-sizing: border-box;
 }
 
-.plus-annot-wholeCDS, 
-.minus-annot-wholeCDS {
-    position: absolute;
-    background-color: pink;
-    height: 7px;
-}
-
-/** styles for annotations (features in AnnotTracks) */
-.newtrans-CDS, 
-.plus-newtrans-CDS, 
-.minus-newtrans-CDS, 
+ 
 .annot-CDS, 
 .plus-annot-CDS,
 .minus-annot-CDS {
@@ -850,9 +922,7 @@ div.generic_parent-hist {
     -ms-box-sizing: border-box;
 }
 
-.newtrans-UTR, 
-.plus-newtrans-UTR, 
-.minus-newtrans-UTR, 
+
 .annot-UTR, 
 .plus-annot-UTR, 
 .minus-annot-UTR {
@@ -877,27 +947,16 @@ div.generic_parent-hist {
     -ms-box-sizing: border-box;
 }
 
-.unknown, 
-.plus-unknown, 
-.minus-unknown  {
-    position:absolute;
-    height: 12px;
-    margin-top: 2px;
-    margin-bottom: 2px;
-    background: gray;
-    border: 1px solid black;
-    z-index: 8;
-    min-width: 1px;
-    cursor: pointer;
-    box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    -webkit-box-sizing: border-box;
-    -ms-box-sizing: border-box;
+/*
+.plus-annot-wholeCDS, 
+.minus-annot-wholeCDS {
+    position: absolute;
+    background-color: pink;
+    height: 7px;
 }
+*/
 
-
-
-.plus-newtrans-arrowhead, 
+.plus-trellis-arrowhead, 
 .plus-annot-arrowhead {
     position: absolute;
 /*    margin-top: -4px; */
@@ -908,7 +967,7 @@ div.generic_parent-hist {
     background-repeat: no-repeat;
 }
 
-.minus-newtrans-arrowhead, 
+.minus-trellis-arrowhead, 
 .minus-annot-arrowhead {
     position: absolute;
 /*   margin-top: -4px; */
@@ -1059,7 +1118,7 @@ div.canvas-track-control {
     height: 250px;
     padding: 10px;
     z-index: 190;
-    background-color: white; */
-/* background-color: #005555; */
+    background-color: white; 
+    /* background-color: #005555; */
     border: 2px black solid;
 }
