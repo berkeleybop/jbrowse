@@ -46,8 +46,7 @@ JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
     // console.log("JSON: " + JSON.stringify(afeature));
     // console.log("JSONUtils.createJBrowseFeature, input feature:");
     // console.log(afeature);
-    var PASSTHROUGH = false;
-    var PROCESS_CDS = true;
+    // var CONVERT_UTR_CDS = false;
 
     var jfeature = new Array();
     var loc = afeature.location;
@@ -90,7 +89,7 @@ JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
 };
 
 /*
- JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
+ JSONUtils.createJBrowseFeature2 = function(afeature, fields, subfields)  {
     // console.log("JSON: " + JSON.stringify(afeature));
     console.log(afeature);
     var PASSTHROUGH = false;
@@ -101,14 +100,12 @@ JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
     jfeature[fields["start"]] = loc.fmin;
     jfeature[fields["end"]] = loc.fmax;
     jfeature[fields["strand"]] = loc.strand;
- 
    if (fields["id"])  {
 	jfeature[fields["id"]] = uid;
     }
     if (fields["name"])  {
 	jfeature[fields["name"]] = uid;
     }
-
     if (fields["type"])  { 
 	var type = afeature.type.name;
 	if (type == "exon")  {
@@ -122,10 +119,7 @@ JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
     var children = afeature.children;
     if (fields["subfeatures"] && children)  {
 	jfeature[fields["subfeatures"]] = new Array();
-	
 	var clength = children.length;
-
-
 	var cds = null;
 	for (var i = 0; i < clength; ++i) {
 	    var achild = children[i];
@@ -212,12 +206,10 @@ JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
 		jfeature[fields["subfeatures"]].push(jchild);
 	    }
 	}
-
     }
     jfeature.uid = uid;
     return jfeature;
 };
-*/
 
 /** 
 *  creates a feature in ApolloEditorService JSON format
@@ -279,7 +271,14 @@ JSONUtils.createApolloFeature = function(jfeature, fields, subfields, specified_
 		var subfeat = subfeats[i];
 		if (subfields)  {
 		    // afeature.children[i] = JSONUtils.createApolloFeature(subfeat, subfields); 
-		    afeature.children[i] = JSONUtils.createApolloFeature(subfeat, subfields, subfields, "exon"); 
+		    var subtype = subfeat[subfields["type"]];
+		    // if "wholeCDS", then translate to the equivalent "CDS" for server
+		    if (subtype === "wholeCDS")  {
+			afeature.children[i] = JSONUtils.createApolloFeature(subfeat, subfields, subfields, "CDS"); 
+		    }
+		    else  {  // currently clietn "CDS" (CDS-segment), "UTR", etc. are all converted to "exon"
+			afeature.children[i] = JSONUtils.createApolloFeature(subfeat, subfields, subfields, "exon"); 	
+		    }
 		}
 		else  {
 		    afeature.children[i] = JSONUtils.createApolloFeature(subfeat, fields, fields); 
@@ -290,11 +289,6 @@ JSONUtils.createApolloFeature = function(jfeature, fields, subfields, specified_
     return afeature;
 };
 
-/*
-JSONUtils.createJBrowseFeature = function(apollo_feature, fields)  {
-    
-}
-*/
 
 /*
 *  takes a feature from a source_track and returns equivalent feature for a target_track, 

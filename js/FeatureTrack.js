@@ -20,6 +20,7 @@ function FeatureTrack(trackMeta, url, refSeq, browserParams) {
     this.fields = {};
     this.features = new NCList();
     this.refSeq = refSeq;
+    // baseUrl is dataRoot param passed to Browser constructor in index.html
     this.baseUrl = (browserParams.baseUrl ? browserParams.baseUrl : "");
     this.url = url;
     this.trackBaseUrl = (this.baseUrl + url).match(/^.+\//);
@@ -28,8 +29,12 @@ function FeatureTrack(trackMeta, url, refSeq, browserParams) {
     this.histLabel = false;
     this.padding = 5;
     this.trackPadding = browserParams.trackPadding;
+    console.log("baseUrl: " + this.baseUrl);
+    console.log("url: " + this.url);
+    console.log("trackBaseUrl: " + this.trackBaseUrl);
 
     this.trackMeta = trackMeta;
+
     this.load(this.baseUrl + url);
 
     var thisObj = this;
@@ -66,10 +71,25 @@ FeatureTrack.prototype.loadSuccess = function(trackInfo) {
             this.subFields[trackInfo.subfeatureHeaders[i]] = i;
         }
     }
-    var importBaseUrl = this.trackBaseUrl;
+    var importBaseUrl; 
+    /* ignoreTrackBaseUrl is deprecated (eventually TO BE REMOVED) */
     if (trackInfo.ignoreTrackBaseUrl)  {
+	console.log("ignoreTrackBaseUrl param true, so ignoring trackBaseUrl: " + this.trackBaseUrl);
 	importBaseUrl = "";
     }
+    // if lazyfeatureUrlTemplate is full URI, then don't prepend trackBaseUrl
+    //     else if ( /^http:/.test(trackInfo.lazyfeatureUrlTemplate) || 
+    //               /^file:/.test(trackInfo.lazyfeatureUrlTemplate) )  {
+    else if (Util.startsWith(trackInfo.lazyfeatureUrlTemplate, "http:") || 
+	     Util.startsWith(trackInfo.lazyfeatureUrlTemplate, "file:")) {
+	console.log("lazyfeatureUrlTemplate is full URI, so ignoring trackBaseUrl: " + this.trackBaseUrl);
+	importBaseUrl = "";
+    }
+    else  {
+	console.log("trackBaseUrl: " + this.trackBaseUrl);
+	importBaseUrl = this.trackBaseUrl;
+    }
+    console.log("url_template: " + trackInfo.lazyfeatureUrlTemplate);
     this.features.importExisting(trackInfo.featureNCList,
                                  trackInfo.sublistIndex,
                                  trackInfo.lazyIndex,
@@ -85,6 +105,10 @@ FeatureTrack.prototype.loadSuccess = function(trackInfo) {
     this.labelScale = 50 * (trackInfo.featureCount / this.refSeq.length);
     this.subfeatureScale = 80 * (trackInfo.featureCount / this.refSeq.length);
     this.className = trackInfo.className;
+    this.renderClassName = trackInfo.renderClassName;
+//    var cssStyle = Util.getCssStyle(this.className, "genome_styles");
+//    console.log("CSS style for track " + this.name + ", class mapping: " + this.className);
+//    console.log(cssStyle);
     this.subfeatureClasses = trackInfo.subfeatureClasses;
     this.arrowheadClass = trackInfo.arrowheadClass;
     this.urlTemplate = trackInfo.urlTemplate;
@@ -689,9 +713,19 @@ FeatureTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
 	subfeature.track = this;
     }
 
+
     var className = null;
+    var tempName = null;
     if (this.subfeatureClasses) {
-        var tempName = this.subfeatureClasses[subfeature[this.subFields["type"]]];
+        tempName = this.subfeatureClasses[subfeature[this.subFields["type"]]];
+	// console.log("type: " + subfeature[this.subFields["type"]] + ", mapping: " + tempName);
+	// type undefined, then assign "unknown" className root 
+	//     (so subfeature is rendered with default "unknown" CSS styling)
+	// type = null, then className = null (so subfeature is not rendered as a div at all)
+	// otherwise use tempName as className root (so subfeature is rendered with based on type name
+	if (tempName === undefined) {
+	    tempName = "unknown";  
+	}
 	if (tempName)  {
             switch (subfeature[this.subFields["strand"]]) {
             case 1:
@@ -709,7 +743,8 @@ FeatureTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
 	}
     }
 
-    // if no mapping of subfeature to a CSS class name for styling, then don't render the feature
+    //    console.log("className: " + className);
+    // if subfeatureClasses specifies subfeature maps to null, then don't render the feature
     if (!className)  {
 	return null;
     }

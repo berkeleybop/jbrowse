@@ -221,6 +221,16 @@ DraggableFeatureTrack.prototype.renderFeature = function(feature, uniqueId, bloc
 	// using JQuery bind() will normalize events to W3C spec (don't have to worry about IE inconsistencies, etc.)
 	$featdiv.bind("mousedown", this.featMouseDown);
 	$featdiv.bind("dblclick", this.featDoubleClick);
+
+	// if renderClassName field exists in trackData.json for this track, then add a child 
+	//    div to the featdiv with class for CSS styling set to renderClassName value
+	if (this.renderClassName)  {
+	    // console.log("in FeatureTrack.renderFeature, creating annot div");
+	    var rendiv = document.createElement("div");
+	    rendiv.className = this.renderClassName;
+	    if (Util.is_ie6) rendiv.appendChild(document.createComment());
+	    featdiv.appendChild(rendiv);
+	}
     }
     return featdiv;
 };
@@ -239,6 +249,156 @@ DraggableFeatureTrack.prototype.renderSubfeature = function(feature, featDiv, su
 	$subfeatdiv.bind("dblclick", this.featDoubleClick);
     }
     return subfeatdiv;
+};
+
+/**
+ * overriding handleSubFeatures for customized handling of UTR/CDS-segment rendering within exon divs
+ */
+DraggableFeatureTrack.prototype.handleSubFeatures = function(feature, featDiv, 
+						    displayStart, displayEnd, block)  {
+    // only way to get here is via renderFeature(parent,...), 
+    //   so parent guaranteed to have unique ID set by now
+    var parentId = feature.uid;  
+    var subfeats = feature[this.fields["subfeatures"]];
+    var slength = subfeats.length;
+    var subfeat;
+    var wholeCDS = null;
+    var subtype;
+    var i;
+    for (i=0; i < slength; i++)  {
+	subfeat = subfeats[i];
+	subtype = subfeat[this.subFields["type"]];
+	if (subtype === "wholeCDS") {
+	    wholeCDS = subfeat;
+	    break;
+	}
+    }
+    if (wholeCDS) {
+	var cdsStart = wholeCDS[this.subFields["start"]];
+	var cdsEnd = wholeCDS[this.subFields["end"]];
+	//    current convention is start = min and end = max regardless of strand, but checking just in case
+	var cdsMin = Math.min(cdsStart, cdsEnd);
+	var cdsMax = Math.max(cdsStart, cdsEnd);
+	if (this.verbose_render)  { console.log("wholeCDS:"); console.log(wholeCDS); }
+    }
+
+    for (i = 0; i < slength; i++) {
+	subfeat = subfeats[i];
+	var uid = subfeat.uid;
+	if (!uid)  {
+	    uid = this.getSubfeatId(subfeat, i, parentId);
+	    subfeat.uid= uid;
+	}
+	subtype = subfeat[this.subFields["type"]];
+	// don't render "wholeCDS" type
+	// although if subfeatureClases is properly set up, wholeCDS would also be filtered out in renderFeature?
+	// if (subtype == "wholeCDS")  {  continue; }
+        var subDiv = this.renderSubfeature(feature, featDiv, subfeat, displayStart, displayEnd, block);
+	// if subfeat is of type "exon", add CDS/UTR rendering
+	if (subDiv && wholeCDS && (subtype === "exon")) {
+	    this.renderExonSegments(subfeat, subDiv, cdsMin, cdsMax, displayStart, displayEnd);
+	}
+	if (this.verbose_render)  { 
+	    console.log("in DraggableFeatureTrack.handleSubFeatures, subDiv: ");
+	    console.log(subDiv);
+	}
+    }
+};
+
+
+/**
+ *  TODO: still need to factor in truncation based on displayStart and displayEnd???
+ */
+DraggableFeatureTrack.prototype.renderExonSegments = function(subfeature, subDiv, cdsMin, cdsMax, displayStart, displayEnd)  {
+    var subStart = subfeature[this.subFields["start"]];
+    var subEnd = subfeature[this.subFields["end"]];
+    var subLength = subEnd - subStart;
+    // look for UTR and CDS subfeature class mapping from trackData
+    //    if can't find, then default to parent feature class + "-UTR" or "-CDS"
+    var UTRclass = this.subfeatureClasses["UTR"];
+    var CDSclass = this.subfeatureClasses["CDS"];
+    if (! UTRclass)  { UTRclass = this.className + "-UTR"; }
+    if (! CDSclass)  { CDSclass = this.className + "-CDS"; }
+		       
+
+    // if the feature has been truncated to where it doesn't cover
+    // this subfeature anymore, just skip this subfeature
+    if ((subEnd <= displayStart) || (subStart >= displayEnd)) return undefined;
+
+    var segDiv;
+    // whole exon is untranslated
+    if (cdsMax <= subStart || cdsMin >= subEnd)  {
+	segDiv = document.createElement("div");
+	// not worrying about appending "plus-"/"minus-" based on strand yet
+	segDiv.className = UTRclass;
+	if (Util.is_ie6) segDiv.appendChild(document.createComment());
+	segDiv.style.cssText =
+            "left: " + (100 * ((subStart - subStart) / subLength)) + "%;"
+            + "top: 0px;"
+            + "width: " + (100 * ((subEnd - subStart) / subLength)) + "%;";
+	subDiv.appendChild(segDiv);
+    }
+    // whole exon is translated
+    else if (cdsMin <= subStart && cdsMax >= subEnd) {
+	segDiv = document.createElement("div");
+	// not worrying about appending "plus-"/"minus-" based on strand yet
+	segDiv.className = CDSclass;
+	
+	if (Util.is_ie6) segDiv.appendChild(document.createComment());
+	segDiv.style.cssText =
+            "left: " + (100 * ((subStart - subStart) / subLength)) + "%;"
+            + "top: 0px;"
+            + "width: " + (100 * ((subEnd - subStart) / subLength)) + "%;";
+	subDiv.appendChild(segDiv);
+    }
+    // partial translation of exon
+    else  {
+	// calculate 5'UTR, CDS segment, 3'UTR
+	var cdsSegStart = Math.max(cdsMin, subStart);
+	var cdsSegEnd = Math.min(cdsMax, subEnd);
+	var utrStart;
+	var utrEnd;
+	// make left UTR (if needed)
+	if (cdsMin > subStart) {
+	    utrStart = subStart;
+	    utrEnd = cdsSegStart;
+	    segDiv = document.createElement("div");
+	    // not worrying about appending "plus-"/"minus-" based on strand yet
+	    segDiv.className = UTRclass;
+	    if (Util.is_ie6) segDiv.appendChild(document.createComment());
+	    segDiv.style.cssText =
+		"left: " + (100 * ((utrStart - subStart) / subLength)) + "%;"
+		+ "top: 0px;"
+		+ "width: " + (100 * ((utrEnd - utrStart) / subLength)) + "%;";
+	    subDiv.appendChild(segDiv);
+	}
+	// make CDS segment
+	segDiv = document.createElement("div");
+	// not worrying about appending "plus-"/"minus-" based on strand yet
+	segDiv.className = CDSclass;
+	if (Util.is_ie6) segDiv.appendChild(document.createComment());
+	segDiv.style.cssText =
+            "left: " + (100 * ((cdsSegStart - subStart) / subLength)) + "%;"
+            + "top: 0px;"
+            + "width: " + (100 * ((cdsSegEnd - cdsSegStart) / subLength)) + "%;";
+	subDiv.appendChild(segDiv);
+
+	// make right UTR  (if needed)
+	if (cdsMax < subEnd)  {
+	    utrStart = cdsSegEnd;
+	    utrEnd = subEnd;
+	    segDiv = document.createElement("div");
+	    // not worrying about appending "plus-"/"minus-" based on strand yet
+	    segDiv.className = UTRclass;
+	    if (Util.is_ie6) segDiv.appendChild(document.createComment());
+	    segDiv.style.cssText =
+		"left: " + (100 * ((utrStart - subStart) / subLength)) + "%;"
+		+ "top: 0px;"
+		+ "width: " + (100 * ((utrEnd - utrStart) / subLength)) + "%;";
+	    subDiv.appendChild(segDiv);
+	}
+    }
+    return null;
 };
 
 
