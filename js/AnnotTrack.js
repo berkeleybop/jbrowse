@@ -1140,6 +1140,50 @@ AnnotTrack.prototype.makeIntronInExon = function(annots, event) {
     }
 };
 
+AnnotTrack.prototype.setTranslationStart = function(event)  {
+    var selected = this.selectionManager.getSelection();
+    this.selectionManager.clearSelection();
+    this.setTranslationStartInCDS(selected, event);
+};
+
+AnnotTrack.prototype.setTranslationStartInCDS = function(annots, event) {
+    if (annots.length > 1) {
+    	return;
+    }
+    var track = this;
+    var annot = annots[0];
+	var coordinate = this.gview.getGenomeCoord(event);
+    var features = '"features": [ { "uniquename": "' + annot.parent.uid + '", "location": { "fmin": ' + coordinate + ' } } ]';
+    var operation = "set_translation_start";
+    var trackName = track.getUniqueTrackName();
+    if (AnnotTrack.USE_LOCAL_EDITS)  {
+        // TODO
+        track.hideAll();
+        track.changed();
+    }
+    else  {
+    	dojo.xhrPost( {
+    	    postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }',
+    	    url: context_path + "/AnnotationEditorService",
+    	    handleAs: "json",
+    	    timeout: 5000 * 1000, // Time in milliseconds
+    	    load: function(response, ioArgs) {
+    	    	// TODO
+    	    },
+    	    // The ERROR function will be called in an error case.
+    	    error: function(response, ioArgs) { // 
+    			track.handleError(response);
+    	    	console.log("Annotation server error--maybe you forgot to login to the server?");
+    	    	console.error("HTTP status code: ", ioArgs.xhr.status); 
+    	    	//
+    	    	//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //  
+    	    	return response; // 
+    	    }
+
+    	});
+    }
+}
+
 AnnotTrack.prototype.undo = function()  {
     var selected = this.selectionManager.getSelection();
     this.selectionManager.clearSelection();
@@ -1549,6 +1593,14 @@ AnnotTrack.prototype.initContextMenu = function() {
 					//    at mouse position of event that triggered annot_context_menu popup
 					onClick: function(event) {
 						thisObj.makeIntron(thisObj.annot_context_mousedown);
+					}
+				} ));
+				annot_context_menu.addChild(new dijit.MenuItem( {
+					label: "Set translation start",
+					// use annot_context_mousedown instead of current event, since want to split 
+					//    at mouse position of event that triggered annot_context_menu popup
+					onClick: function(event) {
+						thisObj.setTranslationStart(thisObj.annot_context_mousedown);
 					}
 				} ));
 				annot_context_menu.addChild(new dijit.MenuItem( {
