@@ -279,7 +279,14 @@ JSONUtils.createApolloFeature = function(jfeature, fields, subfields, specified_
 		var subfeat = subfeats[i];
 		if (subfields)  {
 		    // afeature.children[i] = JSONUtils.createApolloFeature(subfeat, subfields); 
-		    afeature.children[i] = JSONUtils.createApolloFeature(subfeat, subfields, subfields, "exon"); 
+		    var subtype = subfeat[subfields["type"]];
+		    // if "wholeCDS", then translate to the equivalent "CDS" for server
+		    if (subtype === "wholeCDS")  {
+			afeature.children[i] = JSONUtils.createApolloFeature(subfeat, subfields, subfields, "CDS"); 
+		    }
+		    else  {  // currently clietn "CDS" (CDS-segment), "UTR", etc. are all converted to "exon"
+			afeature.children[i] = JSONUtils.createApolloFeature(subfeat, subfields, subfields, "exon"); 	
+		    }
 		}
 		else  {
 		    afeature.children[i] = JSONUtils.createApolloFeature(subfeat, fields, fields); 
@@ -290,11 +297,6 @@ JSONUtils.createApolloFeature = function(jfeature, fields, subfields, specified_
     return afeature;
 };
 
-/*
-JSONUtils.createJBrowseFeature = function(apollo_feature, fields)  {
-    
-}
-*/
 
 /*
 *  takes a feature from a source_track and returns equivalent feature for a target_track, 
