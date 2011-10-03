@@ -222,14 +222,14 @@ DraggableFeatureTrack.prototype.renderFeature = function(feature, uniqueId, bloc
 	$featdiv.bind("mousedown", this.featMouseDown);
 	$featdiv.bind("dblclick", this.featDoubleClick);
 
-	// if internalClassName field exists in trackData.json for this track, then add a child 
-	//    div to the featdiv with class for CSS styling set to internalClassName value
-	if (this.internalClassName)  {
+	// if renderClassName field exists in trackData.json for this track, then add a child 
+	//    div to the featdiv with class for CSS styling set to renderClassName value
+	if (this.renderClassName)  {
 	    // console.log("in FeatureTrack.renderFeature, creating annot div");
-	    var idiv = document.createElement("div");
-	    idiv.className = this.internalClassName;
-	    if (Util.is_ie6) idiv.appendChild(document.createComment());
-	    featdiv.appendChild(idiv);
+	    var rendiv = document.createElement("div");
+	    rendiv.className = this.renderClassName;
+	    if (Util.is_ie6) rendiv.appendChild(document.createComment());
+	    featdiv.appendChild(rendiv);
 	}
     }
     return featdiv;

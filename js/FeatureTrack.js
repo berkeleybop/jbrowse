@@ -105,7 +105,10 @@ FeatureTrack.prototype.loadSuccess = function(trackInfo) {
     this.labelScale = 50 * (trackInfo.featureCount / this.refSeq.length);
     this.subfeatureScale = 80 * (trackInfo.featureCount / this.refSeq.length);
     this.className = trackInfo.className;
-    this.internalClassName = trackInfo.internalClassName;
+    this.renderClassName = trackInfo.renderClassName;
+//    var cssStyle = Util.getCssStyle(this.className, "genome_styles");
+//    console.log("CSS style for track " + this.name + ", class mapping: " + this.className);
+//    console.log(cssStyle);
     this.subfeatureClasses = trackInfo.subfeatureClasses;
     this.arrowheadClass = trackInfo.arrowheadClass;
     this.urlTemplate = trackInfo.urlTemplate;
