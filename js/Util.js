@@ -191,7 +191,7 @@ Util.relativeXY = function(event, elem)  {
  */
 Util.startsWith = function(str, prefix)  {
     return (str.lastIndexOf(prefix, 0) === 0);
-}
+};
 
 /* returns true if string str ends with string suffix (exact match)
  *
@@ -199,7 +199,46 @@ Util.startsWith = function(str, prefix)  {
  */
 Util.endsWith = function(str, suffix)  {
     return (str.indexOf(suffix, str.length - suffix.length) !== -1);
-}
+};
+
+
+/**
+ *  Returns CSS style associated with a given CSS selector in loaded stylesheets, 
+ *      or null if no matching style is found
+ *  Assumes all style selectors are lowercase
+ *  WARNING!  access to styleSheet.cssRules/rules follows same-origin policy, 
+ *            and attempts to access rules of styleSheet loaded from differenct origin
+ *            can throw security exceptions
+ *      it is recommended that stylesheets are given titles, and this function is only 
+ *         called with sheet_title arg for stylesheet that is known to be same-origin
+ */
+Util.getCssStyle = function(selector, sheet_title) {               
+    if (document.styleSheets) {                           
+	var slength = document.styleSheets.length;
+	for (var sindex=0; sindex<slength; sindex++) { 
+            var styleSheet=document.styleSheets[sindex]; 
+            if ( (! sheet_title) || (styleSheet.title === sheet_title)) {
+		// console.log("sheet title: " + styleSheet.title);
+		var rules = styleSheet.cssRules; // Firefox, Safari?
+		if (! rules) {
+		    rules = styleSheet.rules;  // IE
+		}
+		if (rules)  {
+		    var rlength = rules.length;
+		    for (var rindex = 0; rindex<rlength; rindex++) {
+			var rule = rules[rindex];
+			// console.log(rule.selectorText);
+			if (rule.selectorText === selector) { 
+			    return rule;     // found matching rule, return it              
+			}                                      
+		    }                                             
+		} 
+	    }
+	}                                                   
+    }                                                      
+    return null;   // no matching CSS rule found                                       
+};                                          
+
 
 /*
 Copyright (c) 2007-2010 The Evolutionary Software Foundation
