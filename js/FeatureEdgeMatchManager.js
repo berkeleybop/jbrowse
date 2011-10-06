@@ -84,10 +84,16 @@ FeatureEdgeMatchManager.prototype.selectionAdded = function(feat)  {
     var smindex = source_subfields["start"];
     var smaxdex = source_subfields["end"]; 
     if (verbose_edges)  { console.log("qmin = " + qmin + ", qmax = " + qmax); }
-
-    var ftracks = $("div.track").each( function(index, trackdiv)  {
-	var target_track = trackdiv.track;	
-	if (target_track && target_track.features)  {  // only do FeatureTracks
+    
+    var ftracks = $("div.track").each( function(index, trackdiv)  {  
+        var target_track = trackdiv.track;	
+//	if (target_track && target_track.features)  {
+// TEMPORARY FIX for error when dragging track into main view --
+//     if something selected, edge matching attempted on new track, which throws an error:
+//             "target_subfields is undefined"
+//             at "var tmindex = target_subfields["start"];" line below
+//     error possibly due to track's trackData not yet being fully loaded, so check track load field
+         if (target_track && target_track.features && target_track.loaded)  {
 	    if (verbose_edges)  { console.log("edge matching for: " + target_track.name); console.log(trackdiv); }
 	    var nclist = target_track.features;
 	    var target_fields = target_track.fields;
