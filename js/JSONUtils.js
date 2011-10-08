@@ -73,6 +73,16 @@ JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
     if (fields["parent_id"] && afeature.parent_id) {
 	jfeature[fields["parent_id"]] = afeature.parent_id;
     }
+
+    if (afeature.properties) {
+    	for (var i = 0; i < afeature.properties.length; ++i) {
+    		var property = afeature.properties[i];
+    		if (property.type.name == "comment" && property.value == "Manually set translation start") {
+    			jfeature.manuallySetTranslationStart = true;
+    		}
+    	}
+    }
+    
     var children = afeature.children;
     if (fields["subfeatures"] && children)  {
 	jfeature[fields["subfeatures"]] = new Array();
@@ -81,6 +91,9 @@ JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
 	    var achild = children[i];
 	    var jchild =  JSONUtils.createJBrowseFeature(achild, subfields, subfields);
 	    jfeature[fields["subfeatures"]].push(jchild);
+	    if (jchild.manuallySetTranslationStart) {
+	    	jfeature.manuallySetTranslationStart = true;
+	    }
 	}
     }
     // console.log("JSONUtils.createJBrowseFeature, output feature:");

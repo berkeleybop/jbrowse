@@ -78,6 +78,7 @@ dojo.require("dijit.Menu");
 dojo.require("dijit.MenuItem");
 dojo.require("dijit.Dialog");
 var annot_context_menu;
+var contextMenuItems;
 var context_path = "/ApolloWeb";
 // var context_path = "";
 
@@ -147,6 +148,7 @@ AnnotTrack.prototype.createAnnotationChangeListener = function() {
 	},
 	handleAs: "json",
 //	timeout: 1000 * 1000, // Time in milliseconds
+	timeout: 0,
 	// The LOAD function will be called on a successful response.
 	load: function(response, ioArgs) {
 	    for (var i in response) {
@@ -421,105 +423,124 @@ AnnotTrack.prototype.onFeatureClick = function(event) {
 };
 
 AnnotTrack.prototype.addToAnnotation = function(annot, features)  {
-    var target_track = this;
-    var nclist = target_track.features;
+	var target_track = this;
+	var nclist = target_track.features;
 
-    if (AnnotTrack.USE_LOCAL_EDITS) {
-	if (this.verbose_add)  {
-	    console.log("adding to annot: ");
-	    console.log(annot);
-	    // console.log("removing annotation for modification");
-	}
-	// removing annotation from NCList (since need to re-add after modifications for proper repositioning)
-	// not necessary, track.hideAll() / track.changed() at end forces rerendering
-	//  nclist.deleteEntry(annot.uid);
-
-
-	// flatten features (only add subfeats)
-	var subfeats = [];
-
-	var flength = features.length;
-	for (var i=0; i<flength; i++)  { 
-	    var feat = features[i];
-	    var is_subfeature = (!!feat.parent);  // !! is shorthand for returning true if value is defined and non-null
-	    if (is_subfeature)  {
-		subfeats.push(feat);
-	    }
-	    else  {
-		var source_track = feat.track;
-		if (source_track.fields["subfeatures"])  {
-		    var subs = feat[source_track.fields["subfeatures"]];
-		    $.merge(subfeats, subs);
+	if (AnnotTrack.USE_LOCAL_EDITS) {
+		if (this.verbose_add)  {
+			console.log("adding to annot: ");
+			console.log(annot);
+			// console.log("removing annotation for modification");
 		}
-	    }
-	}
-	if (this.verbose_add)  {
-	    console.log("flattened feats to add");
-	    console.log(subfeats);
-	}
+		// removing annotation from NCList (since need to re-add after modifications for proper repositioning)
+		// not necessary, track.hideAll() / track.changed() at end forces rerendering
+		//  nclist.deleteEntry(annot.uid);
 
-	var slength = subfeats.length;
-	for (var k=0; k<slength; k++)  {
-	    var sfeat = subfeats[k];
-	    if (this.verbose_add)  {
-		console.log("converting feature, is_subfeature = " + is_subfeature + ":");
-		console.log(sfeat);
-	    }
-	    var source_track = sfeat.track;
-	    var newfeat = JSONUtils.convertToTrack(sfeat, true, source_track, target_track);
-	    var id = "annot_" + AnnotTrack.creation_count++;
-	    newfeat.parent = annot;
-	    if (target_track.subFields["id"])  { newfeat[target_track.subFields["id"]] = id; }
-	    if (target_track.subFields["name"])  { newfeat[target_track.fields["name"]] = id; }
-	    newfeat.uid = id;
-	    newfeat.track = target_track;  // done in convertToTrack, but just making sure...
-	    if (this.verbose_add)  {
-		console.log("converted feature created: ");
-		console.log(newfeat);
-	    }
-	    var annot_subs = annot[target_track.fields["subfeatures"]];
-	    annot_subs.push(newfeat);
-	    // hardwiring start as f[0], end as f[1] for now -- 
-	    //   to fix this need to whether newfeat is a subfeat, etc.
-	    if (newfeat[0] < annot[0])  {annot[0] = newfeat[0];}
-	    if (newfeat[1] > annot[1])  {annot[1] = newfeat[1];}
-	}
 
-	if (this.verbose_add)  {
-	    console.log("adding modified annotation back: ");
-	    console.log(annot.slice());
-	}
+		// flatten features (only add subfeats)
+		var subfeats = [];
 
-	// adding modified annotation back to NCList 
-	// no longer removing (relying on hideAll/changed calls), so don't need to add back
-	//    nclist.add(annot, annot.uid);
-
-	// force re-rendering
-	this.hideAll();
-	this.changed();
-	if (this.verbose_add)  { console.log("finished adding to annot: "); }
-    }
-    else {
-	var featuresString = "";
-	for (var i = 0; i < features.length; ++i) {
-	    var jsonFeature = JSONUtils.createApolloFeature(features[i], target_track.fields, target_track.subfield, "exon");
-	    featuresString += ", " + JSON.stringify(jsonFeature);
-	}
-	var parent = JSONUtils.createApolloFeature(annot, target_track.fields, target_track.subfields);
-	parent.uniquename = annot[target_track.fields["name"]];
-	dojo.xhrPost( {
-	    postData: '{ "track": "' + target_track.getUniqueTrackName() + '", "features": [ ' + JSON.stringify(parent) + featuresString + '], "operation": "add_exon" }',
-	    url: context_path + "/AnnotationEditorService",
-	    handleAs: "json",
-	    timeout: 5000, // Time in milliseconds
-	    // The LOAD function will be called on a successful response.
-	    load: function(response, ioArgs) { //
-		if (!AnnotTrack.USE_COMET || !target_track.comet_working)  {
-		    //TODO
+		var flength = features.length;
+		for (var i=0; i<flength; i++)  { 
+			var feat = features[i];
+			var is_subfeature = (!!feat.parent);  // !! is shorthand for returning true if value is defined and non-null
+			if (is_subfeature)  {
+				subfeats.push(feat);
+			}
+			else  {
+				var source_track = feat.track;
+				if (source_track.fields["subfeatures"])  {
+					var subs = feat[source_track.fields["subfeatures"]];
+					$.merge(subfeats, subs);
+				}
+			}
 		}
-	    }
-	});
-    }
+		if (this.verbose_add)  {
+			console.log("flattened feats to add");
+			console.log(subfeats);
+		}
+
+		var slength = subfeats.length;
+		for (var k=0; k<slength; k++)  {
+			var sfeat = subfeats[k];
+			if (this.verbose_add)  {
+				console.log("converting feature, is_subfeature = " + is_subfeature + ":");
+				console.log(sfeat);
+			}
+			var source_track = sfeat.track;
+			var newfeat = JSONUtils.convertToTrack(sfeat, true, source_track, target_track);
+			var id = "annot_" + AnnotTrack.creation_count++;
+			newfeat.parent = annot;
+			if (target_track.subFields["id"])  { newfeat[target_track.subFields["id"]] = id; }
+			if (target_track.subFields["name"])  { newfeat[target_track.fields["name"]] = id; }
+			newfeat.uid = id;
+			newfeat.track = target_track;  // done in convertToTrack, but just making sure...
+			if (this.verbose_add)  {
+				console.log("converted feature created: ");
+				console.log(newfeat);
+			}
+			var annot_subs = annot[target_track.fields["subfeatures"]];
+			annot_subs.push(newfeat);
+			// hardwiring start as f[0], end as f[1] for now -- 
+			//   to fix this need to whether newfeat is a subfeat, etc.
+			if (newfeat[0] < annot[0])  {annot[0] = newfeat[0];}
+			if (newfeat[1] > annot[1])  {annot[1] = newfeat[1];}
+		}
+
+		if (this.verbose_add)  {
+			console.log("adding modified annotation back: ");
+			console.log(annot.slice());
+		}
+
+		// adding modified annotation back to NCList 
+		// no longer removing (relying on hideAll/changed calls), so don't need to add back
+		//    nclist.add(annot, annot.uid);
+
+		// force re-rendering
+		this.hideAll();
+		this.changed();
+		if (this.verbose_add)  { console.log("finished adding to annot: "); }
+	}
+	else {
+		var subfeats = new Array();
+		for (var i = 0; i < features.length; ++i)  { 
+			var feat = features[i];
+			var isSubfeature = (!!feat.parent);  // !! is shorthand for returning true if value is defined and non-null
+			if (isSubfeature)  {
+				subfeats.push(feat);
+			}
+			else  {
+				var source_track = feat.track;
+				if (source_track.fields["subfeatures"])  {
+					var subs = feat[source_track.fields["subfeatures"]];
+					$.merge(subfeats, subs);
+				}
+			}
+		}
+		
+		var featuresString = "";
+		for (var i = 0; i < subfeats.length; ++i) {
+			var subfeat = subfeats[i];
+			if (subfeat[target_track.subFields["type"]] == "exon") {
+				var jsonFeature = JSONUtils.createApolloFeature(subfeats[i], target_track.fields, target_track.subfield, "exon");
+				featuresString += ", " + JSON.stringify(jsonFeature);
+			}
+		}
+//		var parent = JSONUtils.createApolloFeature(annot, target_track.fields, target_track.subfields);
+//		parent.uniquename = annot[target_track.fields["name"]];
+		dojo.xhrPost( {
+			postData: '{ "track": "' + target_track.getUniqueTrackName() + '", "features": [ {"uniquename": "' + annot[target_track.fields["name"]] + '"}' + featuresString + '], "operation": "add_exon" }',
+			url: context_path + "/AnnotationEditorService",
+			handleAs: "json",
+			timeout: 5000, // Time in milliseconds
+			// The LOAD function will be called on a successful response.
+			load: function(response, ioArgs) { //
+				if (!AnnotTrack.USE_COMET || !target_track.comet_working)  {
+					//TODO
+				}
+			}
+		});
+	}
 };
 
 AnnotTrack.prototype.makeTrackDroppable = function() {
@@ -783,13 +804,15 @@ AnnotTrack.prototype.mergeAnnotations = function(annots) {
     var features;
     var operation;
     // merge exons
-    if (leftAnnot.parent == rightAnnot.parent) {
+    if (leftAnnot.parent && rightAnnot.parent && leftAnnot.parent == rightAnnot.parent) {
         features = '"features": [ { "uniquename": "' + leftAnnot.uid + '" }, { "uniquename": "' + rightAnnot.uid + '" } ]';
         operation = "merge_exons";
     }
     // merge transcripts
     else {
-        features = '"features": [ { "uniquename": "' + leftAnnot.parent.uid + '" }, { "uniquename": "' + rightAnnot.parent.uid + '" } ]';
+    	var leftTranscriptId = leftAnnot.parent ? leftAnnot.parent.uid : leftAnnot.uid;
+    	var rightTranscriptId = rightAnnot.parent ? rightAnnot.parent.uid : rightAnnot.uid;
+        features = '"features": [ { "uniquename": "' + leftTranscriptId + '" }, { "uniquename": "' + rightTranscriptId + '" } ]';
         operation = "merge_transcripts";
     }
     if (AnnotTrack.USE_LOCAL_EDITS)  {
@@ -980,6 +1003,64 @@ AnnotTrack.prototype.setTranslationStartInCDS = function(annots, event) {
     }
 }
 
+AnnotTrack.prototype.setLongestORF = function()  {
+    var selected = this.selectionManager.getSelection();
+    this.selectionManager.clearSelection();
+    this.setLongestORFForSelectedFeatures(selected, event);
+};
+
+AnnotTrack.prototype.setLongestORFForSelectedFeatures = function(annots, event) {
+    var track = this;
+    var features = '"features": [';
+    for (var i in annots)  {
+    	var annot = annots[i];
+    	// get top level feature
+    	while (annot.parent) {
+    		annot = annot.parent;
+    	}
+    	var uniqueName = annot.uid;
+    	// just checking to ensure that all features in selection are from this track
+    	if (annot.track === track)  {
+    	    var trackdiv = track.div;
+    	    var trackName = track.getUniqueTrackName();
+
+    	    if (i > 0) {
+    	    	features += ',';
+    	    }
+    	    features += ' { "uniquename": "' + uniqueName + '" } ';
+    	}
+    }
+    features += ']';
+    var operation = "set_longest_orf";
+    var trackName = track.getUniqueTrackName();
+	var information = "";
+    if (AnnotTrack.USE_LOCAL_EDITS)  {
+        // TODO
+        track.hideAll();
+        track.changed();
+    }
+    else  {
+    	dojo.xhrPost( {
+    	    postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }',
+    	    url: context_path + "/AnnotationEditorService",
+    	    handleAs: "json",
+    	    timeout: 5000 * 1000, // Time in milliseconds
+    	    load: function(response, ioArgs) {
+    	    },
+    	    // The ERROR function will be called in an error case.
+    	    error: function(response, ioArgs) { // 
+    			track.handleError(response);
+    	    	console.log("Annotation server error--maybe you forgot to login to the server?");
+    	    	console.error("HTTP status code: ", ioArgs.xhr.status); 
+    	    	//
+    	    	//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //  
+    	    	return response; // 
+    	    }
+
+    	});
+    }
+}
+
 AnnotTrack.prototype.undo = function()  {
     var selected = this.selectionManager.getSelection();
     this.selectionManager.clearSelection();
@@ -1113,7 +1194,6 @@ AnnotTrack.prototype.redoSelectedFeatures = function(annots) {
 
 AnnotTrack.prototype.getInformation = function()  {
     var selected = this.selectionManager.getSelection();
-    this.selectionManager.clearSelection();
     this.getInformationForSelectedFeatures(selected);
 };
 
@@ -1182,7 +1262,6 @@ AnnotTrack.prototype.getInformationForSelectedFeatures = function(annots) {
 
 AnnotTrack.prototype.getSequence = function()  {
     var selected = this.selectionManager.getSelection();
-    this.selectionManager.clearSelection();
     this.getSequenceForSelectedFeatures(selected);
 };
 
@@ -1352,6 +1431,7 @@ AnnotTrack.prototype.initContextMenu = function() {
 
     var thisObj = this;
     
+    contextMenuItems = new Array();
     annot_context_menu = new dijit.Menu({});
 	dojo.xhrPost( {
 		sync: true,
@@ -1362,6 +1442,7 @@ AnnotTrack.prototype.initContextMenu = function() {
 		// The LOAD function will be called on a successful response.
 		load: function(response, ioArgs) { //
 			var permission = response.permission;
+			var index = 0;
 			if (permission & Permission.WRITE) {
 				annot_context_menu.addChild(new dijit.MenuItem( {
 					label: "Delete",
@@ -1369,12 +1450,14 @@ AnnotTrack.prototype.initContextMenu = function() {
 						thisObj.deleteSelectedFeatures();
 					}
 				} ));
+				contextMenuItems["delete"] = index++;
 				annot_context_menu.addChild(new dijit.MenuItem( {
 					label: "Merge",
 					onClick: function() {
 						thisObj.mergeSelectedFeatures();
 					}
 				} ));
+				contextMenuItems["merge"] = index++;
 				annot_context_menu.addChild(new dijit.MenuItem( {
 					label: "Split",
 					onClick: function(event) {
@@ -1383,6 +1466,7 @@ AnnotTrack.prototype.initContextMenu = function() {
 						thisObj.splitSelectedFeatures(thisObj.annot_context_mousedown);
 					}
 				} ));
+				contextMenuItems["split"] = index++;
 				annot_context_menu.addChild(new dijit.MenuItem( {
 					label: "Make intron",
 					// use annot_context_mousedown instead of current event, since want to split 
@@ -1391,26 +1475,35 @@ AnnotTrack.prototype.initContextMenu = function() {
 						thisObj.makeIntron(thisObj.annot_context_mousedown);
 					}
 				} ));
+				contextMenuItems["make_intron"] = index++;
 				annot_context_menu.addChild(new dijit.MenuItem( {
 					label: "Set translation start",
 					// use annot_context_mousedown instead of current event, since want to split 
 					//    at mouse position of event that triggered annot_context_menu popup
 					onClick: function(event) {
-						thisObj.setTranslationStart(thisObj.annot_context_mousedown);
+						if (thisObj.getMenuItem("set_translation_start").get("label") == "Set translation start") {
+							thisObj.setTranslationStart(thisObj.annot_context_mousedown);
+						}
+						else {
+							thisObj.setLongestORF();
+						}
 					}
 				} ));
+				contextMenuItems["set_translation_start"] = index++;
 				annot_context_menu.addChild(new dijit.MenuItem( {
 					label: "Undo",
 					onClick: function(event) {
 						thisObj.undo();
 					}
 				} ));
+				contextMenuItems["undo"] = index++;
 				annot_context_menu.addChild(new dijit.MenuItem( {
 					label: "Redo",
 					onClick: function(event) {
 						thisObj.redo();
 					}
 				} ));
+				contextMenuItems["redo"] = index++;
 			}
 			annot_context_menu.addChild(new dijit.MenuItem( {
 				label: "Information",
@@ -1418,12 +1511,14 @@ AnnotTrack.prototype.initContextMenu = function() {
 					thisObj.getInformation();
 				}
 			} ));
+			contextMenuItems["information"] = index++;
 			annot_context_menu.addChild(new dijit.MenuItem( {
 				label: "Get sequence",
 				onClick: function(event) {
 					thisObj.getSequence();
 				}
 			} ));
+			contextMenuItems["get_sequence"] = index++;
 			annot_context_menu.addChild(new dijit.MenuItem( {
 				label: "..."
 			} ));
@@ -1438,6 +1533,7 @@ AnnotTrack.prototype.initContextMenu = function() {
 	// keeping track of mousedown event that triggered annot_context_menu popup, 
 	//   because need mouse position of that event for some actions
 	thisObj.annot_context_mousedown = thisObj.last_mousedown_event;
+	thisObj.updateMenu();
     };
 	
     annot_context_menu.startup();
@@ -1456,6 +1552,9 @@ AnnotTrack.prototype.initPopupDialog = function() {
 		preventCache: true,
 		id: id
 	});
+	dojo.connect(track.popupDialog, "onHide", null, function() {
+		track.selectionManager.clearSelection();
+	});
 	track.popupDialog.startup();
 
 };
@@ -1469,7 +1568,94 @@ AnnotTrack.prototype.openDialog = function(title, data) {
 	this.popupDialog.set("content", data);
     this.popupDialog.show();
     this.popupDialog.placeAt("GenomeBrowser", "first");
-}
+};
+
+AnnotTrack.prototype.updateMenu = function() {
+	this.updateSetTranslationStartMenuItem();
+	this.updateMergeMenuItem();
+	this.updateMakeIntronMenuItem();
+	this.updateUndoMenuItem();
+	this.updateRedoMenuItem();
+};
+
+AnnotTrack.prototype.updateSetTranslationStartMenuItem = function() {
+	var menuItem = this.getMenuItem("set_translation_start");
+    var selected = this.selectionManager.getSelection();
+    if (selected.length > 1) {
+    	menuItem.set("disabled", true);
+    	return;
+    }
+    menuItem.set("disabled", false);
+    var selectedFeat = selected[0];
+    if (selectedFeat.parent) {
+    	selectedFeat = selectedFeat.parent;
+    }
+    if (selectedFeat.manuallySetTranslationStart) {
+    	menuItem.set("label", "Unset translation start");
+    }
+    else {
+    	menuItem.set("label", "Set translation start");
+    }
+};
+
+AnnotTrack.prototype.updateMergeMenuItem = function() {
+	var menuItem = this.getMenuItem("merge");
+    var selected = this.selectionManager.getSelection();
+    if (selected.length < 2) {
+    	menuItem.set("disabled", true);
+    	return;
+    }
+    var strand = this.getStrand(selected[0]);
+    for (var i = 1; i < selected.length; ++i) {
+    	if (this.getStrand(selected[i]) != strand) {
+        	menuItem.set("disabled", true);
+        	return;
+    	}
+    }
+	menuItem.set("disabled", false);
+};
+
+AnnotTrack.prototype.updateMakeIntronMenuItem = function() {
+	var menuItem = this.getMenuItem("make_intron");
+    var selected = this.selectionManager.getSelection();
+    if (selected.length > 1) {
+    	menuItem.set("disabled", true);
+    	return;
+    }
+    menuItem.set("disabled", false);
+};
+
+AnnotTrack.prototype.updateUndoMenuItem = function() {
+	var menuItem = this.getMenuItem("undo");
+    var selected = this.selectionManager.getSelection();
+    if (selected.length > 1) {
+    	menuItem.set("disabled", true);
+    	return;
+    }
+    menuItem.set("disabled", false);
+};
+
+AnnotTrack.prototype.updateRedoMenuItem = function() {
+	var menuItem = this.getMenuItem("redo");
+    var selected = this.selectionManager.getSelection();
+    if (selected.length > 1) {
+    	menuItem.set("disabled", true);
+    	return;
+    }
+    menuItem.set("disabled", false);
+};
+
+
+AnnotTrack.prototype.getMenuItem = function(operation) {
+	return annot_context_menu.getChildren()[contextMenuItems[operation]];
+};
+
+AnnotTrack.prototype.getStrand = function(feature) {
+	if (feature.parent) {
+		return feature[this.subFields["strand"]];
+	}
+	return feature[this.fields["strand"]];
+};
 
 /*
   Copyright (c) 2010-2011 Berkeley Bioinformatics Open Projects (BBOP)
