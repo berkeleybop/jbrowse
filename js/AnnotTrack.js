@@ -521,7 +521,7 @@ AnnotTrack.prototype.addToAnnotation = function(annot, features)  {
 		var featuresString = "";
 		for (var i = 0; i < subfeats.length; ++i) {
 			var subfeat = subfeats[i];
-			if (subfeat[target_track.subFields["type"]] == "exon") {
+			if (subfeat[target_track.subFields["type"]] != "wholeCDS") {
 				var jsonFeature = JSONUtils.createApolloFeature(subfeats[i], target_track.fields, target_track.subfield, "exon");
 				featuresString += ", " + JSON.stringify(jsonFeature);
 			}
@@ -1573,6 +1573,7 @@ AnnotTrack.prototype.openDialog = function(title, data) {
 AnnotTrack.prototype.updateMenu = function() {
 	this.updateSetTranslationStartMenuItem();
 	this.updateMergeMenuItem();
+	this.updateSplitMenuItem();
 	this.updateMakeIntronMenuItem();
 	this.updateUndoMenuItem();
 	this.updateRedoMenuItem();
@@ -1608,6 +1609,23 @@ AnnotTrack.prototype.updateMergeMenuItem = function() {
     var strand = this.getStrand(selected[0]);
     for (var i = 1; i < selected.length; ++i) {
     	if (this.getStrand(selected[i]) != strand) {
+        	menuItem.set("disabled", true);
+        	return;
+    	}
+    }
+	menuItem.set("disabled", false);
+};
+
+AnnotTrack.prototype.updateSplitMenuItem = function() {
+	var menuItem = this.getMenuItem("split");
+    var selected = this.selectionManager.getSelection();
+    if (selected.length > 2) {
+    	menuItem.set("disabled", true);
+    	return;
+    }
+    var parent = selected[0].parent;
+    for (var i = 1; i < selected.length; ++i) {
+    	if (selected[i].parent != parent) {
         	menuItem.set("disabled", true);
         	return;
     	}
