@@ -127,7 +127,11 @@ FeatureTrack.prototype.loadSuccess = function(trackInfo) {
     if (trackInfo.clientConfig) {
         var cc = trackInfo.clientConfig;
         var density = trackInfo.featureCount / this.refSeq.length;
-        this.histScale = (cc.histScale ? cc.histScale : 4) * density;
+	// GAH if histScale is specified in track metadata, then use value directly as histScale (in pixels_per_base), 
+	//     rather than also factoring in feature density
+	// if current scale is < histscale then switch to histogram view
+        // this.histScale = (cc.histScale ? cc.histScale : 4) * density;
+        this.histScale = cc.histScale;
         this.labelScale = (cc.labelScale ? cc.labelScale : 50) * density;
         this.subfeatureScale = (cc.subfeatureScale ? cc.subfeatureScale : 80)
                                    * density;
@@ -178,6 +182,7 @@ FeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
 FeatureTrack.prototype.fillHist = function(blockIndex, block,
                                            leftBase, rightBase,
                                            stripeWidth) {
+    // console.log("called fillHist: " + leftBase + " ==> " + rightBase);
     if (this.histogramMeta === undefined)  {return;}
     // bases in each histogram bin that we're currently rendering
     var bpPerBin = (rightBase - leftBase) / this.numBins;
@@ -185,7 +190,7 @@ FeatureTrack.prototype.fillHist = function(blockIndex, block,
     var logScale = false;
     for (var i = 0; i < this.histStats.length; i++) {
         if (this.histStats[i].bases >= bpPerBin) {
-            //console.log("bpPerBin: " + bpPerBin + ", histStats bases: " + this.histStats[i].bases + ", mean/max: " + (this.histStats[i].mean / this.histStats[i].max));
+            // console.log("bpPerBin: " + bpPerBin + ", histStats bases: " + this.histStats[i].bases + ", mean/max: " + (this.histStats[i].mean / this.histStats[i].max));
             logScale = ((this.histStats[i].mean / this.histStats[i].max) < .01);
             pxPerCount = 100 / (logScale
                                 ? Math.log(this.histStats[i].max)
@@ -286,7 +291,7 @@ FeatureTrack.prototype.fillBlock = function(blockIndex, block,
                                             leftBase, rightBase,
                                             scale, stripeWidth,
                                             containerStart, containerEnd) {
-    //console.log("scale: %d, histScale: %d", scale, this.histScale);
+    // console.log("scale: %d, histScale: %d", scale, this.histScale);
     if (scale < this.histScale) {
 	this.fillHist(blockIndex, block, leftBase, rightBase, stripeWidth,
                       containerStart, containerEnd);
