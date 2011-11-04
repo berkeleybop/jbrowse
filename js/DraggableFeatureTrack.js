@@ -146,9 +146,7 @@ DraggableFeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
 
 };
 
-
-
-DraggableFeatureTrack.prototype.selectionAdded = function(feat) {
+DraggableFeatureTrack.prototype.selectionAdded = function(feat, smanager) {
     var track = this;
     if (feat.track === track)  {  
 	var featdiv = track.getFeatDiv(feat);
@@ -168,7 +166,7 @@ DraggableFeatureTrack.prototype.selectionAdded = function(feat) {
     }
 };
 
-DraggableFeatureTrack.prototype.selectionCleared = function(selected) {
+DraggableFeatureTrack.prototype.selectionCleared = function(selected, smanager) {
     var track = this;
     if (track.verbose_selection_notification)  {
 	console.log("DFT.selectionCleared called");
@@ -180,7 +178,7 @@ DraggableFeatureTrack.prototype.selectionCleared = function(selected) {
     }
 };
 
-DraggableFeatureTrack.prototype.selectionRemoved = function(feat)  {
+DraggableFeatureTrack.prototype.selectionRemoved = function(feat, smanager)  {
     var track = this;
     if (feat.track === track)  {
 	var featdiv = track.getFeatDiv(feat);
