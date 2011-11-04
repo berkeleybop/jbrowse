@@ -14,7 +14,11 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
 
     DraggableFeatureTrack.call(this, trackMeta, url, refSeq, browserParams);
     // this.selectionManager = this.setSelectionManager(new FeatureSelectionManager());
+    // this.selectionManager = this.setSelectionManager(DraggableFeatureTrack.selectionManager);
     this.selectionManager = this.setSelectionManager(AnnotTrack.annotSelectionManager);
+    //    this.selectionManager.setClearOnAdd(new Array(DraggableFeatureTrack.selectionManager));
+    //    DraggableFeatureTrack.selectionManager.setClearOnAdd(new Array(this.selectionManager)); 
+
     this.selectionClass = "selected-annotation";
     this.annot_under_mouse = null;
 
@@ -52,6 +56,11 @@ AnnotTrack.prototype = new DraggableFeatureTrack();
 
 // annotSelectionManager is class variable (shared by all AnnotTrack instances)
 AnnotTrack.annotSelectionManager = new FeatureSelectionManager();
+// setting up selection exclusiveOr -- 
+//    if selection is made in annot track, any selection in other tracks is deselected, and vice versa, 
+//    regardless of multi-select mode etc.
+AnnotTrack.annotSelectionManager.setClearOnAdd(new Array(DraggableFeatureTrack.selectionManager));
+DraggableFeatureTrack.selectionManager.setClearOnAdd(new Array(AnnotTrack.annotSelectionManager));
 
 /**
  *  only set USE_COMET true if server supports Servlet 3.0 comet-style long-polling, and web app is propertly set up for async
