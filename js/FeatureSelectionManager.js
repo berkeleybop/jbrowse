@@ -8,13 +8,30 @@
 function FeatureSelectionManager()  {
     this.selected = [];
     this.listeners = [];
-}
+    this.clearOnAdd = null;
+};
 
+/**
+ *  sets an array of other FeatureSelectionManagers to call clearSelection() on 
+ *     whenever addToSelection() is called on _this_ FeatureSelectionManager
+ *     effectively ensures that selection is mutually exclusive between this manager 
+ *        and the set of other managers passed in as setClearOnAdd args
+ */
+FeatureSelectionManager.prototype.setClearOnAdd = function(other_smanagers)  {
+    this.clearOnAdd = other_smanagers;
+};
 
 // adding a parent should remove all children
 // adding a child should remove all parents
-// attemptign to add a feature that's already part of the selection does nothing (and doesn't trigger listener calls)
+// attempting to add a feature that's already part of the selection does nothing (and doesn't trigger listener calls)
 FeatureSelectionManager.prototype.addToSelection = function(feat)  {
+    // if this selection manager has had setClearOnAdd(others) called to set other selection managers to 
+    //     clear selection from when 
+    if (this.clearOnAdd)  {
+	for (var i=0; i<this.clearOnAdd.length; i++)  {
+	    this.clearOnAdd[i].clearSelection();
+	}
+    }
     //    console.log("called FeatureselectionManager.addToSelection()");
     // do nothing if feat is already in selection
     if (this.isSelected(feat))  {
@@ -40,7 +57,7 @@ FeatureSelectionManager.prototype.addToSelection = function(feat)  {
     var lislength = this.listeners.length;
     for (var lindex = 0; lindex<lislength; lindex++)  {
 	var listener = this.listeners[lindex];
-	listener.selectionAdded(feat);
+	listener.selectionAdded(feat, this);
     }
     //    console.log("done calling FeatureselectionManager.addToSelection()");
 };
@@ -60,7 +77,7 @@ FeatureSelectionManager.prototype._removeSelectionAt = function(index, feat)  {
     var lislength = this.listeners.length;
     for (var lindex = 0; lindex<lislength; lindex++)  {
 	var listener = this.listeners[lindex];
-	listener.selectionRemoved(feat);
+	listener.selectionRemoved(feat, this);
     }
 };
 
@@ -77,7 +94,7 @@ FeatureSelectionManager.prototype.clearSelection = function()  {
     var lislength = this.listeners.length;
     for (var lindex=0; lindex<lislength; lindex++)  {
 	var listener = this.listeners[lindex];
-	listener.selectionCleared(previous_selected);
+	listener.selectionCleared(previous_selected, this);
     }
     /*
       for (var sindex in previous_selected)  {
