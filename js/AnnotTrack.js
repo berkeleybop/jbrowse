@@ -375,7 +375,7 @@ AnnotTrack.prototype.onAnnotMouseDown = function(event)  {
 		    	var fmin = subfeat[track.subFields["start"]] + leftDeltaBases;
 		    	var fmax = subfeat[track.subFields["end"]] + rightDeltaBases;
 			dojo.xhrPost( {
-			    postData: '{ "track": "' + track.getUniqueTrackName() + '", "features": [ { "uniquename": ' + subfeat[track.subFields["name"]] + ', "location": { "fmin": ' + fmin + ', "fmax": ' + fmax + ' } } ], "operation": "set_exon_boundaries" }',
+			    postData: '{ "track": "' + track.getUniqueTrackName() + '", "features": [ { "uniquename": ' + subfeat.uid + ', "location": { "fmin": ' + fmin + ', "fmax": ' + fmax + ' } } ], "operation": "set_exon_boundaries" }',
 			    url: context_path + "/AnnotationEditorService",
 			    handleAs: "json",
 			    timeout: 1000 * 1000, // Time in milliseconds
@@ -529,7 +529,7 @@ AnnotTrack.prototype.addToAnnotation = function(annot, features)  {
 //		var parent = JSONUtils.createApolloFeature(annot, target_track.fields, target_track.subfields);
 //		parent.uniquename = annot[target_track.fields["name"]];
 		dojo.xhrPost( {
-			postData: '{ "track": "' + target_track.getUniqueTrackName() + '", "features": [ {"uniquename": "' + annot[target_track.fields["name"]] + '"}' + featuresString + '], "operation": "add_exon" }',
+			postData: '{ "track": "' + target_track.getUniqueTrackName() + '", "features": [ {"uniquename": "' + annot.uid + '"}' + featuresString + '], "operation": "add_exon" }',
 			url: context_path + "/AnnotationEditorService",
 			handleAs: "json",
 			timeout: 5000, // Time in milliseconds

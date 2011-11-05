@@ -58,7 +58,8 @@ JSONUtils.createJBrowseFeature = function(afeature, fields, subfields)  {
 	jfeature[fields["id"]] = uid;
     }
     if (fields["name"])  {
-	jfeature[fields["name"]] = uid;
+    	var name = afeature.name ? afeature.name : uid;
+    	jfeature[fields["name"]] = name;
     }
     jfeature.uid = uid;
 
