@@ -557,14 +557,18 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 
     var featDiv;
     var featUrl = this.featureUrl(feature);
-    if (featUrl) {
+/*
+      if (featUrl) {
         featDiv = document.createElement("a");
         featDiv.href = featUrl;
         featDiv.target = "_new";
-    } else {
-        featDiv = document.createElement("div");
-	featDiv.onclick = this.featureClick;
-    }
+    } else { 
+*/
+    featDiv = document.createElement("div");
+    featDiv.onclick = this.featureClick;
+/*
+     }
+*/
 
     block.featureNodes[uniqueId] = featDiv;
     if (!feature.track)  {
