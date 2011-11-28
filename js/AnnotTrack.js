@@ -204,15 +204,16 @@ AnnotTrack.prototype.createAnnotationChangeListener = function() {
 };
 
 AnnotTrack.prototype.addFeatures = function(responseFeatures) {
-    var featureArray = JSONUtils.createJBrowseFeature(responseFeatures[0], this.fields, this.subFields);
-
-    var id = responseFeatures[0].uniquename;
-    if (this.features.featIdMap[id] == null) {
-	// note that proper handling of subfeatures requires annotation trackData.json resource to
-	//    set sublistIndex one past last feature array index used by other fields
-	//    (currently Annotations always have 6 fields (0-5), so sublistIndex = 6
-	this.features.add(featureArray, id);
-    }
+	for (var i = 0; i < responseFeatures.length; ++i) {
+	    var featureArray = JSONUtils.createJBrowseFeature(responseFeatures[i], this.fields, this.subFields);
+	    var id = responseFeatures[i].uniquename;
+	    if (this.features.featIdMap[id] == null) {
+		// note that proper handling of subfeatures requires annotation trackData.json resource to
+		//    set sublistIndex one past last feature array index used by other fields
+		//    (currently Annotations always have 6 fields (0-5), so sublistIndex = 6
+		this.features.add(featureArray, id);
+	    }
+	}
 
 };
 
@@ -590,88 +591,74 @@ AnnotTrack.prototype.makeTrackDroppable = function() {
 };
 
 AnnotTrack.prototype.createAnnotations = function(feats)  {
-    var target_track = this;
-    var features_nclist = target_track.features;
-    for (var i in feats)  {
-	var dragfeat = feats[i];
-	var source_track = dragfeat.track;
+	var target_track = this;
+	var features_nclist = target_track.features;
+	var featuresToAdd = new Array();
+	for (var i in feats)  {
+		var dragfeat = feats[i];
+		var source_track = dragfeat.track;
+		if (this.verbose_create)  {
+			console.log("creating annotation based on feature: ");
+			console.log(dragfeat);
+		}
+		var dragdiv = source_track.getFeatDiv(dragfeat);
+		var is_subfeature = (!!dragfeat.parent);  // !! is shorthand for returning true if value is defined and non-null
+		var newfeat = JSONUtils.convertToTrack(dragfeat, is_subfeature, source_track, target_track);
+		var source_fields = source_track.fields;
+		var source_subFields = source_track.subFields;
+		var target_fields = target_track.fields;
+		var target_subFields = target_track.subFields;
+		if (this.verbose_create)  {
+			console.log("local feat conversion: " );
+			console.log(newfeat);
+		}
+		var afeat = JSONUtils.createApolloFeature(dragfeat, source_fields, source_subFields, "transcript");
+		featuresToAdd.push(afeat);
+	}
+	// creating JSON feature data struct that WebApollo server understands, 
+	//    based on JSON feature data struct that JBrowse understands
+	var afeat = JSONUtils.createApolloFeature(dragfeat, source_fields, source_subFields, "transcript");
 	if (this.verbose_create)  {
-	    console.log("creating annotation based on feature: ");
-	    console.log(dragfeat);
-	}
-	var dragdiv = source_track.getFeatDiv(dragfeat);
-	var is_subfeature = (!!dragfeat.parent);  // !! is shorthand for returning true if value is defined and non-null
-	var newfeat = JSONUtils.convertToTrack(dragfeat, is_subfeature, source_track, target_track);
-	if (this.verbose_create)  {
-	    console.log("local feat conversion: " );
-	    console.log(newfeat);
-	}
-	if (AnnotTrack.USE_LOCAL_EDITS)  {
-	    var id = "annot_" + AnnotTrack.creation_count++;
-	    newfeat[target_track.fields["id"]] = id;
-	    newfeat[target_track.fields["name"]] = id;
-	    newfeat.uid = id;
-	    if (this.verbose_create)  {
-		console.log("local annotation creation");
-		console.log("new feature: ");
-		console.log(newfeat);
-	    }
-	    features_nclist.add(newfeat, id);
-	    target_track.hideAll();
-	    target_track.changed();
-	}
-	else  {
-	    var responseFeature;
-	    var source_fields = source_track.fields;
-	    var source_subFields = source_track.subFields;
-	    var target_fields = target_track.fields;
-	    var target_subFields = target_track.subFields;
-	    // creating JSON feature data struct that WebApollo server understands, 
-	    //    based on JSON feature data struct that JBrowse understands
-	    var afeat = JSONUtils.createApolloFeature(dragfeat, source_fields, source_subFields, "transcript");
-	    if (this.verbose_create)  {
 		console.log("remote annotation creation");
 		console.log("createApolloFeature: ");
 		console.log(afeat);
-	    }
-	    
-	    dojo.xhrPost( {
-		postData: '{ "track": "' + target_track.getUniqueTrackName() + '", "features": [ ' + JSON.stringify(afeat) + '], "operation": "add_transcript" }',
+	}
+
+	dojo.xhrPost( {
+		postData: '{ "track": "' + target_track.getUniqueTrackName() + '", "features": ' + JSON.stringify(featuresToAdd) + ', "operation": "add_transcript" }',
 		url: context_path + "/AnnotationEditorService",
 		handleAs: "json",
 		timeout: 5000, // Time in milliseconds
 		// The LOAD function will be called on a successful response.
 		load: function(response, ioArgs) { //
-		    if (this.verbose_create)  { console.log("Successfully created annotation object: " + response); }
-		    // response processing is now handled by the long poll thread (when using servlet 3.0)
-		    //  if comet-style long pollling is not working, then create annotations based on 
-		    //     AnnotationEditorResponse
-		    if (!AnnotTrack.USE_COMET || !target_track.comet_working)  {
-			responseFeatures = response.features;
-			for (var rindex in responseFeatures)  {
-			    var rfeat = responseFeatures[rindex];
-			    if (this.verbose_create)  { console.log("AnnotationEditorService annot object: ");
-							console.log(rfeat); }
-			    var jfeat = JSONUtils.createJBrowseFeature(rfeat, target_fields, target_subFields);
-			    if (this.verbose_create)  { console.log("Converted annot object to JBrowse feature array: " + jfeat.uid);
-							console.log(jfeat); }
-			    features_nclist.add(jfeat, jfeat.uid);
-			} 
-			target_track.hideAll();
-			target_track.changed();
-		    }
+			if (this.verbose_create)  { console.log("Successfully created annotation object: " + response); }
+			// response processing is now handled by the long poll thread (when using servlet 3.0)
+			//  if comet-style long pollling is not working, then create annotations based on 
+			//     AnnotationEditorResponse
+			if (!AnnotTrack.USE_COMET || !target_track.comet_working)  {
+				responseFeatures = response.features;
+				for (var rindex in responseFeatures)  {
+					var rfeat = responseFeatures[rindex];
+					if (this.verbose_create)  { console.log("AnnotationEditorService annot object: ");
+					console.log(rfeat); }
+					var jfeat = JSONUtils.createJBrowseFeature(rfeat, target_fields, target_subFields);
+					if (this.verbose_create)  { console.log("Converted annot object to JBrowse feature array: " + jfeat.uid);
+					console.log(jfeat); }
+					features_nclist.add(jfeat, jfeat.uid);
+				} 
+				target_track.hideAll();
+				target_track.changed();
+			}
 		},
 		// The ERROR function will be called in an error case.
 		error: function(response, ioArgs) { //
 			target_track.handleError(response);
-		    console.log("Error creating annotation--maybe you forgot to log into the server?");
-		    console.error("HTTP status code: ", ioArgs.xhr.status); //
-		    //dojo.byId("replace").innerHTML = 'Loading the ressource from the server did not work'; //
-		    return response;
+			console.log("Error creating annotation--maybe you forgot to log into the server?");
+			console.error("HTTP status code: ", ioArgs.xhr.status); //
+			//dojo.byId("replace").innerHTML = 'Loading the ressource from the server did not work'; //
+			return response;
 		}
-	    });
-	}
-    }
+	});
 };
 
 /**
@@ -794,8 +781,13 @@ AnnotTrack.prototype.mergeSelectedFeatures = function()  {
 
 AnnotTrack.prototype.mergeAnnotations = function(annots) {
     var track = this;
-    var leftAnnot = null;
-    var rightAnnot = null;
+    
+    var sortedAnnots = track.sortAnnotationsByLocation(annots);
+    var leftAnnot = sortedAnnots[0];
+    var rightAnnot = sortedAnnots[sortedAnnots.length - 1];
+    var trackName = this.getUniqueTrackName();
+
+    /*
     for (var i in annots)  {
         var annot = annots[i];
         // just checking to ensure that all features in selection are from this track -- 
@@ -810,6 +802,8 @@ AnnotTrack.prototype.mergeAnnotations = function(annots) {
             }
         }
     }
+    */
+    
     var features;
     var operation;
     // merge exons
@@ -864,8 +858,12 @@ AnnotTrack.prototype.splitAnnotations = function(annots, event) {
 	return;
     }
     var track = this;
-    var leftAnnot = null;
-    var rightAnnot = null;
+    var sortedAnnots = track.sortAnnotationsByLocation(annots);
+    var leftAnnot = sortedAnnots[0];
+    var rightAnnot = sortedAnnots[sortedAnnots.length - 1];
+    var trackName = track.getUniqueTrackName();
+    
+    /*
     for (var i in annots)  {
         var annot = annots[i];
         // just checking to ensure that all features in selection are from this track -- 
@@ -880,6 +878,7 @@ AnnotTrack.prototype.splitAnnotations = function(annots, event) {
             }
         }
     }
+    */
     var features;
     var operation;
     // split exon
@@ -981,7 +980,8 @@ AnnotTrack.prototype.setTranslationStartInCDS = function(annots, event) {
     var track = this;
     var annot = annots[0];
 	var coordinate = this.gview.getGenomeCoord(event);
-    var features = '"features": [ { "uniquename": "' + annot.parent.uid + '", "location": { "fmin": ' + coordinate + ' } } ]';
+	var uid = annot.parent ? annot.parent.uid : annot.uid;
+    var features = '"features": [ { "uniquename": "' + uid + '", "location": { "fmin": ' + coordinate + ' } } ]';
     var operation = "set_translation_start";
     var trackName = track.getUniqueTrackName();
     if (AnnotTrack.USE_LOCAL_EDITS)  {
@@ -1015,10 +1015,10 @@ AnnotTrack.prototype.setTranslationStartInCDS = function(annots, event) {
 AnnotTrack.prototype.setLongestORF = function()  {
     var selected = this.selectionManager.getSelection();
     this.selectionManager.clearSelection();
-    this.setLongestORFForSelectedFeatures(selected, event);
+    this.setLongestORFForSelectedFeatures(selected);
 };
 
-AnnotTrack.prototype.setLongestORFForSelectedFeatures = function(annots, event) {
+AnnotTrack.prototype.setLongestORFForSelectedFeatures = function(annots) {
     var track = this;
     var features = '"features": [';
     for (var i in annots)  {
@@ -1451,6 +1451,7 @@ AnnotTrack.prototype.initContextMenu = function() {
 		// The LOAD function will be called on a successful response.
 		load: function(response, ioArgs) { //
 			var permission = response.permission;
+			thisObj.permission = permission;
 			var index = 0;
 			if (permission & Permission.WRITE) {
 				annot_context_menu.addChild(new dijit.MenuItem( {
@@ -1538,12 +1539,14 @@ AnnotTrack.prototype.initContextMenu = function() {
 		}
 	});
 
-    annot_context_menu.onOpen = function(event) {
-	// keeping track of mousedown event that triggered annot_context_menu popup, 
-	//   because need mouse position of that event for some actions
-	thisObj.annot_context_mousedown = thisObj.last_mousedown_event;
-	thisObj.updateMenu();
-    };
+	annot_context_menu.onOpen = function(event) {
+		// keeping track of mousedown event that triggered annot_context_menu popup, 
+		//   because need mouse position of that event for some actions
+		thisObj.annot_context_mousedown = thisObj.last_mousedown_event;
+		if (thisObj.permission & Permission.WRITE) {
+			thisObj.updateMenu();
+		}
+	};
 	
     annot_context_menu.startup();
 };
@@ -1682,6 +1685,19 @@ AnnotTrack.prototype.getStrand = function(feature) {
 		return feature[this.subFields["strand"]];
 	}
 	return feature[this.fields["strand"]];
+};
+
+AnnotTrack.prototype.sortAnnotationsByLocation = function(annots) {
+	var track = this;
+	return annots.sort(function(annot1, annot2) {
+    	if (annot1[track.fields["start"]] != annot2[track.fields["start"]]) {
+    		return annot1[track.fields["start"]] - annot2[track.fields["start"]];
+    	}
+    	if (annot1[track.fields["end"]] != annot2[track.fields["end"]]) {
+    		return annot1[track.fields["end"]] - annot2[track.fields["end"]];
+    	}
+    	return 0;
+    });
 };
 
 /*
