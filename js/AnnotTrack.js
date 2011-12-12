@@ -562,8 +562,18 @@ AnnotTrack.prototype.makeTrackDroppable = function() {
 	console.log(target_trackdiv);
     }
     $(target_trackdiv).droppable(  {
-	accept: ".selected-feature",   // only accept draggables that are selected feature divs
-	drop: function(event, ui)  { 
+	// only accept draggables that are selected feature divs
+	accept: ".selected-feature",   
+	// switched to using deactivate() rather than drop() for drop handling
+	// this fixes bug where drop targets within track (feature divs) were lighting up as drop target, 
+	//    but dropping didn't actually call track.droppable.drop() 
+	//    (see explanation in feature droppable for why we catch drop at track div rather than feature div child)
+	//    cause is possible bug in JQuery droppable where droppable over(), drop() and hoverclass 
+	//       collision calcs may be off (at least when tolerance=pointer)?
+	//         
+	// drop: function(event, ui)  { 
+	deactivate: function(event, ui)  {	
+	    // console.log("trackdiv droppable detected: draggable deactivated");
 	    // "this" is the div being dropped on, so same as target_trackdiv
 	    if (target_track.verbose_drop)  {
 		console.log("draggable dropped on AnnotTrack");
