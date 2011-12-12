@@ -893,6 +893,7 @@ GenomeView.prototype.trimVertical = function(y) {
 
 GenomeView.prototype.zoomIn = function(e, zoomLoc, steps) {
     if (this.animation) return;
+    this._unsetPosBeforeZoom();
     if (zoomLoc === undefined) zoomLoc = 0.5;
     if (steps === undefined) steps = 1;
     steps = Math.min(steps, (this.zoomLevels.length - 1) - this.curZoom);
@@ -925,8 +926,46 @@ GenomeView.prototype.zoomIn = function(e, zoomLoc, steps) {
 	       700, zoomLoc);
 };
 
+GenomeView.prototype.zoomToBaseLevel = function(e, pos) {
+    if (this.animation) return;
+
+    this._setPosBeforeZoom(this.minVisible(), this.maxVisible(), this.curZoom);
+    var zoomLoc = 0.5;
+    var steps = 100000;
+    if (steps === undefined) steps = 1;
+    steps = Math.min(steps, (this.zoomLevels.length - 1) - this.curZoom);
+    if (0 == steps) return;
+
+    this.showWait();
+    this.trimVertical();
+
+    var scale = this.zoomLevels[this.curZoom + steps] / this.pxPerBp;
+    var fixedBp = pos;
+    this.curZoom += steps;
+    this.pxPerBp = this.zoomLevels[this.curZoom];
+    this.maxLeft = (this.pxPerBp * this.ref.end) - this.dim.width;
+
+    for (var track = 0; track < this.tracks.length; track++)
+	this.tracks[track].startZoom(this.pxPerBp,
+				     fixedBp - ((zoomLoc * this.dim.width)
+						/ this.pxPerBp),
+				     fixedBp + (((1 - zoomLoc) * this.dim.width)
+						/ this.pxPerBp));
+    //YAHOO.log("centerBp: " + centerBp + "; estimated post-zoom start base: " + (centerBp - ((zoomLoc * this.dim.width) / this.pxPerBp)) + ", end base: " + (centerBp + (((1 - zoomLoc) * this.dim.width) / this.pxPerBp)));
+
+    var thisObj = this;
+    // Zooms take an arbitrary 700 milliseconds, which feels about right
+    // to me, although if the zooms were smoother they could probably
+    // get faster without becoming off-putting. -MS
+    new Zoomer(scale, this,
+	       function() {thisObj.zoomUpdate(zoomLoc, fixedBp);},
+	       700, zoomLoc);
+};
+
+
 GenomeView.prototype.zoomOut = function(e, zoomLoc, steps) {
     if (this.animation) return;
+    this._unsetPosBeforeZoom();
     if (steps === undefined) steps = 1;
     steps = Math.min(steps, this.curZoom);
     if (0 == steps) return;
@@ -963,6 +1002,60 @@ GenomeView.prototype.zoomOut = function(e, zoomLoc, steps) {
     new Zoomer(scale, this,
 	       function() {thisObj.zoomUpdate(zoomLoc, fixedBp);},
 	       700, zoomLoc);
+};
+
+GenomeView.prototype.zoomBackOut = function(e) {
+    if (this.animation) return;
+
+    if (!this.isZoomedToBase()) {
+    	return;
+    }
+
+    var min = this.posBeforeZoom.min;
+    var max = this.posBeforeZoom.max;
+    var zoom = this.posBeforeZoom.zoom;
+    
+    this.posBeforeZoom = undefined;
+    
+    var steps = 1;
+    var zoomLoc = 0.5;
+
+    this.showWait();
+    
+    this.curZoom = zoom;
+
+    var scale = this.zoomLevels[this.curZoom - steps] / this.pxPerBp;
+    var fixedBp = (min + max) / 2;
+    this.pxPerBp = this.zoomLevels[this.curZoom];
+
+    for (var track = 0; track < this.tracks.length; track++) {
+    	this.tracks[track].startZoom(this.pxPerBp,
+    			fixedBp - ((zoomLoc * this.dim.width)
+    					/ this.pxPerBp),
+    					fixedBp + (((1 - zoomLoc) * this.dim.width)
+    							/ this.pxPerBp));
+	}
+    
+    this.minLeft = this.pxPerBp * this.ref.start;
+    var thisObj = this;
+    // Zooms take an arbitrary 700 milliseconds, which feels about right
+    // to me, although if the zooms were smoother they could probably
+    // get faster without becoming off-putting. -MS
+    new Zoomer(scale, this,
+	       function() {thisObj.setLocation(thisObj.ref, min, max); thisObj.zoomUpdate(zoomLoc, fixedBp); },
+	       700, zoomLoc);
+};
+
+GenomeView.prototype.isZoomedToBase = function() {
+	return this.posBeforeZoom !== undefined;
+};
+
+GenomeView.prototype._setPosBeforeZoom = function(min, max, zoom) {
+    this.posBeforeZoom = { "min": min, "max": max, "zoom": zoom };
+};
+
+GenomeView.prototype._unsetPosBeforeZoom = function() {
+	this.posBeforeZoom = undefined;
 };
 
 GenomeView.prototype.zoomUpdate = function(zoomLoc, fixedBp) {

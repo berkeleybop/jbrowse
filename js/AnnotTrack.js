@@ -297,6 +297,7 @@ AnnotTrack.prototype.onFeatureMouseDown = function(event) {
     // _not_ calling DraggableFeatureTrack.prototyp.onFeatureMouseDown -- 
     //     don't want to allow dragging (at least not yet)
     // event.stopPropagation();
+    this.last_mousedown_event = event;
     var ftrack = this;
     if (ftrack.verbose_selection || ftrack.verbose_drag)  { 
 	console.log("AnnotTrack.onFeatureMouseDown called"); 
@@ -327,7 +328,7 @@ AnnotTrack.prototype.onFeatureMouseDown = function(event) {
  */
 AnnotTrack.prototype.onAnnotMouseDown = function(event)  {
     var track = this;
-    track.last_mousedown_event = event;
+//    track.last_mousedown_event = event;
     var verbose_resize = track.verbose_resize;
     if (verbose_resize || track.verbose_mousedown)  { console.log("AnnotTrack.onAnnotMouseDown called"); }
     event = event || window.event;
@@ -1407,6 +1408,15 @@ AnnotTrack.prototype.getSequenceForSelectedFeatures = function(annots) {
 	this.openDialog("Sequence", content);
 };
 
+AnnotTrack.prototype.zoomToBaseLevel = function(event) {
+	var coordinate = this.gview.getGenomeCoord(event);
+	this.gview.zoomToBaseLevel(event, coordinate);
+};
+
+AnnotTrack.prototype.zoomBackOut = function(event) {
+	this.gview.zoomBackOut(event);
+}
+
 AnnotTrack.prototype.createAnnotation = function()  {
 
 };
@@ -1530,6 +1540,18 @@ AnnotTrack.prototype.initContextMenu = function() {
 			} ));
 			contextMenuItems["get_sequence"] = index++;
 			annot_context_menu.addChild(new dijit.MenuItem( {
+				label: "Zoom to base level",
+				onClick: function(event) {
+					if (thisObj.getMenuItem("zoom_to_base_level").get("label") == "Zoom to base level") {
+						thisObj.zoomToBaseLevel(thisObj.annot_context_mousedown);
+					}
+					else {
+						thisObj.zoomBackOut(thisObj.annot_context_mousedown);
+					}
+				}
+			} ));
+			contextMenuItems["zoom_to_base_level"] = index++;
+			annot_context_menu.addChild(new dijit.MenuItem( {
 				label: "..."
 			} ));
 		},
@@ -1589,6 +1611,7 @@ AnnotTrack.prototype.updateMenu = function() {
 	this.updateMakeIntronMenuItem();
 	this.updateUndoMenuItem();
 	this.updateRedoMenuItem();
+	this.updateZoomToBaseLevelMenuItem();
 };
 
 AnnotTrack.prototype.updateSetTranslationStartMenuItem = function() {
@@ -1675,6 +1698,15 @@ AnnotTrack.prototype.updateRedoMenuItem = function() {
     menuItem.set("disabled", false);
 };
 
+AnnotTrack.prototype.updateZoomToBaseLevelMenuItem = function() {
+	var menuItem = this.getMenuItem("zoom_to_base_level");
+	if (!this.gview.isZoomedToBase()) {
+		menuItem.set("label", "Zoom to base level");
+	}
+	else {
+		menuItem.set("label", "Zoom back out");
+	}
+};
 
 AnnotTrack.prototype.getMenuItem = function(operation) {
 	return annot_context_menu.getChildren()[contextMenuItems[operation]];
