@@ -21,7 +21,7 @@
     <style type="text/css">
       html, body { height: 100%; width: 100%; padding: 0; border: 0; }
     </style>
-    <link rel="stylesheet" type="text/css" href="genome.css"></link>
+    <link rel="stylesheet" type="text/css" title="genome_styles" href="genome.css"></link>
 
     <!--  Load JQuery, JQuery-UI, Dojo remotely from Google CDN: -->
    <script src="http://www.google.com/jsapi" type="text/javascript"></script>
@@ -33,12 +33,14 @@
 
     <!--  Load JQuery, JQuery-ui, Dojo from WebApollo server: -->
     <!--
-    <script type="text/javascript" src="jslib/jquery-1.5/jquery-1.5.min.js" ></script> 
+   <script type="text/javascript" src="jslib/jquery-1.5/jquery-1.5.min.js" ></script> 
     <script type="text/javascript" src="jslib/jquery-ui-1.8.9.custom/js/jquery-ui-1.8.9.custom.min.js"></script> 
     <script type="text/javascript" src="jslib/dojo-1.5.0/dojo/dojo.js"></script>
     -->
-
-    <script type="text/javascript" src="jslib/modernizr-1.7.min.js"></script>
+    
+    <!-- using modernizr for easy testing of browser support for HTML5 / CSS3 / etc. features -->
+   <!-- <script type="text/javascript" src="jslib/modernizr-1.7.min.js"></script> -->
+     <script type="text/javascript" src="jslib/modernizr-2.0.6.js"></script> -->
 
     <!--  djConfig="isDebug: true" -->
 
@@ -83,10 +85,10 @@
     <!-- <script type="text/javascript" src="js/FileLoader.js"></script> -->
 <!-- js_source_files -->
 
-    <script type="text/javascript" src="data/refSeqs.js"></script>
+   <script type="text/javascript" src="data/refSeqs.js"></script>
     <script type="text/javascript" src="data/trackInfo.js"></script>
 
-    <script type="text/javascript" src="jslib/colour/jquery.color.js"></script>
+   <script type="text/javascript" src="jslib/colour/jquery.color.js"></script>
     <script type="text/javascript" src="jslib/farbtastic/mod-farbtastic.js"></script>
 <!--    <script type="text/javascript" src="jslib/jlayout/jquery.jlayout.js"></script> -->
 <!--    <script type="text/javascript" src="jslib/jlayout/jlayout.grid.js"></script> -->
@@ -109,11 +111,12 @@
                                    containerID: "GenomeBrowser",
                                    refSeqs: refSeqs,
                                    trackData: trackInfo,
-                                   defaultTracks: "DNA,gene,mRNA,noncodingRNA",
+                                   defaultTracks: "DNA,Annotations,RefSeq",
                                    location: queryParams.loc,
                                    tracks: queryParams.tracks,
                                    bookmark: bookmarkCallback,
-	                           dataRoot: "" 
+	                           // dataRoot: "data/"  // for Amel4.5
+				   dataRoot: ""  // for dm3
                                });
     /* ]]> */
       <!-- standard jbrowse dataRoot setting in Browser constructor... -->
