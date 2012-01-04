@@ -21,6 +21,20 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
 
     this.selectionClass = "selected-annotation";
     this.annot_under_mouse = null;
+    
+    /** 
+     * only show residues overlay if "pointer-events" CSS property is suppported
+     *   (otherwise will interfere with passing of events to features beneath the overlay)
+     */
+    this.useResiduesOverlay = Modernizr.testProp('pointerEvents');
+    this.FADEIN_RESIDUES = false;
+    
+    /**
+     *   map keeping track of set of y positions for top-level feature divs of selected features
+     *   (selected features can have same y position, in which case
+     *   y position is 
+     */
+//    this.selectionYPosition = null;
 
     var thisObj = this;
     /*
@@ -284,14 +298,98 @@ AnnotTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
     return subdiv;
 };
 
+/** 
+ *  get the GenomeView's sequence track -- maybe move this to GenomeView?  
+ *  WebApollo assumes there is only one SequenceTrack
+ *     if there are multiple SequenceTracks, getSequenceTrack returns first one found
+ *         iterating through tracks list
+ */
+AnnotTrack.prototype.getSequenceTrack = function()  {
+    if (this.seqTrack)  {
+	 return this.seqTrack;
+    }
+    else  {
+	var tracks = this.gview.tracks;
+	for (var i = 0; i < tracks.length; i++)  {
+	    if (tracks[i] instanceof SequenceTrack)  {
+		this.seqTrack = tracks[i];
+		break;
+	    }
+	}
+	return this.seqTrack;
+    }
+}
 
-AnnotTrack.prototype.showRange = function(first, last, startBase, bpPerBlock, scale,
-					  containerStart, containerEnd) {
-    DraggableFeatureTrack.prototype.showRange.call(this, first, last, startBase, bpPerBlock, scale,
+AnnotTrack.prototype.fillBlock = function(blockIndex, block, leftBlock, rightBlock, 
+					 leftBase, rightBase, scale, stripeWidth, 
+					 containerStart, containerEnd)  {
+    DraggableFeatureTrack.prototype.fillBlock.call(this, 
+						   blockIndex, block, leftBlock, rightBlock, 
+						   leftBase, rightBase, scale, stripeWidth, 
 						   containerStart, containerEnd);
-    //    console.log("after calling annot track.showRange(), block range: " + 
-    //		this.firstAttached + "--" + this.lastAttached + ",  " + (this.lastAttached - this.firstAttached));
+/*
+    var middle = (containerStart + containerEnd) / 2;
+    var report = ((leftBase <= middle) && (rightBase > middle));
+    if (report)  {
+      console.log("AnnotTrack.fillBlock() called,  blockIndex: %f, leftBase: %f, rightBase: %f, scale: %f, "
+		+ "stripeWidth: %f, containerStart: %f, containerEnd: %f, middle: %f", 
+		blockIndex, leftBase, rightBase, scale, stripeWidth, containerStart, containerEnd, middle);
+    }
+
+    // what about removing any previous seqNodes from block, or check for existence and avoid creating 
+    //   new SeqNodes if already exist???
+    // looks like this is probably not necessary -- if fillBlock is called, block is either newly created 
+    //     or previous children have been removed?
+    var track = this;
+    if (scale === track.browserParams.charWidth && track.useResiduesOverlay)  {
+	var selected = track.selectionManager.getSelection();
+	if (selected.length > 0)  {
+ 	    // get toplevel parent of selected feat
+	    var topfeat = selected[0];
+//	    if (report) {
+//		console.log("feat: "); console.log(topfeat);
+//		console.log("featdiv: "); console.log(track.getFeatDiv(topfeat));
+//	    }
+	    while (topfeat.parent)  {  
+		topfeat = topfeat.parent;
+	    }
+	    if (report)  { console.log("topfeat: "); console.log(topfeat); }
+	    var featdiv = track.getFeatDiv(topfeat);
+	    if (report)  { console.log("topfeat featdiv: "); console.log(featdiv); }	    
+
+//	    if (featdiv) { 
+	    if (track.selectionYPosition)  {
+		// need to float sequence residues over selected row(s)
+		var seqTrack = this.getSequenceTrack();
+		seqTrack.getRange(leftBase, rightBase, 
+	           // see 
+	           // callback, gets called for every chunk that overlaps with leftBase->rightBase range
+	           //   start = genome coord of first bp of chunk
+	           //   end = genome coord of last bp of chunk
+	             function(start, end, seq) {
+			 if (report) {
+			     console.log("AnnotTrack blockIndex: %d, adding seq from %d to %d: %s", 
+					 blockIndex, start, end, seq);
+			 }
+			 var seqNode = document.createElement("div");
+			 seqNode.className = "annot-sequence";
+			 seqNode.appendChild(document.createTextNode(seq));
+			 // var ypos = $(topfeat).position().top; 
+			 var ypos = track.selectionYPosition;
+			 ypos += 2;  // hardwired adjustment to center (should be calc'd based on feature div dims?	    
+			 // console.log("ypos: " + ypos);
+			 seqNode.style.cssText = "top: " + ypos + "px;";
+			 block.appendChild(seqNode);
+			 $(seqNode).hide();
+			 $(seqNode).fadeIn(1500);
+		     }
+                );
+	    }
+	}
+    } 
+    */
 };
+
 
 AnnotTrack.prototype.onFeatureMouseDown = function(event) {
     // _not_ calling DraggableFeatureTrack.prototyp.onFeatureMouseDown -- 
@@ -1709,6 +1807,182 @@ AnnotTrack.prototype.sortAnnotationsByLocation = function(annots) {
     	return 0;
     });
 };
+
+AnnotTrack.prototype.showRange = function(first, last, startBase, bpPerBlock, scale,
+					  containerStart, containerEnd) {
+    // console.log("called AnnotTrack.showRange()");
+    DraggableFeatureTrack.prototype.showRange.call(this, first, last, startBase, bpPerBlock, scale,
+						   containerStart, containerEnd);
+    //    console.log("after calling annot track.showRange(), block range: " + 
+    //		this.firstAttached + "--" + this.lastAttached + ",  " + (this.lastAttached - this.firstAttached));
+
+    // handle showing base residues for selected here?
+    // selected feats 
+    //   ==> selected feat divs 
+    //            ==> selected "rows" 
+    //                  ==> (A) float SequenceTrack-like residues layer (with blocks) on each selected row?
+    //                   OR (B) just get all residues needed and float simple div (no blocks)
+    //                            but set up so that callback for actual render happens once all needed residues 
+    //                            are available
+    //                            can do this way while still using SequenceTrack.getRange function
+    //                   
+    // update:
+    //                  OR (C), hybrid of A and B, block-based AND leveraging SequenceTrack.getRange()
+    //    originally tried (B), but after struggling a bit with SequenceTrack.getRange() etc., now leaning 
+    //       trying (C)
+/*
+     var track = this;
+    if (scale === track.browserParams.charWidth)  {
+	// need to float sequence residues over selected row(s)
+	var seqTrack = this.getSequenceTrack();
+	seqTrack.getRange(containerStart, containerEnd, 
+              // see 
+	      // callback, gets called for every block that overlaps with containerStart->containerEnd range
+	      //   start = genome coord of first bp of block
+	      //   end = genome coord of 
+	      function(start, end, seq) {
+		  
+	      }
+	);
+    }
+*/
+};
+
+/** 
+ * handles adding overlay of sequence residues to "row" of selected feature
+ *   (also handled in similar manner in fillBlock());
+ * WARNING:
+ *    this _requires_ browser support for pointer-events CSS property, 
+ *    (currently supported by Firefox 3.6+, Chrome 4.0+, Safari 4.0+)
+ *    (Exploring possible workarounds for IE, for example see:
+ *        http://www.vinylfox.com/forwarding-mouse-events-through-layers/
+ *        http://stackoverflow.com/questions/3680429/click-through-a-div-to-underlying-elements
+ *            [ see section on CSS conditional statement workaround for IE ]
+ *    )
+ *    and must set "pointer-events: none" in CSS rule for div.annot-sequence
+ *    otherwise, since sequence overlay is rendered on top of selected features 
+ *        (and is a sibling of feature divs), events intended for feature divs will 
+ *        get caught by overlay and not make it to the feature divs
+ */
+AnnotTrack.prototype.selectionAdded = function(feat, smanager)  {
+    DraggableFeatureTrack.prototype.selectionAdded.call(this, feat, smanager);
+    // console.log("AnnotTrack.selectionAdded, count = " + AnnotTrack.annotSelectionManager.getSelection().length);
+    var track = this;
+    // want to get child of block, since want position relative to block
+    // so get top-level feature div (assumes top level feature is always rendered...)
+    var topfeat = feat;
+    while (topfeat.parent)  {  
+    	topfeat = topfeat.parent;
+    }
+    var featdiv = track.getFeatDiv(topfeat);
+    if (featdiv)  {
+	//	    track.selectionYPosition = $(featdiv).position().top;
+        var selectionYPosition = $(featdiv).position().top;
+	var scale = track.gview.bpToPx(1);
+	//	console.log("scale: " + scale + ", charWidth: " + track.browserParams.charWidth);
+	if (scale === track.browserParams.charWidth && track.useResiduesOverlay)  {
+	    var seqTrack = this.getSequenceTrack();
+	    for (var bindex = this.firstAttached; bindex <= this.lastAttached; bindex++)  {
+		var block = this.blocks[bindex];
+		seqTrack.getRange(block.startBase, block.endBase, 
+                    function(start, end, seq) {
+			// console.log("AnnotTrack.selectionAdded(), adding seq from %d to %d: %s", 
+			//				    start, end, seq);
+			// var ypos = $(topfeat).position().top; 
+			// +2 hardwired adjustment to center (should be calc'd based on feature div dims?	    
+			var ypos = selectionYPosition + 2;
+			// checking to see if residues for this "row" of the block are already present
+			//    ( either from another selection in same row, or previous rendering 
+			//        of same selection [which often happens when scrolling] )
+			// trying to avoid duplication both for efficiency and because re-rendering of text can 
+			//    be slighly off from previous rendering, leading to bold / blurry text when overlaid
+
+			var $seqdivs = $("div.annot-sequence", block);
+			var sindex = $seqdivs.length;
+			var add_residues = true;
+			if ($seqdivs && sindex > 0)  {
+			    for (var i=0; i<sindex; i++) {
+				var sdiv = $seqdivs[i];
+				if ($(sdiv).position().top === ypos)  {
+				    console.log("residues already present in block: " + bindex);
+				    add_residues = false;
+				}
+			    }
+			}
+			if (add_residues)  {
+			    var seqNode = document.createElement("div");
+			    seqNode.className = "annot-sequence";
+			    seqNode.appendChild(document.createTextNode(seq));
+
+
+			    // console.log("ypos: " + ypos);
+			    seqNode.style.cssText = "top: " + ypos + "px;";
+			    block.appendChild(seqNode);
+			    if (track.FADEIN_RESIDUES)  {
+				$(seqNode).hide();
+				$(seqNode).fadeIn(1500);
+			    }
+			}
+		    } );
+		
+	    }
+	}
+    }
+
+};
+
+AnnotTrack.prototype.selectionRemoved = function(feat, smanager)  {
+    // console.log("AnnotTrack.selectionRemoved() called");
+    DraggableFeatureTrack.prototype.selectionRemoved.call(this, feat, smanager);
+    var track = this;
+    if (feat.track === track)  {
+	var featdiv = track.getFeatDiv(feat);
+	// remove sequence text nodes
+	// console.log("removing base residued text from selected annot");
+	$("div.annot-sequence", track.div).remove();
+	track.selectionYPosition = null;
+    }
+};
+
+AnnotTrack.prototype.startZoom = function(destScale, destStart, destEnd) {
+    DraggableFeatureTrack.prototype.startZoom.call(this, destScale, destStart, destEnd);
+    // console.log("AnnotTrack.startZoom() called");
+/*
+     var track = this;
+    var selected = this.selectionManager.getSelection();
+    for (var i=0; i<selected.length; i++) {
+	var feat = selected[i];
+	var featdiv = track.getFeatDiv(feat);
+	if (featdiv)  {
+	    $("div.annot-sequence", featdiv).hide();
+	}
+    }
+*/
+};
+
+AnnotTrack.prototype.endZoom = function(destScale, destBlockBases) {
+    DraggableFeatureTrack.prototype.endZoom.call(this, destScale, destBlockBases);
+    // console.log("AnnotTrack.endZoom called");
+/*    var track = this;
+    // this.scale = destScale;   moved this.scale assignment to superclass DraggableFeatureTrack.endZoom() method
+
+//    console.log(destScale);
+//    console.log(track.browserParams.charWidth);
+    // only show sequence residues for selected if zoomed all the way in to base pair visibility
+    if (destScale === track.browserParams.charWidth)  {
+	var selected = this.selectionManager.getSelection();
+	for (var i=0; i<selected.length; i++) {
+	    var feat = selected[i];
+	    var featdiv = track.getFeatDiv(feat);
+	    if (featdiv)  {
+		$("div.annot-sequence", featdiv).show();
+	    }
+	}
+    }
+*/
+
+};
+
 
 /*
   Copyright (c) 2010-2011 Berkeley Bioinformatics Open Projects (BBOP)
