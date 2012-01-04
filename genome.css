@@ -147,6 +147,28 @@ div.sequence {
     font-family: monospace;
     letter-spacing: 2px;
     padding-left: 2px;
+    z-index: 15;
+}
+
+div.annot-sequence  {
+    position: absolute;
+    left: 0px;
+    font-family: monospace;
+    letter-spacing: 2px;
+    padding-left: 2px;
+    z-index: 15;
+    /*  
+	need pointer-events:none so that any events pass through annot-sequence overlay
+	and onto the block or feature div underneath
+    */ 
+    pointer-events: none;
+/*    
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -o-user-select: none;
+    user-select: none;
+*/
 }
 
 /*
@@ -2151,10 +2173,14 @@ div.generic_parent-hist {
 */
 .annot-render {
     position: absolute;
-    height: 4px;
+/*    height: 4px;
     margin-top: 6px;
+    background-color: blue; */
     margin-bottom: 6px;  /* don't think this actually is needed */
-    background-color: blue;
+    height: 8px;
+    margin-top: 4px;
+    background-color: #BFDCFF;
+
     /* annotline div may be added to annot div _after_ child feature divs, so 
        if want child divs in front of annotline, make sure has lower 
        z-index than child divs */
