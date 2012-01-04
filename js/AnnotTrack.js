@@ -1904,7 +1904,7 @@ AnnotTrack.prototype.selectionAdded = function(feat, smanager)  {
 			    for (var i=0; i<sindex; i++) {
 				var sdiv = $seqdivs[i];
 				if ($(sdiv).position().top === ypos)  {
-				    console.log("residues already present in block: " + bindex);
+				    // console.log("residues already present in block: " + bindex);
 				    add_residues = false;
 				}
 			    }
