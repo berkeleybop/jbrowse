@@ -794,11 +794,19 @@ FeatureTrack.prototype.getFeatDiv = function(feature)  {
 
     // assuming "this" is track
     var fid = this.getId(feature, null);
+    //    console.log("looking for feature id: " + fid);
+
     for (var bindex = this.firstAttached; bindex <= this.lastAttached; bindex++)  {
 	var block = this.blocks[bindex];
 	if (block && block.featureNodes)  {
+//	    for (key in block.featureNodes)  {
+//		console.log(key + " : " + block.featureNodes[key]);
+//	    }
 	    var div = block.featureNodes[fid];
+//	    console.log("found: " + div);
 	    if (div && div != null)  {
+		// console.log("returning div: ");
+		// console.log(div);
 		return div;
 	    }
 	}
