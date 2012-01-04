@@ -27,6 +27,7 @@ function DraggableFeatureTrack(trackMeta, url, refSeq, browserParams) {
     this.verbose_selection = false;
     this.verbose_selection_notification = false;
     this.verbose_drag = false;
+    this.browserParams = browserParams;
 }
 
 // Inherit from FeatureTrack
@@ -67,6 +68,8 @@ DraggableFeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
 						    widthPct, widthPx, scale]);
     var $div = $(this.div);
     var track = this;
+
+    this.scale = scale;  // scale is in pixels per base
 
     // setting up mousedown and mouseup handlers to enable click-in-whitespace to clear selection
     //    (without conflicting with JBrowse drag-in-whitespace to scroll)
@@ -667,7 +670,7 @@ DraggableFeatureTrack.prototype.getLowestFeatureDiv = function(elem)  {
 
 /**
  *   Near as I can tell, track.showRange is called every time the appearance of the track changes in a way that would 
- *      cause feature divs to be added or deleted
+ *      cause feature divs to be added or deleted (or moved? -- not sure, feature moves may also happen elsewhere?)
  *   So overriding showRange here to try and map selected features to selected divs and make sure the divs have selection style set
  */
 DraggableFeatureTrack.prototype.showRange = function(first, last, startBase, bpPerBlock, scale,
@@ -690,6 +693,11 @@ DraggableFeatureTrack.prototype.showRange = function(first, last, startBase, bpP
 	}
     }
 };
+
+DraggableFeatureTrack.prototype.endZoom = function(destScale, destBlockBases) {
+    FeatureTrack.prototype.endZoom.call(this, destScale, destBlockBases);
+    this.scale = destScale;
+}
 
 
 
