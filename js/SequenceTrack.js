@@ -52,6 +52,13 @@ SequenceTrack.prototype.setViewInfo = function(genomeView, numBlocks,
     this.setLabel(this.key);
 };
 
+/**
+ *   GAH
+ *   not entirely sure, but I think this strategy of calling getRange() only works as long as 
+ *   seq chunk sizes are a multiple of block sizes
+ *   or in other words for a given block there is only one chunk that overlaps it
+ *      (otherwise in the callback would need to fiddle with horizontal position of seqNode within the block)
+ */
 SequenceTrack.prototype.fillBlock = function(blockIndex, block,
                                              leftBlock, rightBlock,
                                              leftBase, rightBase,
@@ -60,7 +67,7 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
     if (this.shown) {
         this.getRange(leftBase, rightBase,
                       function(start, end, seq) {
-                          //console.log("adding seq from %d to %d: %s", start, end, seq);
+                          // console.log("blockIndex: %d, adding seq from %d to %d: %s", blockIndex, start, end, seq);
                           var seqNode = document.createElement("div");
                           seqNode.className = "sequence";
                           seqNode.appendChild(document.createTextNode(seq));
@@ -73,29 +80,46 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
     }
 };
 
+/**
+ *  WARNING
+ *  WebApollo version, modified from JBrowse trunk
+ *  in JBrowse, callback is passed original start and end genome coord parameters
+ *  in WebApollo, callback is passed start and end genome coords of residues being retrieved from 
+ *          the currently processed chunk
+ */
 SequenceTrack.prototype.getRange = function(start, end, callback) {
     //start: start coord, in interbase
     //end: end coord, in interbase
-    //callback: function that takes (start, end, seq)
+    //    interbase, so residues retrieved from chunk are start to end-1
+    //callback: function called for every chunk that overlaps range, 
+    //            takes (chunkstart, chunkend, chunkseq)
     var firstChunk = Math.floor((start) / this.chunkSize);
     var lastChunk = Math.floor((end - 1) / this.chunkSize);
-    var callbackInfo = {start: start, end: end, callback: callback};
+    // var callbackInfo = {start: start, end: end, callback: callback};
     var chunkSize = this.chunkSize;
     var chunk;
 
     for (var i = firstChunk; i <= lastChunk; i++) {
         //console.log("working on chunk %d for %d .. %d", i, start, end);
         chunk = this.chunks[i];
+	var chunkStart = i * chunkSize; // start of chunk in base coords (relative to start of seq
+	var chunkEnd = (i+1) * chunkSize;   // end """""""
+	var resStart = Math.max(chunkStart, start);  // start of requested residues for this chunk
+	var resEnd = Math.min(chunkEnd, end);   // end of requested residues for this chunk
         if (chunk) {
             if (chunk.loaded) {
-                callback(start, end,
-                         chunk.sequence.substring(start - (i * chunkSize),
-                                                  end - (i * chunkSize)));
+//		callback(start - (i * chunkSize), end - (*)
+//                callback(start, end,
+                callback(resStart, resEnd, 
+                         chunk.sequence.substring(resStart - (i * chunkSize),
+                                                  resEnd - (i * chunkSize)));
             } else {
                 //console.log("added callback for %d .. %d", start, end);
+		var callbackInfo = {start: resStart, end: resEnd, callback: callback};		   
                 chunk.callbacks.push(callbackInfo);
             }
         } else {
+	    var callbackInfo = {start: resStart, end: resEnd, callback: callback};		   
             chunk = {
                 loaded: false,
                 num: i,
@@ -107,6 +131,7 @@ SequenceTrack.prototype.getRange = function(start, end, callback) {
                             load: function (response) {
                                 var ci;
                                 chunk.sequence = response;
+				// console.log(response);
                                 for (var c = 0; c < chunk.callbacks.length; c++) {
                                     ci = chunk.callbacks[c];
                                     ci.callback(ci.start,
