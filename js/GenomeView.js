@@ -115,6 +115,7 @@ Zoomer.prototype.step = function(pos) {
 
 function GenomeView(elem, stripeWidth, refseq, zoomLevel) {
     //all coordinates are interbase
+    // this.EDGE_MATCHING_ENABLED = false;
 
     //measure text width for the max zoom level
     var widthTest = document.createElement("div");
@@ -125,6 +126,7 @@ function GenomeView(elem, stripeWidth, refseq, zoomLevel) {
     elem.appendChild(widthTest);
     this.charWidth = widthTest.clientWidth / widthText.length;
     this.seqHeight = widthTest.clientHeight;
+    console.log("char testing, seqHeight param = " + this.seqHeight);
     elem.removeChild(widthTest);
 
     // measure the height of some arbitrary text in whatever font this
@@ -187,7 +189,7 @@ function GenomeView(elem, stripeWidth, refseq, zoomLevel) {
     this.sizeInit();
 
     //distance, in pixels, from the beginning of the reference sequence
-    //to the beginning of the first active stripe
+    //to the beginning of the first active stripe (block)
     //  should always be a multiple of stripeWidth
     this.offset = 0;
     //largest value for the sum of this.offset and this.getX()
@@ -1052,12 +1054,29 @@ GenomeView.prototype.trackHeightUpdate = function(trackName, height) {
 };
 
 GenomeView.prototype.showVisibleBlocks = function(updateHeight, pos, startX, endX) {
+    // pos.x is pixel position of left edge of view within it's scroll container?
+    //   but changes based on shuffling of blocks???
     if (pos === undefined) pos = this.getPosition();
+    // startX is pixel position relative to scroll container to start filling with blocks
+    //   includes padding left of visible area to make scrolling/zooming animations look better
     if (startX === undefined) startX = pos.x - (this.drawMargin * this.dim.width);
+    // endX is pixel position relative to scroll container to end filling with blocks
+    //   includes padding right of visible area to make scrolling/zooming animations look better
     if (endX === undefined) endX = pos.x + ((1 + this.drawMargin) * this.dim.width);
+//    console.log("startX = " + startX + ", endX = " + endX + 
+//		", width = " + this.dim.width + ", pos.x = "  + pos.x + ", blockWidth = " + this.stripeWidth);
+    // GAH
+    // not sure what the bitwise OR with zero ("| 0") is doing in the following???
+    //  leftVisible is index into "active" blocks array of leftmost (first) block that needs to be rendered 
+    //       (may actually not be in view due to padding)
+    //       changes with block shuffling
     var leftVisible = Math.max(0, (startX / this.stripeWidth) | 0);
+    //  rightVisible is index into "active" blocks array of rightmost (last) block that needs to be rendered 
+    //       (may actually not be in view due to padding)
+    //       changes with block shuffling
     var rightVisible = Math.min(this.stripeCount - 1,
 				(endX / this.stripeWidth) | 0);
+
 
     var bpPerBlock = Math.round(this.stripeWidth / this.pxPerBp);
 
@@ -1068,6 +1087,11 @@ GenomeView.prototype.showVisibleBlocks = function(updateHeight, pos, startX, end
 	Math.round(this.pxToBp(this.offset
 			       + (this.stripeCount * this.stripeWidth)));
 
+/*    console.log("GenomeView.showVisibleBlocks() called: " + 
+	"leftVisible = " + leftVisible + ", rightVisible = " + rightVisible + 
+        ", startBase = " + startBase + ", bpPerBlock = " + bpPerBlock + 
+	", containerStart = " + containerStart + ", containerEnd = " + containerEnd);
+*/
     this.trackIterate(function(track, view) {
 	track.showRange(leftVisible, rightVisible,
 			startBase, bpPerBlock,
@@ -1080,14 +1104,16 @@ GenomeView.prototype.showVisibleBlocks = function(updateHeight, pos, startX, end
     var selected = DraggableFeatureTrack.selectionManager.getSelection();
     var annot_selected = AnnotTrack.annotSelectionManager.getSelection();
     FeatureEdgeMatchManager.singleton.selectionCleared();
-//    for (var i in selected)  {
+    //    for (var i in selected)  {
     for (var i = 0; i < selected.length; ++i) {
-    	FeatureEdgeMatchManager.singleton.selectionAdded(selected[i]);
+	FeatureEdgeMatchManager.singleton.selectionAdded(selected[i]);
     }
-//    for (var i in annot_selected)   {
-	for (var i = 0; i < annot_selected.length; ++i) {
-		FeatureEdgeMatchManager.singleton.selectionAdded(annot_selected[i]);
+    //    for (var i in annot_selected)   {
+    for (var i = 0; i < annot_selected.length; ++i) {
+	FeatureEdgeMatchManager.singleton.selectionAdded(annot_selected[i]);
     }
+
+    // GAH temporarily handling 
 
 };
 
