@@ -69,7 +69,7 @@ DraggableFeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
     var $div = $(this.div);
     var track = this;
 
-    this.scale = scale;  // scale is in pixels per base
+    // this.scale = scale;  // scale is in pixels per base
 
     // setting up mousedown and mouseup handlers to enable click-in-whitespace to clear selection
     //    (without conflicting with JBrowse drag-in-whitespace to scroll)
@@ -696,7 +696,7 @@ DraggableFeatureTrack.prototype.showRange = function(first, last, startBase, bpP
 
 DraggableFeatureTrack.prototype.endZoom = function(destScale, destBlockBases) {
     FeatureTrack.prototype.endZoom.call(this, destScale, destBlockBases);
-    this.scale = destScale;
+    // this.scale = destScale;
 }
 
 
