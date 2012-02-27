@@ -2016,6 +2016,56 @@ div.generic_parent-hist {
     -ms-box-sizing: border-box;
 }
 
+.bam, 
+.plus-bam, 
+.minus-bam {
+    position: absolute;
+    height: 2px; 
+    margin-top: 0px;
+    background-color: #AACDDC;
+    z-index: 8;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+.cigarM, 
+.plus-cigarM, 
+.minus-cigarM  {
+    position: absolute;
+    height: 2px; 
+    margin-top: 0px;
+    background-color: #1B8A99;
+    /* background-color: green; */
+    z-index: 8;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+/*  don't render skips, just let parent bam show through (similar to not rendering intron but letting transcript show through)
+.cigarN, 
+.plus-cigarN, 
+.minus-cigarN  {
+    position: absolute;
+    height: 2px; 
+    margin-top: 0px;
+    background-color: #AACDDC;
+    z-index: 8;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+*/
 
 
 /**
@@ -2027,7 +2077,7 @@ div.generic_parent-hist {
 .minus-trellis-exon {
     position: absolute;
     height: 16px;
-    margi-top: 0px;
+    margin-top: 0px;
     z-index: 6;
     min-width: 1px;
     cursor: pointer;
