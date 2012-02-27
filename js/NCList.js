@@ -20,6 +20,10 @@ NCList.prototype.importExisting = function(nclist, sublistIndex,
     this.lazyUrlTemplate = lazyUrlTemplate;
 };
 
+/**
+ *  NOT for appending!
+ *  erases current topList and subarrays, repopulates from intervals
+ */
 NCList.prototype.fill = function(intervals, sublistIndex) {
     //intervals: array of arrays of [start, end, ...]
     //sublistIndex: index into a [start, end] array for storing a sublist
@@ -35,12 +39,13 @@ NCList.prototype.fill = function(intervals, sublistIndex) {
     }
     var myIntervals = intervals;//.concat();
     //sort by OL
-    myIntervals.sort(function(a, b) {
+     myIntervals.sort(function(a, b) {
         if (a[0] != b[0])
             return a[0] - b[0];
         else
             return b[1] - a[1];
     });
+
     var sublistStack = new Array();
     var curList = new Array();
     this.topList = curList;
@@ -262,9 +267,17 @@ NCList.prototype.deleteEntry = function(id) {
     }
 };
 
+/*  as of 2/2012, contains() (and therefore featIdMap) only used by AnnotTrack
+ *     may want to push out to AnnotTrack, since populating featIdMap only happens in add(), 
+ *        and most NCList construction doesn't call add() (exception is AnnotTrack)
+ *     alternatively, make sure featIdMap is populated for every feature in NCList 
+ *        (would require featIdMap[] assignment in fill(), importExisting(), and lazy loading in iterHelper() ?
+ *            possibly elsewhere too? )
+ */
 NCList.prototype.contains = function(id)  {
     return (!!this.featIdMap[id]);  
 };
+
 
 /*
 
