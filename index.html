@@ -40,7 +40,7 @@
     
     <!-- using modernizr for easy testing of browser support for HTML5 / CSS3 / etc. features -->
    <!-- <script type="text/javascript" src="jslib/modernizr-1.7.min.js"></script> -->
-     <script type="text/javascript" src="jslib/modernizr-2.0.6.js"></script> -->
+     <script type="text/javascript" src="jslib/modernizr-2.0.6.js"></script>
 
     <!--  djConfig="isDebug: true" -->
 
@@ -64,11 +64,12 @@
     <!--   <script type="text/javascript" src="js/BasicDraggableFeatureTrack.js"></script>   -->
     <script type="text/javascript" src="js/DasFeatureTrack.js"></script>
     <script type="text/javascript" src="js/AnnotTrack.js"></script>
-    <script type="text/javascript" src="js/UITracks.js"></script>
+   <script type="text/javascript" src="js/UITracks.js"></script>
     <script type="text/javascript" src="js/ImageTrack.js"></script>
+
     <!-- for testing CanvasTrack -->
     <script type="text/javascript" src="js/CanvasTrack.js"></script>
-<!--    <script type="text/javascript" src="js/WigTree.js"></script>  -->
+         <!--    <script type="text/javascript" src="js/WigTree.js"></script>  -->
     <script type="text/javascript" src="js/WigStack.js"></script>
     <script type="text/javascript" src="js/canvas_track_renderers/AvgBar_Renderer.js"></script>  
     <script type="text/javascript" src="js/canvas_track_renderers/AvgBar_MaxBar_Renderer.js"></script>  
@@ -81,8 +82,29 @@
     <script type="text/javascript" src="js/BioFeatureUtils.js"></script>
     <script type="text/javascript" src="js/FeatureEdgeMatchManager.js"></script>
     <script type="text/javascript" src="js/Permission.js"></script>
+
     <!-- for testing file loading -->
-    <!-- <script type="text/javascript" src="js/FileLoader.js"></script> -->
+   <!-- <script type="text/javascript" src="js/FileLoader.js"></script> -->
+
+    <!-- for testing direct BAM access -->
+    <script type="text/javascript" src="js/BamFeatureTrack.js"></script>
+    <script type="text/javascript" src="js/BamPseudoNCList.js"></script>
+    <script type="text/javascript" src="js/BamUtils.js"></script>
+
+<!-- Dalliance code in berkeleybop/jbrowse repository  -->
+  <script language="javascript" src="jslib/dalliance_static/jszlib/js/inflate.js"></script>
+  <script language="javascript" src="jslib/dalliance_static/js/utils.js"></script>
+  <script language="javascript" src="jslib/dalliance_static/js/bin.js"></script>
+  <script language="javascript" src="jslib/dalliance_static/js/bam.js"></script>
+
+<!--  Dalliance code from GreggHelt2/dalliance fork (apollo branch) 
+  <script language="javascript" src="jslib/dalliance/jszlib/js/inflate.js"></script>
+  <script language="javascript" src="jslib/dalliance/js/utils.js"></script>
+  <script language="javascript" src="jslib/dalliance/js/bin.js"></script>
+  <script language="javascript" src="jslib/dalliance/js/bam.js"></script>
+-->
+
+
 <!-- js_source_files -->
 
    <script type="text/javascript" src="data/refSeqs.js"></script>
@@ -115,8 +137,8 @@
                                    location: queryParams.loc,
                                    tracks: queryParams.tracks,
                                    bookmark: bookmarkCallback,
-	                           // dataRoot: "data/"  // for Amel4.5
-				   dataRoot: ""  // for dm3
+	                           dataRoot: "data/"  // for Amel4.5
+				   // dataRoot: ""  // for dm3
                                });
     /* ]]> */
       <!-- standard jbrowse dataRoot setting in Browser constructor... -->
