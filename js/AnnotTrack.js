@@ -112,6 +112,7 @@ AnnotTrack.prototype.loadSuccess = function(trackInfo) {
     DraggableFeatureTrack.prototype.loadSuccess.call(this, trackInfo);
     
     var track = this;
+    // for AnnotTrack, features currently MUST be an NCList
     var features = this.features;
 
     this.initContextMenu();
@@ -221,7 +222,8 @@ AnnotTrack.prototype.addFeatures = function(responseFeatures) {
 	for (var i = 0; i < responseFeatures.length; ++i) {
 	    var featureArray = JSONUtils.createJBrowseFeature(responseFeatures[i], this.fields, this.subFields);
 	    var id = responseFeatures[i].uniquename;
-	    if (this.features.featIdMap[id] == null) {
+	   // if (this.features.featIdMap[id] == null) {
+	   if (! this.features.contains(id))  {
 		// note that proper handling of subfeatures requires annotation trackData.json resource to
 		//    set sublistIndex one past last feature array index used by other fields
 		//    (currently Annotations always have 6 fields (0-5), so sublistIndex = 6
@@ -531,7 +533,7 @@ AnnotTrack.prototype.onFeatureClick = function(event) {
     //   event.stopPropagation();
 };
 
-AnnotTrack.prototype.addToAnnotation = function(annot, features)  {
+AnnotTrack.prototype.addToAnnotation = function(annot, feats_to_add)  {
 	var target_track = this;
 	var nclist = target_track.features;
 
@@ -545,13 +547,12 @@ AnnotTrack.prototype.addToAnnotation = function(annot, features)  {
 		// not necessary, track.hideAll() / track.changed() at end forces rerendering
 		//  nclist.deleteEntry(annot.uid);
 
-
 		// flatten features (only add subfeats)
 		var subfeats = [];
 
-		var flength = features.length;
+		var flength = feats_to_add.length;
 		for (var i=0; i<flength; i++)  { 
-			var feat = features[i];
+			var feat = feats_to_add[i];
 			var is_subfeature = (!!feat.parent);  // !! is shorthand for returning true if value is defined and non-null
 			if (is_subfeature)  {
 				subfeats.push(feat);
@@ -612,8 +613,8 @@ AnnotTrack.prototype.addToAnnotation = function(annot, features)  {
 	}
 	else {
 		var subfeats = new Array();
-		for (var i = 0; i < features.length; ++i)  { 
-			var feat = features[i];
+		for (var i = 0; i < feats_to_add.length; ++i)  { 
+			var feat = feats_to_add[i];
 			var isSubfeature = (!!feat.parent);  // !! is shorthand for returning true if value is defined and non-null
 			if (isSubfeature)  {
 				subfeats.push(feat);
