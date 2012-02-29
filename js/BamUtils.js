@@ -1,4 +1,19 @@
+
 var BamUtils = { };
+
+/**
+masks for BAM alignment bitwise FLAG field (bamrecord.flag)
+0x1	template having multiple segments in sequencing 
+0x2	each segment properly aligned according to the aligner 
+0x4	segment unmapped
+0x8	next segment in the template unmapped
+0x10	SEQ being reverse complemented 
+0x20	SEQ of the next segment in the template being reversed 
+0x40	the first segment in the template 0x80	the last segment in the template
+0x100	secondary alignment 
+0x200	not passing quality controls 
+0x400	PCR or optical duplicate
+*/
 
 BamUtils.START = 0;
 BamUtils.END = 1;
@@ -15,7 +30,8 @@ BamUtils.fields = {start: 0,
 		  };
 BamUtils.subFields = {start: 0, 
 		      end: 1, 
-		      type: 2};
+		      strand: 2, 
+		      type: 3};
 
 BamUtils.lazyIndex = 2;
 BamUtils.sublistIndex = 6;
@@ -45,14 +61,14 @@ BamUtils.subfeatureClasses =  {
  */
 BamUtils.createSubfeats = function(feat)  {
     // console.log(feat);
-    var subfeats = BamUtils.cigarToSubfeats(feat[BamUtils.CIGAR], feat[BamUtils.START]);
+    var subfeats = BamUtils.cigarToSubfeats(feat[BamUtils.CIGAR], feat[BamUtils.START], feat[BamUtils.STRAND]);
     feat[BamUtils.SUBFEATURES] = subfeats;
     return subfeats;
 }
 /**
  *  take a cigar string, and initial position, return an array of subfeatures
  */
-BamUtils.cigarToSubfeats = function(cigar, offset)    {
+BamUtils.cigarToSubfeats = function(cigar, offset, parent_strand)    {
     var subfeats = [];
     var lops = cigar.match(/\d+/g);   
     var ops = cigar.match(/\D/g);
@@ -83,7 +99,7 @@ BamUtils.cigarToSubfeats = function(cigar, offset)    {
 	         break;
 	    // other possible cases
 	}
-	var subfeat = [ min, max, op ];
+	var subfeat = [ min, max, parent_strand, op ];
 	subfeats.push(subfeat);
 	min = max;
     }
@@ -94,6 +110,7 @@ BamUtils.convertBamRecord = function (br, make_cigar_subfeats)  {
     var feat = [];
     // var fields = this.fields;
     // feat[fields.start] = br.pos;
+
     feat[BamUtils.START] = br.pos;
     // lref calc'd in dalliance/js/bam.js  BamFile.readBamRecords() function
     if (br.lref)  {  // determine length based on CIGAR (lref is calc'd based on CIGAR string)
@@ -102,12 +119,28 @@ BamUtils.convertBamRecord = function (br, make_cigar_subfeats)  {
     else  {  // determin length based on read length (no CIGAR found to calc lref)
 	feat[BamUtils.END] = br.pos + br.seq.length;
     }
-
     //feat[END] = br.pos + br.lref;
-
     // feat.segment = br.segment;
     // feat.type = 'bam';
-    feat[BamUtils.STRAND] = 1; // just calling starnd as forward for now
+
+    /*  can extract "SEQ reverse complement" from bitwise flag, 
+     *    but that gives orientation of the _read sequence_ relative to the reference, 
+     *    whereas feat[STRAND] is intended to indicate orientation of the _template_
+     *        (in the case of RNA-Seq, the RNA that the read is derived from) relative to the reference
+     *   for some BAM sources (such as TopHat), an optional field "XS" is used to to indicate RNA orientation 
+     *        relative to ref.  'XS' values are '+' or '-' (any others?), 
+     *        for some sources, lack of 'XS' is meant to indicate plus strand, only minus strand are specifically tagged
+     *   for more on strandedness, see seqanswers.com/forums/showthread.php?t=9303
+     *   TODO: really need to determine whether to look at bitwise flag, or XS, or something else based 
+     *           on the origin of the BAM data (type of sequencer or program name, etc.)
+     *           for now using XS based on honeybee BAM data
+     */
+    // trying to determine orientation from 'XS' optional field
+    if (br.XS === '-') { feat[BamUtils.STRAND] = -1; }
+    else  { feat[BamUtils.STRAND] = 1; }
+    // var reverse = ((br.flag & 0x10) != 0);
+    // feat[BamUtils.STRAND] = reverse ? -1 : 1;
+    // feat[BamUtils.STRAND] = 1; // just calling starnd as forward for now
 
     // simple ID, just same as readName
     // feat[BamUtils.ID] = br.readName;
