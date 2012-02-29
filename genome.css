@@ -2016,6 +2016,7 @@ div.generic_parent-hist {
     -ms-box-sizing: border-box;
 }
 
+/* defaults for rendering aligned read from BAM files */
 .bam, 
 .plus-bam, 
 .minus-bam {
@@ -2032,6 +2033,23 @@ div.generic_parent-hist {
     -ms-box-sizing: border-box;
 }
 
+/* testing different coloration of BAM alignments on minus strand
+.minus-bam {
+    position: absolute;
+    height: 2px; 
+    margin-top: 0px;
+    background-color: #AA00AA;
+    z-index: 8;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+*/
+
+/* render match (M) spans as subfeatures of BAM alignment */
 .cigarM, 
 .plus-cigarM, 
 .minus-cigarM  {
