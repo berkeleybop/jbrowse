@@ -81,7 +81,7 @@ BamFeatureTrack.prototype.loadSuccess = function(bamfile)  {
     this.className = "bam";
     // this.renderClassName = ???  // not using render class different than className yet
     this.subfeatureClasses = BamUtils.subfeatureClasses;  // NOT NEEDED until have subfeats based on CIGAR
-//    this.arrowheadClass =  "trellis-arrowhead",
+    // this.arrowheadClass =  "trellis-arrowhead",
     this.arrowheadClass =  null;  // trying no arrowheads for now
     // this.urlTemplate = trackInfo.urlTemplate;  // NOT NEEDED
     // this.histogramMeta = trackInfo.histogramMeta;  // NOT NEEDED
@@ -100,17 +100,24 @@ BamFeatureTrack.prototype.fillBlock = function(blockIndex, block,
                                             leftBase, rightBase,
                                              scale, stripeWidth, 
 					     containerStart, containerEnd) {
-
-  // TODO: below a certain resolution ( < bp/pixel, or > scale), want to blank out blocks, 
-  //   with some indicator that must zoom in to see BAM features
-//  similar to fillHistogram, but graying out whole blocks insteal of filling with hist summary divs
-//        need to make sure this triggers height adjustment (similar to how fillHistogram does? )
-    //     so add histScale back in loadSuccess()?
-
-  // Histogram not yet re-implemented
-  this.fillFeatures(blockIndex, block, leftBlock, rightBlock,
-                    leftBase, rightBase, scale, 
-		    containerStart, containerEnd);
+    // Histogram not implemented
+    // 
+    // Below a certain resolution ( x < pixels/bp, or y > bp/pixel  [x = 1/y])
+    //   instead of histogram want to blank out blocks, 
+    //   with some indicator that must zoom in to see BAM features
+    // Preferably would calculate a good transition scale based on (sampling of) density of BAM data
+    //    For now just picking resolution that works well with test data
+    var bpPerPixel = 1/scale;  // scale = pixels/bp
+    if (bpPerPixel >= 5) {
+	// if (scale < ?)
+	// do nothing -- grayed out?
+	block.appendChild(document.createTextNode("Zoom in to view..."));
+	block.style.backgroundColor = "#eee";
+    }
+    else  {
+	this.fillFeatures(blockIndex, block, leftBlock, rightBlock,
+			  leftBase, rightBase, scale, containerStart, containerEnd);
+    }
 };
 
 /*
