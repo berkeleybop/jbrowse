@@ -1,18 +1,18 @@
-<!DOCTYPE html 
+<!DOCTYPE html
 	  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
 	  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-  
+
   <head>
-    <title>Apollo 2 JBrowse</title>
+    <title>WebApollo</title>
     <link rel="stylesheet" type="text/css" href="jslib/dijit/themes/tundra/tundra.css"></link>
     <link rel="stylesheet" type="text/css" href="jslib/dojo/resources/dojo.css"></link>
 
     <!-- load JQuery theme CSS remotely from Google CDN: -->
-<!--    <link rel="stylesheet" type="text/css"
-	  href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/themes/base/jquery-ui.css"/>  
--->
+    <!--
+    <link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/themes/base/jquery-ui.css"/>  
+     -->
 
     <!-- load JQuery theme CSS from WebApollo server -->
     <link rel="stylesheet" type="text/css" href="jslib/jquery-ui.css"/> 
@@ -52,6 +52,7 @@
     <!--    <script type="text/javascript"
             src="jslib/jquery_plugins/mod.jquery.ui.multidraggable-1.8.8.js"></script>  -->   
     <script type="text/javascript" src="js/Util.js"></script>
+    <script type="text/javascript" src="js/ArrayRepr.js"></script>
     <script type="text/javascript" src="js/NCList.js"></script>
     <script type="text/javascript" src="js/LazyPatricia.js"></script>
     <script type="text/javascript" src="js/LazyArray.js"></script>
@@ -109,6 +110,14 @@
 
    <script type="text/javascript" src="data/refSeqs.js"></script>
     <script type="text/javascript" src="data/trackInfo.js"></script>
+   <script type="text/javascript" src="js/touchJBrowse.js"></script>
+
+    <script type="text/javascript">
+        window.onerror=function(msg){
+            document.body.setAttribute("JSError",msg);
+        }
+    </script>
+
 
    <script type="text/javascript" src="jslib/colour/jquery.color.js"></script>
     <script type="text/javascript" src="jslib/farbtastic/mod-farbtastic.js"></script>
@@ -129,17 +138,28 @@
                       + "?loc=" + brwsr.visibleRegion()
                       + "&tracks=" + brwsr.visibleTracks();
            }
+
+           var dataRoot = queryParams.data || 'data';
+           // var dataRoot = queryParams.data || '';  // blank dataRoot for dm3
            var b = new Browser({
                                    containerID: "GenomeBrowser",
-                                   refSeqs: refSeqs,
-                                   trackData: trackInfo,
-                                   defaultTracks: "DNA,Annotations,RefSeq",
+	                           // dataRoot: "data/"  // for Amel4.5
+				   // dataRoot: ""  // for dm3
+                                   // refSeqs: refSeqs,
+                                   refSeqs: {url: dataRoot + "/refSeqs.json"},
+                                   // trackData: trackInfo,
+                                   tracklists: [
+                                       {url: dataRoot + "/trackList.json"}
+                                   ],
+                                   nameUrl: dataRoot + "/names/root.json",
+                                   // defaultTracks: "DNA,Annotations,RefSeq",
+                                   defaultTracks: "DNA,gene,mRNA,noncodingRNA",
                                    location: queryParams.loc,
                                    tracks: queryParams.tracks,
                                    bookmark: bookmarkCallback,
-	                           dataRoot: "data/"  // for Amel4.5
-				   // dataRoot: ""  // for dm3
-                               });
+           });
+           b.deferredFunctions.push(function() { loadTouch(); });
+
     /* ]]> */
       <!-- standard jbrowse dataRoot setting in Browser constructor... -->
       <!-- dataRoot: "data/" -->

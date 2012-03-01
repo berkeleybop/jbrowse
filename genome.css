@@ -1,5 +1,9 @@
 html, body {
     height: 100%;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    font-size: 9px;
 }
 
 .nav {
@@ -24,7 +28,7 @@ div.dragWindow {
     position:absolute;
     overflow: hidden;
     z-index: 1;
-    cursor: url("openhand.cur");
+    cursor: url("img/openhand.cur");
 }
 
 div.locationTrap {
@@ -45,13 +49,12 @@ div.locationThumb {
     /* if you change this border from 2px, change GenomeView.showTrap */
     border: 2px solid red;
     margin: 0px -2px 0px -2px;
-    /* I don't see the cursor change when I drag the locationThumb box. */
-    cursor: url("openhand.cur");
+    cursor: url("img/openhand.cur");
 }
 
 /* Style of locationThumb outline as it is being dragged. */
 div.locationThumb.dojoMoveItem {
-    cursor: url("closedhand.cur");
+    cursor: url("img/closedhand.cur");
 }
 
 div.overview {
@@ -282,6 +285,7 @@ div.basic-hist {
     z-index: 10;
 }
 
+.feature,
 .plus-feature,
 .minus-feature {
     position:absolute;
@@ -292,8 +296,8 @@ div.basic-hist {
     z-index: 10;
 }
 
+.feature { background-color: gainsboro }
 .plus-feature { background-image: url('img/plus-chevron3.png'); }
-
 .minus-feature { background-image: url('img/minus-chevron3.png'); }
 
 div.feature-hist {
@@ -305,8 +309,7 @@ div.feature-hist {
     z-index: 10;
 }
 
-.plus-feature2,
-.minus-feature2 {
+.feature2, .plus-feature2, .minus-feature2 {
     position:absolute;
     height: 15px;
     background-repeat: repeat-x;
@@ -315,8 +318,8 @@ div.feature-hist {
     z-index: 10;
 }
 
+.feature2 { background-color: #4fac2a; }
 .plus-feature2 { background-image: url('img/plus-herringbone16.png'); }
-
 .minus-feature2 { background-image: url('img/minus-herringbone16.png'); }
 
 div.feature2-hist {
@@ -328,8 +331,7 @@ div.feature2-hist {
     z-index: 10;
 }
 
-.plus-feature3,
-.minus-feature3 {
+.feature3, .plus-feature3, .minus-feature3 {
     position:absolute;
     height: 8px;
     background-repeat: repeat-x;
@@ -338,8 +340,8 @@ div.feature2-hist {
     z-index: 10;
 }
 
+.feature3 { background-color: goldenrod }
 .plus-feature3 { background-image: url('img/plus-chevron.png'); }
-
 .minus-feature3 { background-image: url('img/minus-chevron.png'); }
 
 div.feature3-hist {
@@ -351,8 +353,7 @@ div.feature3-hist {
     z-index: 10;
 }
 
-.plus-feature4,
-.minus-feature4 {
+.feature4, .plus-feature4, .minus-feature4 {
     position:absolute;
     height: 12px;
     background-repeat: repeat-x;
@@ -361,8 +362,8 @@ div.feature3-hist {
     z-index: 10;
 }
 
+.feature4 { background-color: yellow }
 .plus-feature4 { background-image: url('img/plus-pacman.png'); }
-
 .minus-feature4 { background-image: url('img/minus-pacman.png'); }
 
 div.feature4-hist {
@@ -374,8 +375,7 @@ div.feature4-hist {
     z-index: 10;
 }
 
-.plus-feature5,
-.minus-feature5 {
+.feature5, .plus-feature5, .minus-feature5 {
     position:absolute;
     height: 8px;
     background-repeat: repeat-x;
@@ -384,8 +384,8 @@ div.feature4-hist {
     z-index: 10;
 }
 
+.feature5 { background-color: blue }
 .plus-feature5 { background-image: url('img/plus-chevron2.png'); }
-
 .minus-feature5 { background-image: url('img/minus-chevron2.png'); }
 
 div.feature5-hist {
@@ -751,8 +751,6 @@ div.generic_parent-hist {
     min-width: 1px;
     cursor: pointer;
 }
-
-
 
 .unknown, 
 .plus-unknown, 
@@ -2492,4 +2490,12 @@ div.canvas-track-control {
     background-color: white; 
     /* background-color: #005555; */
     border: 2px black solid;
+}
+
+.icon.nav {
+    height: 30px !important;
+}
+
+input.nav {
+    font-size: 9px !important;
 }
