@@ -849,46 +849,41 @@ FeatureTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
 	subfeature.track = this;
     }
 
-    var className = null;
+    var className = "unknown";
     if (this.config.style.subfeatureClasses) {
 	// type undefined, then assign "unknown" className root 
 	//     (so subfeature is rendered with default "unknown" CSS styling)
 	// if type = null, then className = null (so subfeature is not rendered as a div at all)
 	// otherwise use tempName as className root (so subfeature is rendered with based on type name
         var type = this.attrs.get(subfeature, "Type");
-        var className = this.config.style.subfeatureClasses[type];
+        className = this.config.style.subfeatureClasses[type];
 	if (className === undefined)  { className = "unknown"; }
-	if (className)  {
-	    var strand = this.attrs.get(subfeature, "Strand");
-            switch (strand)  {
-               case 1:
-               case '+':
-	       case '1':
-		   subDiv.className = "plus-" + className; break;
-               case 0:
-	       case '0':
-               case '.':
-               case null:   
-               case undefined:   
-		   subDiv.className = className; break;
-               case -1:
-               case '-':
-               case '-1':
-		   subDiv.className = "minus-" + className; break;
-            }
-	}
-    }
-
-    // if (debug_feat)  {  console.log("className: " + className); }
-    // if subfeatureClasses specifies that subfeature type explicitly maps to null classNmae, 
-    //     or no config.style.subfeatureClasses to do map types, 
-    //     then don't render the feature
-    if (!className)  { 
-	return null;
+	// if subfeatureClasses specifies that subfeature type explicitly maps to null classNmae, 
+	//     or no config.style.subfeatureClasses to do map types, 
+	//     then don't render the feature
+	if (className === null) { return; }  
     }
 
     var subDiv = document.createElement("div");
-    subDiv.className = className;
+
+    var strand = this.attrs.get(subfeature, "Strand");
+    switch (strand)  {
+    case 1:
+    case '+':
+    case '1':
+	subDiv.className= "plus-" + className; break;
+    case 0:
+    case '0':
+    case '.':
+    case null:   
+    case undefined:   
+	subDiv.className = className; break;
+    case -1:
+    case '-':
+    case '-1':
+	subDiv.className = "minus-" + className; break;
+    }
+    // if (debug_feat)  {  console.log("className: " + className); }
     block.featureNodes[subfeature.uid] = subDiv;
 
     // if the feature has been truncated to where it doesn't cover

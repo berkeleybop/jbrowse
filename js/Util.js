@@ -97,7 +97,14 @@ Util.fillTemplate = function(template, fillWith) {
  * @param successCalback function to call on a successful load
  * @param errorCallback function to call on an unsuccessful load
  */
-Util.maybeLoad = function (url, stateObj, successCallback, errorCallback) {
+Util.maybeLoad = function (lurl, stateObj, successCallback, errorCallback) {
+    var url = lurl;
+    console.log("Util.maybeLoad called: url = " + url);
+    console.log(stateObj.state);
+    console.log(stateObj);
+    console.log("successCallback: " + successCallback);
+    console.log("errorCallback: " + errorCallback);
+
     if (stateObj.state) {
         if ("loaded" == stateObj.state) {
             successCallback(stateObj.data);
@@ -119,12 +126,16 @@ Util.maybeLoad = function (url, stateObj, successCallback, errorCallback) {
                     stateObj.state = "loaded";
                     stateObj.data = o;
                     var cbs = stateObj.successCallbacks;
+		    console.log("in maybeload.load: " + url);
                     for (var c = 0; c < cbs.length; c++) cbs[c](o);
+		    console.log("finished maybeload.load: " + url);
                 },
-                error: function() {
+                error: function(msg) {
                     stateObj.state = "error";
                     var cbs = stateObj.errorCallbacks;
+		    console.log("in maybeload.error: " + url + ", message: " + msg);
                     for (var c = 0; c < cbs.length; c++) cbs[c]();
+		    console.log("finished maybeload.error: " + url + ", message: " + msg);
                 }
             });
     }

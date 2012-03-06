@@ -24,6 +24,7 @@ var Browser = function(params) {
     dojo.require("dijit.layout.BorderContainer");
 
     this.params = params;
+    console.log(params);
     var brwsr = this;
 
     this.deferredFunctions = [];
@@ -73,14 +74,21 @@ var Browser = function(params) {
             topPane.appendChild(brwsr.locationTrap);
             topPane.style.overflow="hidden";
 
+	    console.log("setting brwsr.origTracklist");
             var cookieTracks = dojo.cookie(brwsr.container.id + "-tracks");
             if (params.tracks) {
+		console.log("setting to params.tracks");
                 brwsr.origTracklist = params.tracks;
             } else if (cookieTracks) {
+		console.log("setting to cookieTracks");
                 brwsr.origTracklist = cookieTracks;
             } else if (params.defaultTracks) {
+		console.log("setting to defaultTracks");
+		console.log(params.defaultTracks);
                 brwsr.origTracklist = params.defaultTracks;
             }
+	    console.log("brwsr.origTracklist: " + brwsr.origTracklist);
+
 
             Util.maybeLoad(params.refSeqs.url, params.refSeqs,
                            function(o) {
@@ -109,15 +117,20 @@ var Browser = function(params) {
 Browser.prototype.addDeferred = function(f) {
     if (this.isInitialized)
         f();
-    else
-        this.deferredFunctions.push(f);
+    else {
+	console.log("pushed Browser.addDeferred to to deferred functions");
+        this.deferredFunctions.push(f);	
+    }
+
 };
 
 Browser.prototype.addTracklist = function(url, trackList) {
+    console.log("called Browser.addTrackList");
     if (1 == trackList.formatVersion) {
         for (var i = 0; i < trackList.tracks.length; i++)
             trackList.tracks[i].sourceUrl = url;
         this.trackListWidget.insertNodes(false, trackList.tracks);
+	console.log("this.origTracklist: " + this.origTracklist);
         this.showTracks(this.origTracklist);
     } else {
         throw "track list format " + trackList.formatVersion + " not supported";
@@ -126,7 +139,7 @@ Browser.prototype.addTracklist = function(url, trackList) {
 
 Browser.prototype.addRefseqs = function(refSeqs) {
     //currently only meant to be called once
-
+    console.log("Browser.addRefSeqs called");
     this.allRefs = {};
     for (var i = 0; i < refSeqs.length; i++)
         this.allRefs[refSeqs[i].name] = refSeqs[i];
@@ -207,9 +220,15 @@ Browser.prototype.addRefseqs = function(refSeqs) {
     //if someone calls methods on this browser object
     //before it's fully initialized, then we defer
     //those functions until now
-    for (var i = 0; i < brwsr.deferredFunctions.length; i++)
-	brwsr.deferredFunctions[i]();
+    for (var i = 0; i < brwsr.deferredFunctions.length; i++) {
+	var dfun = brwsr.deferredFunctions[i];
+	console.log("running deferred function: ");
+	console.log(dfun);
+	dfun();
+//	brwsr.deferredFunctions[i]();
+    }
     brwsr.deferredFunctions = [];
+    console.log("Browser.addRefSeqs finished");
 };
 
 /**
@@ -291,6 +310,8 @@ Browser.prototype.createTrackList = function(parent, params) {
 
     this.trackCreate = function(track, hint) {
 	console.log("called Browser.trackCreate() for track: " + track.name);
+	console.log(track);
+	console.log("hmm");
         var node;
         if ("avatar" == hint) {
             return trackListCreate(track, hint);
@@ -346,6 +367,7 @@ Browser.prototype.onVisibleTracksChanged = function() {
 Browser.prototype.addTracks = function(trackList, replace) {
     if (!this.isInitialized) {
         var brwsr = this;
+	console.log("pushed Browser.addTracks to deferred functions");
         this.deferredFunctions.push(
             function() {brwsr.addTracks(trackList, show);}
         );
@@ -374,6 +396,7 @@ Browser.prototype.addTracks = function(trackList, replace) {
 Browser.prototype.navigateTo = function(loc) {
     if (!this.isInitialized) {
         var brwsr = this;
+	console.log("pushed Browser.navigateTo to deferred functions");
         this.deferredFunctions.push(function() {brwsr.navigateTo(loc);});
 	return;
     }
@@ -478,8 +501,11 @@ Browser.prototype.navigateTo = function(loc) {
  * information dictionaries
  */
 Browser.prototype.showTracks = function(trackNameList) {
+    console.log("Browser.showTracks():");
+    console.log(trackNameList);
     if (!this.isInitialized) {
         var brwsr = this;
+	console.log("pushed Browser.showTracks to deferred functions");
         this.deferredFunctions.push(
             function() {brwsr.showTracks(trackNameList);}
         );
@@ -490,6 +516,7 @@ Browser.prototype.showTracks = function(trackNameList) {
     var removeFromList = [];
     var brwsr = this;
     for (var n = 0; n < trackNames.length; n++) {
+	console.log("trackName: " + trackNames[n]);
         this.trackListWidget.forInItems(function(obj, id, map) {
                 if (trackNames[n] == obj.data.label) {
 		    console.log("calling vieDndWidget.insertNodes");
