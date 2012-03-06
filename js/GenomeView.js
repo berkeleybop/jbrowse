@@ -1123,11 +1123,13 @@ GenomeView.prototype.scrollUpdate = function() {
 
 GenomeView.prototype.trackHeightUpdate = function(trackName, height) {
     var y = this.getY();
-    if (! trackName in this.trackIndices) return;
+    // Operator precedence bug -- must put "x in y" in parantheses, "!" has higher precedence!!
+    //    if (! trackName in this.trackIndices) return;
+    if (! (trackName in this.trackIndices)) return; 
     var track = this.trackIndices[trackName];
     if (Math.abs(height - this.trackHeights[track]) < 1) return;
 
-    //console.log("trackHeightUpdate: " + trackName + " " + this.trackHeights[track] + " -> " + height);
+    // console.log("trackHeightUpdate: " + trackName + " " + this.trackHeights[track] + " -> " + height);
     // if the bottom of this track is a above the halfway point,
     // and we're not all the way at the top,
     if ((((this.trackTops[track] + this.trackHeights[track]) - y)
@@ -1238,9 +1240,11 @@ GenomeView.prototype.addTrack = function(track) {
     var heightUpdate = function(height) {
         view.trackHeightUpdate(track.name, height);
     };
+    console.log("Track.setViewInfo");
     track.setViewInfo(heightUpdate, this.stripeCount, trackDiv, labelDiv,
 		      this.stripePercent, this.stripeWidth,
                       this.pxPerBp, this.trackPadding);
+    console.log("finished Track.setViewInfo");
 
     labelDiv.style.position = "absolute";
     labelDiv.style.top = "0px";
