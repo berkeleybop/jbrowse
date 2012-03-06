@@ -3,7 +3,10 @@ html, body {
     width: 100%;
     padding: 0;
     border: 0;
-    font-size: 9px;
+/*
+  GAH, reverting GMOD trunk changes, using default input.nav font etc. for now
+    font-size: 9px; 
+ */
 }
 
 .nav {
@@ -2492,6 +2495,7 @@ div.canvas-track-control {
     border: 2px black solid;
 }
 
+/*  GAH, reverting GMOD trunk changes, using default input.nav font etc. for now
 .icon.nav {
     height: 30px !important;
 }
@@ -2499,3 +2503,4 @@ div.canvas-track-control {
 input.nav {
     font-size: 9px !important;
 }
+*/
