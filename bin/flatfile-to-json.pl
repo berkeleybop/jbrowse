@@ -376,8 +376,9 @@ my $track = $gdb->getTrack( $trackLabel )
 
 my $curChrom = 'NONE YET';
 my $totalMatches = 0;
+my $totalChecked = 0;
 while( my $feat = $sorter->get ) {
-
+  $totalChecked++;
     next unless $refSeqs{ $feat->[0] }; # skip features we have no ref seq for
 
     unless( $curChrom eq $feat->[0] ) {
@@ -396,6 +397,7 @@ while( my $feat = $sorter->get ) {
         $track->nameHandler->addName( $namerec );
     }
 }
+print("total checked: $totalChecked \n");
 
 $gdb->writeTrackEntry( $track );
 
