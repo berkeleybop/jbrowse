@@ -26,13 +26,12 @@ CanvasTrack.registerRenderer = function(renderer) {
  *       adds a canvas for each block, and when the block is rendered it delegates 
  *       to canvas rendering
  */
-function CanvasTrack(trackMeta, url, refSeq, browserParams)  {
+function CanvasTrack(trackMeta, refSeq, browserParams)  {
     console.log("called CanvasTrack constructor");
     Track.call(this, trackMeta.label, trackMeta.key, false, browserParams.changeCallback);
     this.refSeq = refSeq;
     this.baseUrl = (browserParams.baseUrl ? browserParams.baseUrl : "");
-    this.url = url;
-    this.trackBaseUrl = (this.baseUrl + url).match(/^.+\//);
+    this.trackBaseUrl = (this.baseUrl + trackMeta.sourceUrl).match(/^.+\//);
     this.padding = 5;
     this.trackPadding = browserParams.trackPadding;
     this.trackMeta = trackMeta;
@@ -60,7 +59,7 @@ function CanvasTrack(trackMeta, url, refSeq, browserParams)  {
 		console.log(errorThrown);
 	    }
 	} );
-    this.load(this.baseUrl + url);
+    this.load(this.baseUrl + trackMeta.sourceUrl);
 }
 
 

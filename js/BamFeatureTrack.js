@@ -31,8 +31,8 @@
           the trackData.json with the "uniqueIdField" setting
  */
 
-function BamFeatureTrack(trackMeta, url, refSeq, browserParams) {
-    DraggableFeatureTrack.call(this, trackMeta, url, refSeq, browserParams);
+function BamFeatureTrack(trackMeta, refSeq, browserParams) {
+    DraggableFeatureTrack.call(this, trackMeta, refSeq, browserParams);
     this.glyphHeightPad = 0;
     this.levelHeightPad = 1;
 }
