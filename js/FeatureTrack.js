@@ -165,9 +165,8 @@ FeatureTrack.prototype.loadSuccess = function(trackInfo, url) {
         }
     };
 
-    // GAH newJSON merge notes
-    //     this bit from GMOD needs to be integrated with onFeatureClick refactoring in berkeleybop fork
-    if (! this.config.linkTemplate) {
+    /*
+      if (! this.config.linkTemplate) {
         defaultConfig.events.click =
             function(track, elem, feat, attrs, event) {
 	        alert("clicked on feature\n" +
@@ -178,6 +177,7 @@ FeatureTrack.prototype.loadSuccess = function(trackInfo, url) {
 	              ", ID: " + attrs.get(feat, "ID") );
             };
     }
+    */
 
     Util.deepUpdate(defaultConfig, this.config);
     this.config = defaultConfig;
@@ -185,11 +185,18 @@ FeatureTrack.prototype.loadSuccess = function(trackInfo, url) {
     this.config.hooks.create = this.evalHook(this.config.hooks.create);
     this.config.hooks.modify = this.evalHook(this.config.hooks.modify);
 
+    // JBrowse supports specifying event handler function in track metadata (in config.event.[EVENT] property)
+    //     these are called when [EVENT] occurs on a feature div within the track
+    // But for WebApollo, allowing click, doubleclick, etc. to be configured in track metadata would conflict 
+    //      with important WebApollo behavior (such as selection)
+    // Therfore WebApollo does NOT support specifying event handlers in track metadata (at least for now)
+/*
     this.eventHandlers = {};
     for (var event in this.config.events) {
         this.eventHandlers[event] =
             this.wrapHandler(this.evalHook(this.config.events[event]));
     }
+*/
 
     if (trackInfo.histograms) {
         this.histograms = trackInfo.histograms;
@@ -232,6 +239,7 @@ FeatureTrack.prototype.loadSuccess = function(trackInfo, url) {
     this.setLoaded();
 };
 
+/*  if arg is a string, returns eval of arg, otherwise just returns arg */
 FeatureTrack.prototype.evalHook = function(hook) {
     if (! ("string" == typeof hook)) return hook;
     var result;
@@ -247,7 +255,8 @@ FeatureTrack.prototype.evalHook = function(hook) {
 /**
  * Make life easier for event handlers by handing them some things
  */
-FeatureTrack.prototype.wrapHandler = function(handler) {
+/* no used by WebApollo, instead individual event handlers calc this stuff as needed 
+ FeatureTrack.prototype.wrapHandler = function(handler) {
     var track = this;
     return function(event) {
         event = event || window.event;
@@ -260,11 +269,14 @@ FeatureTrack.prototype.wrapHandler = function(handler) {
         handler(track, elem, elem.feature, track.attrs, event);
     };
 };
+*/
 
 /* Broken out of loadSuccess so that DraggableFeatureTrack can overload it */
 FeatureTrack.prototype.onFeatureClick = function(event) {
     // var fields = thisObj.fields;
-    var fields = this.fields;
+    var track = this;
+//    var fields = this.fields;
+    var attrs = track.attrs;
     event = event || window.event;
     if (event.shiftKey) return;
     var elem = (event.currentTarget || event.srcElement);
@@ -273,11 +285,12 @@ FeatureTrack.prototype.onFeatureClick = function(event) {
     if (!elem.feature) elem = elem.parentElement;
     if (!elem.feature) return; //shouldn't happen; just bail if it does
     var feat = elem.feature;
-    alert("clicked on feature\nstart: " + feat[fields["start"]] +
-	  ", end: " + feat[fields["end"]] +
-	  ", strand: " + feat[fields["strand"]] +
-	  ", label: " + feat[fields["name"]] +
-	  ", ID: " + feat[fields["id"]]);
+    alert("WebApollo FeatureTrack.onFeatureClick(), clicked on feature\n" + 
+          "start: " + (Number(attrs.get(feat, "Start"))+1) +
+	  ", end: " + Number(attrs.get(feat, "End")) +
+	  ", strand: " + attrs.get(feat, "Strand") +
+	  ", label: " + attrs.get(feat, "Name") +
+	  ", ID: " + attrs.get(feat, "ID") );
 };
 
 FeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
@@ -678,12 +691,13 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
     block.featureNodes[uniqueId] = featDiv;
     if (!feature.track)  { feature.track = this; }
 
-    // GAH newJSON merge notes: onclick assignment replaced by eventHandlers from config.events
-    //   need to revise to use berkeleybop featureClick code
-//    featDiv.onclick = this.featureClick;
+    /*  WebApollo doesn't use configurable event handlers
     for (event in this.eventHandlers) {
         featDiv["on" + event] = this.eventHandlers[event];
     }
+     */
+    featDiv.onclick = this.featureClick;
+
     featDiv.feature = feature;
     featDiv.layoutEnd = featureEnd;
 
