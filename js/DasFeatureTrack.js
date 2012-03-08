@@ -23,8 +23,8 @@
           the trackData.json with the "uniqueIdField" setting
  */
 
-function DasFeatureTrack(trackMeta, url, refSeq, browserParams) {
-    DraggableFeatureTrack.call(this, trackMeta, url, refSeq, browserParams);
+function DasFeatureTrack(trackMeta, refSeq, browserParams) {
+    DraggableFeatureTrack.call(this, trackMeta, refSeq, browserParams);
 }
 
 DasFeatureTrack.prototype = new DraggableFeatureTrack();

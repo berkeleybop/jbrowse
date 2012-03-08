@@ -1,8 +1,10 @@
-function AnnotTrack(trackMeta, url, refSeq, browserParams) {
+
+function AnnotTrack(trackMeta, refSeq, browserParams) {
+            //function AnnotTrack(trackMeta, url, refSeq, browserParams) {
     //trackMeta: object with:
     //            key:   display text track name
     //            label: internal track name (no spaces, odd characters)
-    //url: URL of the track's JSON file
+    //            sourceUrl: replaces previous url arg to FetureTrack constructors
     //refSeq: object with:
     //         start: refseq start
     //         end:   refseq end
@@ -12,7 +14,7 @@ function AnnotTrack(trackMeta, url, refSeq, browserParams) {
     //                baseUrl: base URL for the URL in trackMeta
 
 
-    DraggableFeatureTrack.call(this, trackMeta, url, refSeq, browserParams);
+    DraggableFeatureTrack.call(this, trackMeta, refSeq, browserParams);
     // this.selectionManager = this.setSelectionManager(new FeatureSelectionManager());
     // this.selectionManager = this.setSelectionManager(DraggableFeatureTrack.selectionManager);
     this.selectionManager = this.setSelectionManager(AnnotTrack.annotSelectionManager);

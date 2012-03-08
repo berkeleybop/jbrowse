@@ -1,7 +1,7 @@
 
 /*  Subclass of FeatureTrack that allows features to be dragged and dropped into the annotation track to create annotations. */
-function DraggableFeatureTrack(trackMeta, url, refSeq, browserParams) {
-    FeatureTrack.call(this, trackMeta, url, refSeq, browserParams);
+function DraggableFeatureTrack(trackMeta, refSeq, browserParams) {
+    FeatureTrack.call(this, trackMeta, refSeq, browserParams);
     //  console.log("DragableFeatureTrack constructor called");
 
     var thisObj = this;
