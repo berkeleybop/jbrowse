@@ -27,80 +27,20 @@ var Browser = function(params) {
     dojo.require("dijit.layout.ContentPane");
     dojo.require("dijit.layout.BorderContainer");
 
-    this.params = params;
-
-    console.log(params);
     var brwsr = this;
+    this.params = params;
+    console.log(params);
     this.deferredFunctions = [];
-
     if (params.nameUrl)
         this.names = new LazyTrie(params.nameUrl, "lazy-{Chunk}.json");
     this.tracks = [];
-
-    brwsr.isInitialized = false;
-    dojo.addOnLoad(
-        function() {
-            //set up top nav/overview pane and main GenomeView pane
-            dojo.addClass(document.body, "tundra");
-            brwsr.container = dojo.byId(params.containerID);
-            brwsr.container.genomeBrowser = brwsr;
-            var topPane = document.createElement("div");
-            brwsr.container.appendChild(topPane);
-
-            var overview = document.createElement("div");
-            overview.className = "overview";
-            overview.id = "overview";
-            topPane.appendChild(overview);
-            //try to come up with a good estimate of how big the location box
-            //actually has to be
-            var maxBase = 100000000;
-            brwsr.navbox = brwsr.createNavBox(topPane, (2 * (String(maxBase).length + (((String(maxBase).length / 3) | 0) / 2))) + 2, params);
-
-            var viewElem = document.createElement("div");
-            brwsr.viewElem = viewElem;
-            brwsr.container.appendChild(viewElem);
-            viewElem.className = "dragWindow";
-	    $(viewElem).addClass("main-viewport");
-
-            brwsr.containerWidget = new dijit.layout.BorderContainer({
-                liveSplitters: false,
-                design: "sidebar",
-                gutters: false
-            }, brwsr.container);
-            var contentWidget =
-                new dijit.layout.ContentPane({region: "top"}, topPane);
-            brwsr.browserWidget =
-                new dijit.layout.ContentPane({region: "center"}, viewElem);
-
-
-            //create location trapezoid
-            brwsr.locationTrap = document.createElement("div");
-            brwsr.locationTrap.className = "locationTrap";
-            topPane.appendChild(brwsr.locationTrap);
-            topPane.style.overflow="hidden";
-
-	    console.log("setting brwsr.origTracklist");
-            var cookieTracks = dojo.cookie(brwsr.container.id + "-tracks");
-            if (params.tracks) {
-		console.log("setting to params.tracks");
-                brwsr.origTracklist = params.tracks;
-            } else if (cookieTracks) {
-		console.log("setting to cookieTracks");
-                brwsr.origTracklist = cookieTracks;
-            } else if (params.defaultTracks) {
-		console.log("setting to defaultTracks");
-		console.log(params.defaultTracks);
-                brwsr.origTracklist = params.defaultTracks;
-            }
-	    console.log("brwsr.origTracklist: " + brwsr.origTracklist);
-
-=======
     this.isInitialized = false;
-    var browser = this;
-    dojo.addOnLoad( function() { browser.initialize(); } );
+
+    dojo.addOnLoad( function() { brwsr.initialize(); } );
 };
 
 Browser.prototype.initialize = function() {
+    var brwsr = this;
     //set up top nav/overview pane and main GenomeView pane
     dojo.addClass(document.body, "tundra");
     this.container = dojo.byId(this.params.containerID);
@@ -155,7 +95,6 @@ Browser.prototype.initialize = function() {
     }
     console.log("brwsr.origTracklist: " + brwsr.origTracklist);
 
-    var brwsr = this;
     Util.maybeLoad(this.params.refSeqs.url, this.params.refSeqs,
                    function(o) {
                        brwsr.addRefseqs(o);
