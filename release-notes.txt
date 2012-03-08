@@ -1,5 +1,19 @@
 {{$NEXT}}
 
+ * added nav, overview, and tracklist URL options that, when set to 0,
+   turn off the navigation box, the overview panel, and the track
+   list, respectively.  When all of these are off, and if run in an
+   iframe, JBrowse looks similar to the output of GBrowse's
+   gbrowse_img script.  More documentation on this coming soon.
+
+ * Fixed a long-standing off-by-one bug where the window could not be
+   scrolled to view the last base in the reference sequence.
+
+ * Coordinates displayed in the user interface are now 1-based closed
+   coordinates, which are more familiar to most users.  Previously,
+   the labels displayed interbase (i.e. 0-based half-open)
+   coordinates.
+
  * NON-BACKWARDS-COMPATIBLE improvements to the JSON format used for
    track configuration, feature data, and image data
      - initial support for a new hook system for greater

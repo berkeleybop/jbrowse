@@ -196,7 +196,7 @@ function GenomeView(elem, stripeWidth, refseq, zoomLevel, browserRoot) {
     this.offset = 0;
     //largest value for the sum of this.offset and this.getX()
     //this prevents us from scrolling off the right end of the ref seq
-    this.maxLeft = this.bpToPx(this.ref.end) - this.dim.width;
+    this.maxLeft = this.bpToPx(this.ref.end+1) - this.dim.width;
     //smallest value for the sum of this.offset and this.getX()
     //this prevents us from scrolling off the left end of the ref seq
     this.minLeft = this.bpToPx(this.ref.start);
@@ -531,6 +531,7 @@ GenomeView.prototype.setLocation = function(refseq, startbp, endbp) {
 	this.setY(0);
 	this.containerHeight = this.topSpace;
     }
+
     this.pxPerBp = Math.min(this.dim.width / (endbp - startbp), this.charWidth);
     this.curZoom = Util.findNearest(this.zoomLevels, this.pxPerBp);
     if (Math.abs(this.pxPerBp - this.zoomLevels[this.zoomLevels.length - 1]) < 0.2) {
@@ -567,7 +568,8 @@ GenomeView.prototype.instantZoomUpdate = function() {
 	(this.stripeCount * this.stripeWidth) + "px";
     this.maxOffset =
 	this.bpToPx(this.ref.end) - this.stripeCount * this.stripeWidth;
-    this.maxLeft = this.bpToPx(this.ref.end) - this.dim.width;
+//    this.maxLeft = this.bpToPx(this.ref.end) - this.dim.width;
+    this.maxLeft = this.bpToPx(this.ref.end+1) - this.dim.width;
     this.minLeft = this.bpToPx(this.ref.start);
 };
 
@@ -733,7 +735,8 @@ GenomeView.prototype.sizeInit = function() {
     this.curZoom = 0;
     while (this.pxPerBp > this.zoomLevels[this.curZoom])
 	this.curZoom++;
-    this.maxLeft = this.bpToPx(this.ref.end) - this.dim.width;
+    //    this.maxLeft = this.bpToPx(this.ref.end) - this.dim.width;
+    this.maxLeft = this.bpToPx(this.ref.end+1) - this.dim.width;
 
     delete this.stripePercent;
     //25, 50, 100 don't work as well due to the way scrollUpdate works
@@ -827,14 +830,15 @@ GenomeView.prototype.sizeInit = function() {
     var overviewStripePct = 100 / (refLength / this.overviewStripeBases);
     var overviewHeight = 0;
     this.overviewTrackIterate(function (track, view) {
-	track.clear();
-	track.sizeInit(view.overviewStripes,
-		       overviewStripePct);
-	track.showRange(0, view.overviewStripes - 1,
-			0, view.overviewStripeBases,
-			view.overviewBox.w /
-			(view.ref.end - view.ref.start));
-    });
+	    track.clear();
+	    track.sizeInit(view.overviewStripes,
+			   overviewStripePct);
+            track.showRange(0, view.overviewStripes - 1,
+			    // 0, view.overviewStripeBases,
+                            -1, view.overviewStripeBases,
+                            view.overviewBox.w /
+                            (view.ref.end - view.ref.start));
+	});
     this.updateOverviewHeight();
 };
 
@@ -914,7 +918,7 @@ GenomeView.prototype.zoomIn = function(e, zoomLoc, steps) {
     var fixedBp = this.pxToBp(pos.x + this.offset + (zoomLoc * this.dim.width));
     this.curZoom += steps;
     this.pxPerBp = this.zoomLevels[this.curZoom];
-    this.maxLeft = (this.pxPerBp * this.ref.end) - this.dim.width;
+    this.maxLeft = this.bpToPx(this.ref.end+1) - this.dim.width;
 
     for (var track = 0; track < this.tracks.length; track++)
 	this.tracks[track].startZoom(this.pxPerBp,
@@ -1076,8 +1080,8 @@ GenomeView.prototype.zoomUpdate = function(zoomLoc, fixedBp) {
     var centerStripe = Math.round(centerPx / this.stripeWidth);
     var firstStripe = (centerStripe - ((this.stripeCount) / 2)) | 0;
     this.offset = firstStripe * this.stripeWidth;
-    this.maxOffset = this.bpToPx(this.ref.end) - this.stripeCount * this.stripeWidth;
-    this.maxLeft = this.bpToPx(this.ref.end) - this.dim.width;
+    this.maxOffset = this.bpToPx(this.ref.end+1) - this.stripeCount * this.stripeWidth;
+    this.maxLeft = this.bpToPx(this.ref.end+1) - this.dim.width;
     this.minLeft = this.bpToPx(this.ref.start);
     this.zoomContainer.style.left = "0px";
     this.setX((centerPx - this.offset) - (eWidth / 2));
@@ -1123,7 +1127,7 @@ GenomeView.prototype.scrollUpdate = function() {
 
 GenomeView.prototype.trackHeightUpdate = function(trackName, height) {
     var y = this.getY();
-    // Operator precedence bug -- must put "x in y" in parantheses, "!" has higher precedence!!
+    // found operator precedence bug -- must put "x in y" in parantheses, "!" has higher precedence!!
     //    if (! trackName in this.trackIndices) return;
     if (! (trackName in this.trackIndices)) return; 
     var track = this.trackIndices[trackName];
@@ -1182,6 +1186,10 @@ GenomeView.prototype.showVisibleBlocks = function(updateHeight, pos, startX, end
 
     var startBase = Math.round(this.pxToBp((leftVisible * this.stripeWidth)
 					   + this.offset));
+    // GAH decrementing startBase inherited from merge of GMOD/jbrowse:master, 
+    //    not sure if should do this in WebApollo, but for now preserving from merge
+    startBase -= 1;
+
     var containerStart = Math.round(this.pxToBp(this.offset));
     var containerEnd =
 	Math.round(this.pxToBp(this.offset

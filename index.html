@@ -61,13 +61,17 @@
     <script type="text/javascript" src="js/Layout.js"></script>
     <script type="text/javascript" src="js/FeatureSelectionManager.js"></script>
     <script type="text/javascript" src="js/FeatureTrack.js"></script>
-    <script type="text/javascript" src="js/DraggableFeatureTrack.js"></script>
+   <script type="text/javascript" src="js/DraggableFeatureTrack.js"></script>
     <!-- for testing draggable etc. -->
     <!--   <script type="text/javascript" src="js/BasicDraggableFeatureTrack.js"></script>   -->
     <script type="text/javascript" src="js/DasFeatureTrack.js"></script>
     <script type="text/javascript" src="js/AnnotTrack.js"></script>
-   <script type="text/javascript" src="js/UITracks.js"></script>
-    <script type="text/javascript" src="js/ImageTrack.js"></script>
+    <!-- UITracks replaced by StaticTrack and GridTrack
+         <script type="text/javascript" src="js/UITracks.js"></script>
+    -->
+   <script type="text/javascript" src="js/StaticTrack.js"></script>
+   <script type="text/javascript" src="js/GridTrack.js"></script>
+   <script type="text/javascript" src="js/ImageTrack.js"></script>
 
     <!-- for testing CanvasTrack -->
     <script type="text/javascript" src="js/CanvasTrack.js"></script>
@@ -129,6 +133,7 @@
 
 
     <script type="text/javascript">
+<<<<<<< HEAD:index.html
       /* <![CDATA[ */
            var queryParams = dojo.queryToObject(window.location.search.slice(1));
            var bookmarkCallback = function(brwsr) {
@@ -138,7 +143,6 @@
                       + "?loc=" + brwsr.visibleRegion()
                       + "&tracks=" + brwsr.visibleTracks();
            }
-
            var dataRoot = queryParams.data || 'data';
            // var dataRoot = queryParams.data || '';  // blank dataRoot for dm3
            var b = new Browser({
@@ -146,19 +150,25 @@
 	                           // dataRoot: "data/"  // for Amel4.5
 				   // dataRoot: ""  // for dm3
                                    // refSeqs: refSeqs,
-                                   refSeqs: {url: dataRoot + "/refSeqs.json"},
+                                  refSeqs: {url: dataRoot + "/seq/refSeqs.json"},
                                    // trackData: trackInfo,
-                                   tracklists: [
+                                  tracklists: [
                                        {url: dataRoot + "/trackList.json"}
                                    ],
                                    nameUrl: dataRoot + "/names/root.json",
                                    // defaultTracks: "DNA,Annotations,RefSeq",
                                    defaultTracks: "DNA,gene,mRNA,noncodingRNA",
+                                   queryParams: queryParams,
                                    location: queryParams.loc,
                                    tracks: queryParams.tracks,
-                                   bookmark: bookmarkCallback,
-           });
-           b.deferredFunctions.push(function() { loadTouch(); });
+                                   // is bookmark superceded by show_nav, show_tracklist, show_overview
+                                  //  after merge from GMOD/jbrowse:master ???
+                                  bookmark: bookmarkCallback,
+				   show_nav: queryParams.nav,
+				   show_tracklist: queryParams.tracklist,
+				   show_overview: queryParams.overview
+                               });
+          b.deferredFunctions.push(function() { loadTouch(); });
 
     /* ]]> */
       <!-- standard jbrowse dataRoot setting in Browser constructor... -->

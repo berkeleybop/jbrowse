@@ -56,12 +56,14 @@ SequenceTrack.prototype.setViewInfo = function(genomeView, numBlocks,
     this.setLabel(this.key);
 };
 
+SequenceTrack.nbsp = String.fromCharCode(160);
+
 /**
  *   GAH
  *   not entirely sure, but I think this strategy of calling getRange() only works as long as 
  *   seq chunk sizes are a multiple of block sizes
  *   or in other words for a given block there is only one chunk that overlaps it
- *      (otherwise in the callback would need to fiddle with horizontal position of seqNode within the block)
+ *      (otherwise in the callback would need to fiddle with horizontal position of seqNode within the block) ???
  */
 SequenceTrack.prototype.fillBlock = function(blockIndex, block,
                                              leftBlock, rightBlock,
@@ -78,6 +80,14 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
         this.getRange(leftBase, rightBase,
                       function(start, end, seq) {
                           // console.log("blockIndex: %d, adding seq from %d to %d: %s", blockIndex, start, end, seq);
+
+                          // fill with leading blanks if the
+                          // sequence does not extend all the way
+                          // across our range
+                          for( ; start < 0; start++ ) {
+                              seq = SequenceTrack.nbsp + seq; //nbsp is an "&nbsp;" entity
+                          }
+
                           var seqNode = document.createElement("div");
                           seqNode.className = "sequence";
                           seqNode.appendChild(document.createTextNode(seq));
@@ -103,7 +113,7 @@ SequenceTrack.prototype.getRange = function(start, end, callback) {
     //    interbase, so residues retrieved from chunk are start to end-1
     //callback: function called for every chunk that overlaps range, 
     //            takes (chunkstart, chunkend, chunkseq)
-    var firstChunk = Math.floor((start) / this.chunkSize);
+    var firstChunk = Math.floor( Math.max(0,start) / this.chunkSize);
     var lastChunk = Math.floor((end - 1) / this.chunkSize);
     // var callbackInfo = {start: start, end: end, callback: callback};
     var chunkSize = this.chunkSize;
