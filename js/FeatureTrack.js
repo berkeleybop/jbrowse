@@ -2,9 +2,10 @@ function FeatureTrack(trackMeta, refSeq, browserParams) {
     //trackMeta: object with:
     //            key:   display text track name
     //            label: internal track name (no spaces, odd characters)
-    //            sourceUrl: URL of the tracklist containing this track entry 
-    //                  GAH newJSON merge notes: sourceUrl replaces previous "url": URL of the track's JSON file (for given refSeq)
-    //            config: configuration info for this track (replaces trackInfo.clientConfig?)
+    //            trackMeta: JSON data structure loaded from trackList for this track, 
+    //                          includes label, config, etc.
+    //            sourceUrl: URL of the trackList containing this track entry 
+    //                 sourceUrl is set in Browser.addTrackList(), and is same for each trackMeta in a trackList
     //refSeq: object with:
     //         name:  refseq name
     //         start: refseq start
@@ -567,7 +568,8 @@ FeatureTrack.prototype.getId = function(feature, path)  {
     var id = feature.uid;
     if (!id)  {
 	if (this.uniqueIdField)  {  
-	    id = feature[this.fields[this.uniqueIdField]];
+	    // id = feature[this.fields[this.uniqueIdField]];
+	    id = this.attrs.get(feature, this.uniqueIdField);
 	}
 	else if (path)  {
 	    id = path.join(",");
