@@ -5,26 +5,45 @@
 //Bioinformatics, doi:10.1093/bioinformatics/btl647
 //http://bioinformatics.oxfordjournals.org/cgi/content/abstract/btl647v1
 
-function NCList() {
-    this.featIdMap = {};
+/**
+ *   NOT a true NCList!
+ */
+function BamPseudoNCList(bamfile, refSeq) {
+    this.make_cigar_subfeats = true;
+    this.bamfile = bamfile;
+    this.refSeq = refSeq;
+    this.refLength = refSeq.length;
+    this.lazyIndex = BamUtils.lazyIndex;
+    this.sublistIndex = BamUtils.sublistIndex;
     this.topList = [];
+    // for now make topList an array of lazy-load chunks, each of length chunk_size
+    //   like NCList, if iterate() touches lazy-load chunk, will trigger loading (but via bamfile rather than urltemplate)
+    var chunk_size = 1000;
+    var maxindex = Math.ceil(this.refLength / chunk_size);
+    // console.log("refSeq length: " + this.refLength + ", lazy chunks: " + maxindex);
+    for (var i=0; i<maxindex; i++) {
+	var chunk_min = i * chunk_size;
+	var chunk_max = chunk_min + chunk_size;
+	if (chunk_max > this.refLength) { chunk_max = this.refLength; }
+	// includes empty Object at chunk[lazyIndex] to indicate it's a "fake" lazy loading feature
+	var chunk = [ chunk_min, chunk_max, {} ]; 
+	this.topList.push(chunk);
+    }
 }
 
-NCList.prototype.importExisting = function(nclist, sublistIndex,
-                                           lazyIndex, baseURL,
-                                           lazyUrlTemplate) {
-    this.topList = nclist;
-    this.sublistIndex = sublistIndex;
-    this.lazyIndex = lazyIndex;
-    this.baseURL = baseURL;
-    this.lazyUrlTemplate = lazyUrlTemplate;
-};
+// BamPseudoNCList.prototype.importExisting   // similar functionality merged into constructor
 
 /**
+ *  nearly identical to NCList.fill(), 
+ *    but for populating any level in the nested list structure 
+ *        assumes all intervals overlap/are contained in parent_list arg
+ *        assumes parent_list sublistIndex is empty (replaces it)
+ *        assumes interval[0] = min, interval[1] = max
  *  NOT for appending!
  *  erases current topList and subarrays, repopulates from intervals
  */
-NCList.prototype.fill = function(intervals, sublistIndex) {
+BamPseudoNCList.prototype.makeSubLists = function(intervals, parent_list)  {
+              // , sublistIndex) {
     //intervals: array of arrays of [start, end, ...]
     //sublistIndex: index into a [start, end] array for storing a sublist
     //              array. this is so you can use those arrays for something
@@ -32,9 +51,11 @@ NCList.prototype.fill = function(intervals, sublistIndex) {
     //              That's hacky, but keeping a separate copy of the intervals
     //              in the NCList seems like a waste (TODO: measure that waste).
     //half-open?
-    this.sublistIndex = sublistIndex;
+    // this.sublistIndex = sublistIndex;
+    var sublistIndex = this.sublistIndex;
     if (intervals.length == 0) {
-        this.topList = [];
+	parent_list[sublistIndex] = [];
+        // this.topList = [];
         return;
     }
     var myIntervals = intervals;//.concat();
@@ -48,7 +69,9 @@ NCList.prototype.fill = function(intervals, sublistIndex) {
 
     var sublistStack = new Array();
     var curList = new Array();
-    this.topList = curList;
+    //    this.topList = curList;
+    parent_list[sublistIndex] = curList;
+
     curList.push(myIntervals[0]);
     if (myIntervals.length == 1) return;
     var curInterval, topSublist;
@@ -82,7 +105,7 @@ NCList.prototype.fill = function(intervals, sublistIndex) {
     }
 };
 
-NCList.prototype.binarySearch = function(arr, item, itemIndex) {
+BamPseudoNCList.prototype.binarySearch = function(arr, item, itemIndex) {
     var low = -1;
     var high = arr.length;
     var mid;
@@ -101,23 +124,25 @@ NCList.prototype.binarySearch = function(arr, item, itemIndex) {
     if (1 == itemIndex) return high; else return low;
 };
 
-NCList.prototype.iterHelper = function(arr, from, to, fun, finish,
+BamPseudoNCList.prototype.iterHelper = function(arr, from, to, fun, finish,
                                        inc, searchIndex, testIndex, path) {
     var len = arr.length;
     var i = this.binarySearch(arr, from, searchIndex);
     while ((i < len)
            && (i >= 0)
            && ((inc * arr[i][testIndex]) < (inc * to)) ) {
-
-        if ("object" == typeof arr[i][this.lazyIndex]) {
+	var feat = arr[i];
+	var lazyField =feat[this.lazyIndex];
+        if ("object" == typeof lazyField) {
+	    var lazyFeat = feat;
             var ncl = this;
             // lazy node
-            if (arr[i][this.lazyIndex].state) {
-                if ("loading" == arr[i][this.lazyIndex].state) {
+            if (lazyField.state) {
+                if ("loading" == lazyField.state) {
                     // node is currenly loading; finish this query once it
                     // has been loaded
                     finish.inc();
-                    arr[i][this.lazyIndex].callbacks.push(
+                    lazyField.callbacks.push(
                         function(parentIndex) {
                             return function(o) {
                                 ncl.iterHelper(o, from, to, fun, finish, inc,
@@ -127,59 +152,74 @@ NCList.prototype.iterHelper = function(arr, from, to, fun, finish,
                             };
                         }(i)
                     );
-                } else if ("loaded" == arr[i][this.lazyIndex].state) {
-                    // just continue below
+                } else if ("loaded" == lazyField.state) {
+                    // just continue below (at SUBLIST_ITERATE)
+		    // (but not doing callback fun(feat), since feat  
+		    //    is a "fake" feature meant to trigger lazy loading, rather than a real feature
                 } else {
-                    console.log("unknown lazy type: " + arr[i]);
+                    console.log("unknown lazy type: " + lazyFeat);
                 }
             } else {
                 // no "state" property means this node hasn't been loaded,
                 // start loading
-                arr[i][this.lazyIndex].state = "loading";
-                arr[i][this.lazyIndex].callbacks = [];
+                lazyField.state = "loading";
+                lazyField.callbacks = [];
                 finish.inc();
-                dojo.xhrGet(
-                    {
-                        url: this.baseURL +
-                            this.lazyUrlTemplate.replace(
-                                /\{chunk\}/g,
-                                arr[i][this.lazyIndex].chunk
-                            ),
-                        handleAs: "json",
-                        load: function(lazyFeat, lazyObj,
-                                       sublistIndex, parentIndex) {
-                            return function(o) {
-                                lazyObj.state = "loaded";
-                                lazyFeat[sublistIndex] = o;
-                                ncl.iterHelper(o, from, to,
-                                               fun, finish, inc,
-                                               searchIndex, testIndex,
-                                               path.concat(parentIndex));
-                                for (var c = 0;
-                                     c < lazyObj.callbacks.length;
-                                     c++)
-                                     lazyObj.callbacks[c](o);
-                                finish.dec();
-                            };
-                        }(arr[i], arr[i][this.lazyIndex], this.sublistIndex, i),
-                        error: function() {
-                            finish.dec();
-                        }
-                    });
+		var chunkMin = lazyFeat[0];
+		var chunkMax = lazyFeat[1];
+
+		// this.bamfile.fetch(ncl.refSeq.name, bamMin, bamMax, 
+		this.bamfile.fetch(ncl.refSeq.name, chunkMin, chunkMax, 
+			  function(bamrecords, error) {
+			      if (error) { finish.dec(); }
+			      else {
+				  // set state to "loaded"
+				  lazyField.state = "loaded";
+
+				  // create JBrowse JSON feats array from returned BAM records
+				  var bamfeats = [];
+				  for (var bindex = 0; bindex < bamrecords.length; bindex++)  {
+				      var record = bamrecords[bindex];
+				      var bamfeat = BamUtils.convertBamRecord(record, ncl.make_cigar_subfeats);
+				      bamfeats.push(bamfeat);
+				  }
+
+				  // construct nested containment list array from JSON feats
+				  //     (using modified NCList.fill() method
+				  // populate lazyFeat[sublistIndex] with NCL array
+				  ncl.makeSubLists(bamfeats, lazyFeat);
+				  var sublists = lazyFeat[ncl.sublistIndex];
+
+				  // call iterHelper on newly created NCL sublist array
+				  ncl.iterHelper(sublists, from, to,
+						 fun, finish, inc,
+						 searchIndex, testIndex,
+						 path.concat(i));
+
+				  // handle any callbacks that were postponed while loading was in progress
+                                  for (var c = 0; c < lazyField.callbacks.length; c++) {
+                                      lazyField.callbacks[c](sublists);
+				  }
+
+				  finish.dec();
+			      }
+			  } );
             }
         } else {
-            fun(arr[i], path.concat(i));
+            fun(feat, path.concat(i));
         }
 
-        if (arr[i][this.sublistIndex])
-            this.iterHelper(arr[i][this.sublistIndex], from, to,
+	// SUBLIST_ITERATE: now if feat contain sublists, recurse into sublists
+        if (feat[this.sublistIndex])
+            this.iterHelper(feat[this.sublistIndex], from, to,
                             fun, finish, inc, searchIndex, testIndex,
                             path.concat(i));
         i += inc;
-    }
+    }  // END main while loop
 };
 
-NCList.prototype.iterate = function(from, to, fun, postFun) {
+BamPseudoNCList.prototype.iterate = function(from, to, fun, postFun) {
+    // console.log("BamPseudoNCList.iterate() called, min = " + from + ", max = " + to + ", length = " + (to-from));
     // calls the given function once for each of the
     // intervals that overlap the given interval
     //if from <= to, iterates left-to-right, otherwise iterates right-to-left
@@ -198,7 +238,7 @@ NCList.prototype.iterate = function(from, to, fun, postFun) {
     finish.finish();
 };
 
-NCList.prototype.histogram = function(from, to, numBins, callback) {
+BamPseudoNCList.prototype.histogram = function(from, to, numBins, callback) {
     //calls callback with a histogram of the feature density
     //in the given interval
 
@@ -221,73 +261,8 @@ NCList.prototype.histogram = function(from, to, numBins, callback) {
                  );
 };
 
-NCList.prototype.setSublistIndex = function(index) {
-    if (this.sublistIndex === undefined) {
-        this.sublistIndex = index;
-    } else {
-        throw new Error("sublistIndex already set; can't be changed");
-    }
-};
+// NOT NEEDED BamPseudoNCList.prototype.setSublistIndex = function(index) {
+// NOT NEEDED: BamPseudoNCList.prototype.add = function(feat, id) {
+// NOT NEEDED: NCList.prototype.deleteEntry = function(id)   {
+// NOT NEEDED: NCList.prototype.contains = function(id)  {
 
-NCList.prototype.add = function(feat, id) {
-    if (this.verbose)  {
-	console.log("NCList.add() called, id: " + id);
-	console.log(feat);
-    }
-    var featArray = [feat];
-    this.iterate(-Infinity, Infinity, function(f) { featArray.push(f); });
-    for (var i = 0; i < featArray.length; i++) {
-        if (featArray[i][this.sublistIndex])
-            delete featArray[i][this.sublistIndex];
-    }
-    this.fill(featArray, this.sublistIndex);
-    this.featIdMap[id] = feat;
-};
-
-NCList.prototype.deleteEntry = function(id) {
-    var toDelete = this.featIdMap[id];
-    if (this.verbose)  {
-	console.log("NCList.deleteEntry() called, id: " + id);
-	console.log(toDelete);
-    }
-    if (toDelete) {
-        var featArray = [];
-        this.iterate(-Infinity, Infinity,
-                     function(feat) {
-                         if (feat !== toDelete) featArray.push(feat);
-                     });
-        for (var i = 0; i < featArray.length; i++) {
-            if (featArray[i][this.sublistIndex])
-                delete featArray[i][this.sublistIndex];
-        }
-        delete this.featIdMap[id];
-        this.fill(featArray, this.sublistIndex);
-    } else {
-        throw new Error("NCList.deleteEntry: id " + id + " doesn't exist");
-    }
-};
-
-/*  as of 2/2012, contains() (and therefore featIdMap) only used by AnnotTrack
- *     may want to push out to AnnotTrack, since populating featIdMap only happens in add(), 
- *        and most NCList construction doesn't call add() (exception is AnnotTrack)
- *     alternatively, make sure featIdMap is populated for every feature in NCList 
- *        (would require featIdMap[] assignment in fill(), importExisting(), and lazy loading in iterHelper() ?
- *            possibly elsewhere too? )
- */
-NCList.prototype.contains = function(id)  {
-    return (!!this.featIdMap[id]);  
-};
-
-
-/*
-
-Copyright (c) 2007-2009 The Evolutionary Software Foundation
-
-Created by Mitchell Skinner <mitch_skinner@berkeley.edu>
-
-This package and its accompanying libraries are free software; you can
-redistribute it and/or modify it under the terms of the LGPL (either
-version 2.1, or at your option, any later version) or the Artistic
-License 2.0.  Refer to LICENSE for the full license text.
-
-*/

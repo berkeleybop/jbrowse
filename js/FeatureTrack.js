@@ -2,7 +2,7 @@ function FeatureTrack(trackMeta, url, refSeq, browserParams) {
     //trackMeta: object with:
     //            key:   display text track name
     //            label: internal track name (no spaces, odd characters)
-    //url: URL of the track's JSON file
+    //url: URL of the track's JSON file (for given refSeq)
     //refSeq: object with:
     //         start: refseq start
     //         end:   refseq end
@@ -13,13 +13,13 @@ function FeatureTrack(trackMeta, url, refSeq, browserParams) {
 
     if (arguments.length == 0)
       return;
-
     if (browserParams === undefined)  {return;}
     Track.call(this, trackMeta.label, trackMeta.key,
 	       false, browserParams.changeCallback);
+
     this.fields = {};
-    this.features = new NCList();
-    this.refSeq = refSeq;
+    // this.features = new NCList();  // moved to loadSuccess
+    this.refSeq = refSeq; 
     // baseUrl is dataRoot param passed to Browser constructor in index.html
     this.baseUrl = (browserParams.baseUrl ? browserParams.baseUrl : "");
     this.url = url;
@@ -28,15 +28,15 @@ function FeatureTrack(trackMeta, url, refSeq, browserParams) {
     this.numBins = 25;
     this.histLabel = false;
     this.padding = 5;
+    this.glyphHeightPad = 2;
+    this.levelHeightPad = 2;
     this.trackPadding = browserParams.trackPadding;
     console.log("baseUrl: " + this.baseUrl);
     console.log("url: " + this.url);
     console.log("trackBaseUrl: " + this.trackBaseUrl);
-
     this.trackMeta = trackMeta;
 
-    this.load(this.baseUrl + url);
-
+//    this.load(this.baseUrl + url);
     var thisObj = this;
     /* GAH -- never used?
       this.subfeatureCallback = function(i, val, param) {
@@ -45,6 +45,17 @@ function FeatureTrack(trackMeta, url, refSeq, browserParams) {
         };
     */	
     this.featureClick = function(event) { thisObj.onFeatureClick(event); };
+
+    var loadUrl;
+    if (Util.startsWith(url, "http:") || 
+	Util.startsWith(url, "file:")) {
+	loadUrl = url;
+    }
+    else  {
+	  loadUrl = this.baseUrl + url;
+    }
+    // base Track.load() doesn't use trackMeta arg, but some subclasses FeatureTrack.load() do
+    this.load(loadUrl, trackMeta);  
 }
 
 FeatureTrack.prototype = new Track("");
@@ -90,6 +101,25 @@ FeatureTrack.prototype.loadSuccess = function(trackInfo) {
 	importBaseUrl = this.trackBaseUrl;
     }
     console.log("url_template: " + trackInfo.lazyfeatureUrlTemplate);
+
+    /*  
+     *   features Object contract:
+     *        for FeatureTrack, features Object must implement:
+     *             iterate()
+     *             importExisting()   (only in FeatureTrack.loadSuccess())
+     *             histogram()        (only in FeatureTrack.fillHist())
+     *       Also, it's possible other NCList methods may get called in subclasses (ex: AnnotTrack)
+     *       For subclasses that need features Object to be class other than NCList:
+     *           If featureTrack.loadSuccess() is overriden to handle features initialization differently, then
+     *                features need not implement importExisting()
+     *           If no histogram mode, or histograms handled differently, then may not need histogram()
+     *           Then only method absolutely needed is iterate() 
+     *                 (though as of 2/2012, even features.iterate() is only used in:
+     *                     FeatureTrack.fillFeatures() and
+     *                     FeatureEdgeMatchManager.selectionAdded(), 
+     *           
+     */
+    this.features = new NCList();  // moved to loadSuccess()
     this.features.importExisting(trackInfo.featureNCList,
                                  trackInfo.sublistIndex,
                                  trackInfo.lazyIndex,
@@ -101,8 +131,11 @@ FeatureTrack.prototype.loadSuccess = function(trackInfo) {
 //                                             this.trackBaseUrl);
                                  importBaseUrl);
 
-    this.histScale = 4 * (trackInfo.featureCount / this.refSeq.length);
+    // histScale: scale (in pixels/bp) below which histograms are displayed instead of individual features
+    this.histScale = 4 * (trackInfo.featureCount / this.refSeq.length); 
+    // labelScale: scale (in pixels/bp above which labels are displayed)
     this.labelScale = 50 * (trackInfo.featureCount / this.refSeq.length);
+    // subfeatureScale: scale (in pixels/bp) above which subfeatures are displayed)
     this.subfeatureScale = 80 * (trackInfo.featureCount / this.refSeq.length);
     this.className = trackInfo.className;
     this.renderClassName = trackInfo.renderClassName;
@@ -494,7 +527,8 @@ FeatureTrack.prototype.measureStyles = function() {
     if (Util.is_ie6) heightTest.appendChild(document.createComment("foo"));
     document.body.appendChild(heightTest);
     glyphBox = dojo.marginBox(heightTest);
-    this.glyphHeight = Math.round(glyphBox.h + 2);
+    this.glyphHeight = Math.round(glyphBox.h + this.glyphHeightPad);
+    // console.log("heightcalc: " + this.className + ", h = " + glyphBox.h + ", glyphHeight = " + this.glyphHeight);
     this.padding += glyphBox.w;
     document.body.removeChild(heightTest);
 
@@ -516,6 +550,10 @@ FeatureTrack.prototype.measureStyles = function() {
 FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
                                                 containerStart, containerEnd) {
     var fields = this.fields;
+
+    // var debug_feat = (feature[fields["start"]] === 245078);
+    // if (debug_feat)  { console.log("FeatureTrack.renderFeature() called for debug_feat"); }
+
     if (!feature.uid)  {  // should have been set before in getId(), but just making sure
 	feature.uid = uniqueId;
     }
@@ -544,11 +582,8 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
     }
     featureEnd += Math.max(1, this.padding / scale);
 
-    var levelHeight =
-        this.glyphHeight + 2 +
-        (
-            (fields["name"] && (scale > this.labelScale)) ? this.nameHeight : 0
-        );
+    var levelHeight = this.glyphHeight + this.levelHeightPad + 
+        ((this.fields["name"] && (scale > this.labelScale)) ? this.nameHeight : 0 );
 
     var top = block.featureLayout.addRect(uniqueId,
                                           featureStart,
@@ -654,10 +689,13 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
         block.appendChild(labelDiv);
     }
 
+
     if (fields["subfeatures"]
         && (scale > this.subfeatureScale)
         && feature[fields["subfeatures"]]
         && feature[fields["subfeatures"]].length > 0) {
+
+	// if (debug_feat)  { console.log("calling handleSubFeatures() for debug_feat"); }
 
 	// refactoring subfeature handling/loading into 
 	//   handleSubFeatures() method to allow for subclasses to 
@@ -712,7 +750,8 @@ FeatureTrack.prototype.featureUrl = function(feature) {
 
 FeatureTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
                                                    displayStart, displayEnd, block) {
-
+    // var debug_feat = (feature[this.fields["start"]] === 245078);
+    // if (debug_feat) { console.log("called FeatureTrack.renderSubfeature for debug_feat"); }
     if (!subfeature.parent)  { subfeature.parent = feature; }
     var subStart = subfeature[this.subFields["start"]];
     var subEnd = subfeature[this.subFields["end"]];
@@ -752,9 +791,9 @@ FeatureTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
 	}
     }
 
-    //    console.log("className: " + className);
+    // if (debug_feat)  {  console.log("className: " + className); }
     // if subfeatureClasses specifies subfeature maps to null, then don't render the feature
-    if (!className)  {
+    if (!className)  { 
 	return null;
     }
 
@@ -779,8 +818,8 @@ FeatureTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
 };
 
 /**
-*  given a feature data struct being rendered on this track, return the div used for rendering the feature
-*    or (undefined? null?) if no div found
+*  given a feature data struct being rendered on this track, return the div used for rendering the feature, 
+*    or undefined if no div found
 *  JBrowse should only have a single div for each feature (features that overlap multiple blocks are assigned 
 *      to a single block within the set they overlap (and hence a single feat div is generated)
 */
@@ -793,6 +832,10 @@ FeatureTrack.prototype.getFeatDiv = function(feature)  {
       */
 
     // assuming "this" is track
+    //    okay to pass null for the feature nclist path, since don't need for id construction 
+    //       because for there to be a div associated with the feature, must 
+    //       have already called renderFeature, which populates feature.uid, which in getId() 
+    //       takes precedence over passed in path anyway
     var fid = this.getId(feature, null);
     //    console.log("looking for feature id: " + fid);
 

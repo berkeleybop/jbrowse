@@ -162,6 +162,10 @@ CanvasTrack.prototype.setUpGraphControl = function()  {
     $rangeSC.addClass("graph-range-slider");
 //    $rangeSC.css('float', 'left');
 
+    //  using standard jQuery UI Slider plugin for now
+    //  may want to try more flexible slider, for example
+    //      JQ Slider (also a jQuery plugin): 
+    //          http://www.egrappler.com/free-multi-node-range-data-slider-jqslider/
     var $slider = $rangeSC.slider( { 
 		        orientation: "vertical", 
 			range: true, 
@@ -225,19 +229,29 @@ CanvasTrack.prototype.setUpGraphControl = function()  {
     CanvasTrack.GRAPH_CONTROL_COUNT++;
 }
 
+/**
+ * Only limited functionality for now
+ * 
+ * not handling Wiggle type = fixed step (score)
+ * not handling bedgraph (seq start end score)
+ * assuming Wiggle type = variable step (pos score), 
+ *   (and that score for i holds for every coord till next entry i+1)
+ * TODO: Expand to handle all wiggle types
+ */
 CanvasTrack.prototype.parseData = function(data)  {
     console.log("calling CanvasTrack.parseData");
     var  lines = data.split('\n');
     var linecount = lines.length;
-    var locs = [];
-    var scores = [];
-    var sums = [];
+    // presize locs, scores, sums arrays
+    var locs = new Array(linecount);
+    var scores = new Array(linecount);
+    var sums = new Array(linecount);
     var loc;
     var minviz = 1000000;
     var maxviz = -1000000;
     var score;
 //    var score;
-    console.log("line count: " + lines.length);
+    console.log("line count: " + linecount);
     //  for (var i=0; i<linecount; i++)  {
     for (var i=0; i<linecount; i++)  {
 	var line = lines[i];
