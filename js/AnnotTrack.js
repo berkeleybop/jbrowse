@@ -1121,6 +1121,68 @@ AnnotTrack.prototype.setTranslationStartInCDS = function(annots, event) {
     }
 }
 
+AnnotTrack.prototype.flipStrand = function()  {
+    var selected = this.selectionManager.getSelection();
+    this.flipStrandForSelectedFeatures(selected);
+};
+
+AnnotTrack.prototype.flipStrandForSelectedFeatures = function(annots) {
+    var track = this;
+    var uniqueNames = new Object();
+    for (var i in annots)  {
+    	var annot = annots[i];
+    	// get top level feature
+    	while (annot.parent) {
+    		annot = annot.parent;
+    	}
+    	var uniqueName = annot.uid;
+    	// just checking to ensure that all features in selection are from this track
+    	if (annot.track === track)  {
+    		uniqueNames[uniqueName] = 1;
+    	}
+    }
+    var features = '"features": [';
+    var i = 0;
+    for (var uniqueName in uniqueNames) {
+	    var trackdiv = track.div;
+	    var trackName = track.getUniqueTrackName();
+
+	    if (i > 0) {
+	    	features += ',';
+	    }
+	    features += ' { "uniquename": "' + uniqueName + '" } ';
+	    ++i;
+    }
+    features += ']';
+    var operation = "flip_strand";
+    var trackName = track.getUniqueTrackName();
+    if (AnnotTrack.USE_LOCAL_EDITS)  {
+        // TODO
+        track.hideAll();
+        track.changed();
+    }
+    else  {
+    	dojo.xhrPost( {
+    	    postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }',
+    	    url: context_path + "/AnnotationEditorService",
+    	    handleAs: "json",
+    	    timeout: 5000 * 1000, // Time in milliseconds
+    	    load: function(response, ioArgs) {
+    	    },
+    	    // The ERROR function will be called in an error case.
+    	    error: function(response, ioArgs) { // 
+    			track.handleError(response);
+    	    	console.log("Annotation server error--maybe you forgot to login to the server?");
+    	    	console.error("HTTP status code: ", ioArgs.xhr.status); 
+    	    	//
+    	    	//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //  
+    	    	return response; // 
+    	    }
+
+    	});
+    }
+};
+
 AnnotTrack.prototype.setLongestORF = function()  {
     var selected = this.selectionManager.getSelection();
     this.selectionManager.clearSelection();
@@ -1222,7 +1284,7 @@ AnnotTrack.prototype.undoSelectedFeatures = function(annots) {
     	    handleAs: "json",
     	    timeout: 5000 * 1000, // Time in milliseconds
     	    load: function(response, ioArgs) {
-    	    	if (response.confirm) {
+    	    	if (response && response.confirm) {
     	    		if (track.handleConfirm(response.confirm)) {
         		    	dojo.xhrPost( {
         		    		sync: true,
@@ -1619,6 +1681,13 @@ AnnotTrack.prototype.initContextMenu = function() {
 				} ));
 				contextMenuItems["set_translation_start"] = index++;
 				annot_context_menu.addChild(new dijit.MenuItem( {
+					label: "Flip strand",
+					onClick: function(event) {
+						thisObj.flipStrand();
+					}
+				} ));
+				contextMenuItems["flip_strand"] = index++;
+				annot_context_menu.addChild(new dijit.MenuItem( {
 					label: "Undo",
 					onClick: function(event) {
 						thisObj.undo();
@@ -1717,6 +1786,7 @@ AnnotTrack.prototype.updateMenu = function() {
 	this.updateMergeMenuItem();
 	this.updateSplitMenuItem();
 	this.updateMakeIntronMenuItem();
+	this.updateFlipStrandMenuItem();
 	this.updateUndoMenuItem();
 	this.updateRedoMenuItem();
 	this.updateZoomToBaseLevelMenuItem();
@@ -1784,6 +1854,10 @@ AnnotTrack.prototype.updateMakeIntronMenuItem = function() {
     	return;
     }
     menuItem.set("disabled", false);
+};
+
+AnnotTrack.prototype.updateFlipStrandMenuItem = function() {
+	var menuItem = this.getMenuItem("flip_strand");
 };
 
 AnnotTrack.prototype.updateUndoMenuItem = function() {
