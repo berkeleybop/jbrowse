@@ -143,9 +143,11 @@ DraggableFeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
     } );
 
 
-    $div.bind("click", function(e) {
+/*  track click diagnostic (and example of how to add additional track mouse listener?)
+     $div.bind("click", function(e) {
 	console.log("track click, base position: " + track.gview.getGenomeCoord(e));
     } );
+*/
 
 };
 
