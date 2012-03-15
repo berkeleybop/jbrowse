@@ -93,6 +93,14 @@ ArrayRepr.prototype.attrIndices = function(attr) {
     );
 };
 
+/** 
+ *  return true iff given feature has attribute named attr defined in it's classes attributes 
+ */
+ArrayRepr.prototype.hasDefinedAttribute = function(obj, attr) {
+    return (this.fields[obj[0]][attr] !== undefined);
+//    return (!!this.fields[obj[0]][attr]);
+}
+
 ArrayRepr.prototype.get = function(obj, attr) {
     if (attr in this.fields[obj[0]]) {
         return obj[this.fields[obj[0]][attr]];
@@ -110,14 +118,14 @@ ArrayRepr.prototype.get = function(obj, attr) {
 ArrayRepr.prototype.fastGet = function(obj, attr) {
     // can be used only if attr is guaranteed to be in
     // the "classes" array for this object
-    return obj[self.fields[obj[0]][attr]];
+    return obj[this.fields[obj[0]][attr]];
 };
 
 ArrayRepr.prototype.set = function(obj, attr, val) {
     if (attr in this.fields[obj[0]]) {
         obj[this.fields[obj[0]][attr]] = val;
     } else {
-        var adhocIndex = self.classes[obj[0]].length + 1;
+        var adhocIndex = this.classes[obj[0]].attributes.length + 1;
         if (adhocIndex >= obj.length)
             obj[adhocIndex] = {};
         obj[adhocIndex][attr] = val;
@@ -162,13 +170,16 @@ ArrayRepr.prototype.makeFastGetter = function(attr) {
     };
 };
 
-ArrayRepr.prototype.construct = function(self, obj, klass) {
+/* not used, also not current with latest data struct */
+/*
+ ArrayRepr.prototype.construct = function(self, obj, klass) {
     var result = new Array(self.classes[klass].length);
     for (var attr in obj) {
         this.set(result, attr, obj[attr]);
     }
     return result;
 };
+*/
 
 /*
 
