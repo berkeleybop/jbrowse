@@ -142,21 +142,24 @@ Browser.prototype.addTracklist = function(url, trackList) {
 
 Browser.prototype.addRefseqs = function(refSeqs) {
     //currently only meant to be called once
-    console.log("Browser.addRefSeqs called");
+    console.log("************ Browser.addRefSeqs called ***************");
     this.allRefs = {};
     for (var i = 0; i < refSeqs.length; i++)
         this.allRefs[refSeqs[i].name] = refSeqs[i];
 
     var refCookie = dojo.cookie(this.params.containerID + "-refseq");
     this.refSeq = refSeqs[0];
+    console.log("initial refSeq: " + this.refSeq.name);
     for (var i = 0; i < refSeqs.length; i++) {
         this.chromList.options[i] = new Option(refSeqs[i].name,
                                                refSeqs[i].name);
         if (refSeqs[i].name.toUpperCase() == String(refCookie).toUpperCase()) {
             this.refSeq = this.allRefs[refSeqs[i].name];
+	    console.log("new refSeq from cookie: " + this.refSeq.name);
             this.chromList.selectedIndex = i;
         }
     }
+    console.log("chose refSeq: " + this.refSeq.name);
 
     //hook up GenomeView
     var gv = new GenomeView(this.viewElem, 250, this.refSeq, 1/200,
@@ -395,8 +398,8 @@ Browser.prototype.addTracks = function(trackList, replace) {
  */
 
 Browser.prototype.navigateTo = function(loc) {
+    var brwsr = this;
     if (!this.isInitialized) {
-        var brwsr = this;
 	console.log("pushing Browser.navigateTo to deferred functions");
         this.deferredFunctions.push(function() { brwsr.navigateTo(loc); });
 	return;
