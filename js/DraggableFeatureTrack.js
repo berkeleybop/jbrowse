@@ -225,10 +225,11 @@ DraggableFeatureTrack.prototype.renderFeature = function(feature, uniqueId, bloc
 
 	// if renderClassName field exists in trackData.json for this track, then add a child 
 	//    div to the featdiv with class for CSS styling set to renderClassName value
-	if (this.renderClassName)  {
+	var rclass = this.config.style.renderClassName;
+	if (rclass)  {
 	    // console.log("in FeatureTrack.renderFeature, creating annot div");
 	    var rendiv = document.createElement("div");
-	    rendiv.className = this.renderClassName;
+	    rendiv.className = rclass;
 	    if (Util.is_ie6) rendiv.appendChild(document.createComment());
 	    featdiv.appendChild(rendiv);
 	}
