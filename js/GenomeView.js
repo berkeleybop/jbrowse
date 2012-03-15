@@ -1239,7 +1239,7 @@ GenomeView.prototype.addTrack = function(track) {
 
     if (track.name == "Annotations") {
 	trackDiv.style.backgroundColor = "#FFFFDD";
-	labelDiv.style.backgroundColor = "#77AAFF";
+	// labelDiv.style.backgroundColor = "#77AAFF";
     }
 
     track.gview = this;
