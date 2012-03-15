@@ -24,10 +24,11 @@ NCList.prototype.importExisting = function(nclist, attrs, baseURL,
 
 
 /**
- *  NOT for appending!
+ *  DO NOT USE directly for adding additional intervals!
  *  erases current topList and subarrays, repopulates from intervals
+ *  if need to add additional intervals, use multiple calls to NCList.add() 
+ *        (n calls to add is very inefficient though: O(n^2) ?)
  */
-
 NCList.prototype.fill = function(intervals, attrs) {
     //intervals: array of arrays of [start, end, ...]
     //attrs: an ArrayRepr object
@@ -225,46 +226,71 @@ NCList.prototype.histogram = function(from, to, numBins, callback) {
 };
 */
 
+/* 
+ * WARNING: to use NCList.add(), 
+ *    MUST have all features for the track (on the current sequence) already loaded!!
+ * Otherwise:
+ *    1. calling add() will force lazy loading of any features not already loaded
+ *           due to iterate(-Infinity, Infinity) call
+ *    2. NCList rebuilding will likely be incomplete, 
+ *           because featArray after iterate is called may not include all the lazy loaded features, 
+ *           since adding those features to featArray is handled asynchronously
+ */
 NCList.prototype.add = function(feat, id) {
     if (this.verbose)  {
 	console.log("NCList.add() called, id: " + id);
 	console.log(feat);
     }
+    var getSublist = this.attrs.makeGetter("Sublist");
+    var setSublist = this.attrs.makeSetter("Sublist");
     var featArray = [feat];
     this.iterate(-Infinity, Infinity, function(f) { featArray.push(f); });
+    /* remove any sublist structure, this needs to be rebuilt in fill() */
     for (var i = 0; i < featArray.length; i++) {
-	var feat = featArray[i];
-	var sublist = this.attrs.get(feat, "Sublist");
-	if (sublist) { delete sublist; }
-       // if (featArray[i][this.sublistIndex])
-       //     delete featArray[i][this.sublistIndex];
+	var otherfeat = featArray[i];
+	if (getSublist(otherfeat))  {
+	    setSublist(otherfeat, null);
+	}
     }
-//    this.fill(featArray, this.sublistIndex);
+
     this.fill(featArray, this.attrs);
     this.featIdMap[id] = feat;
 };
 
+
+/* 
+ * WARNING: to use NCList.deleteEntry, 
+ *    MUST have all features for the track (on the current sequence) already loaded!!
+ * Otherwise:
+ *    1. calling add() will force lazy loading of any features not already loaded
+ *           due to iterate(-Infinity, Infinity) call
+ *    2. NCList rebuilding will likely be incomplete, 
+ *           because featArray after iterate is called may not include all the lazy loaded features, 
+ *           since adding those features to featArray is handled asynchronously
+ */
 NCList.prototype.deleteEntry = function(id) {
-    var toDelete = this.featIdMap[id];
+    var featToDelete = this.featIdMap[id];
     if (this.verbose)  {
 	console.log("NCList.deleteEntry() called, id: " + id);
-	console.log(toDelete);
+	console.log(featToDelete);
     }
-    if (toDelete) {
+    if (featToDelete) {
+	var getSublist = this.attrs.makeGetter("Sublist");
+	var setSublist = this.attrs.makeSetter("Sublist");
         var featArray = [];
         this.iterate(-Infinity, Infinity,
                      function(feat) {
-                         if (feat !== toDelete) featArray.push(feat);
+                         if (feat !== featToDelete) featArray.push(feat);
                      });
+	/* remove any sublist structure, this needs to be rebuilt in fill() */
         for (var i = 0; i < featArray.length; i++) {
-	    var feat = featArray[i];
-	    var sublist = this.attrs.get(feat, "Sublist");
-	    if (sublist) { delete sublist; }
-            // if (featArray[i][this.sublistIndex])
-            //    delete featArray[i][this.sublistIndex];
+	    var otherfeat = featArray[i];
+	    if (getSublist(otherfeat))  {
+		setSublist(otherfeat, null);
+	    }
         }
-        delete this.featIdMap[id];
-        // this.fill(featArray, this.sublistIndex);
+        // delete featToDelete;  // deleting featToDelete doesn't delete entry in featIdMap, must be explicit
+	delete this.featIdMap[id];
 	this.fill(featArray, this.attrs);
     } else {
         throw new Error("NCList.deleteEntry: id " + id + " doesn't exist");
