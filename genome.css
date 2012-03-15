@@ -170,7 +170,9 @@ div.blank-block {
 div.sequence {
     position: absolute;
     left: 0px;
-    font-family: Courier New,monospace;
+    /* Courier New is preferred by JBrowse, but it looks too light in Firefox, and jagged in Chrome */
+    /* font-family: Courier New,monospace; */
+    font-family: monospace;
     font-size: 10px;
     letter-spacing: 2px;
     padding-left: 2px;
@@ -181,6 +183,7 @@ div.annot-sequence  {
     position: absolute;
     left: 0px;
     font-family: monospace;
+    font-size: 10px;
     letter-spacing: 2px;
     padding-left: 2px;
     z-index: 15;
