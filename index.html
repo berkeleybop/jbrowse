@@ -152,11 +152,12 @@
                                   refSeqs: {url: dataRoot + "/seq/refSeqs.json"},
                                    // trackData: trackInfo,
                                   tracklists: [
+                                       {url: dataRoot + "/annotation_trackList.json"}, 
                                        {url: dataRoot + "/trackList.json"}
                                    ],
                                    nameUrl: dataRoot + "/names/root.json",
                                    // defaultTracks: "DNA,Annotations,RefSeq",
-                                   defaultTracks: "DNA,gene,mRNA,noncodingRNA",
+                                   defaultTracks: "DNA,Annotations",
                                    queryParams: queryParams,
                                    location: queryParams.loc,
                                    tracks: queryParams.tracks,
