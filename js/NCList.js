@@ -40,14 +40,14 @@ NCList.prototype.fill = function(intervals, attrs) {
     this.attrs = attrs;
     this.start = attrs.makeFastGetter("Start");
     this.end = attrs.makeFastGetter("End");
-    var sublist = attrs.makeSetter("Sublist");
+    var setSublist = attrs.makeSetter("Sublist");
     var start = this.start;
     var end = this.end;
     var myIntervals = intervals;
     //sort by OL
     myIntervals.sort(function(a, b) {
         if (start(a) != start(b))
-            return start(a) - start(b());
+            return start(a) - start(b);
         else
             return end(b) - end(a);
     });
@@ -65,7 +65,7 @@ NCList.prototype.fill = function(intervals, attrs) {
             //create a new sublist starting with this interval
             sublistStack.push(curList);
             curList = new Array(curInterval);
-            sublist(myIntervals[i - 1], curList);
+            setSublist(myIntervals[i - 1], curList);
         } else {
             //find the right sublist for this interval
             while (true) {
@@ -215,13 +215,15 @@ NCList.prototype.histogram = function(from, to, numBins, callback) {
                  );
 };
 
-NCList.prototype.setSublistIndex = function(index) {
+/*
+ NCList.prototype.setSublistIndex = function(index) {
     if (this.sublistIndex === undefined) {
         this.sublistIndex = index;
     } else {
         throw new Error("sublistIndex already set; can't be changed");
     }
 };
+*/
 
 NCList.prototype.add = function(feat, id) {
     if (this.verbose)  {
@@ -231,10 +233,14 @@ NCList.prototype.add = function(feat, id) {
     var featArray = [feat];
     this.iterate(-Infinity, Infinity, function(f) { featArray.push(f); });
     for (var i = 0; i < featArray.length; i++) {
-        if (featArray[i][this.sublistIndex])
-            delete featArray[i][this.sublistIndex];
+	var feat = featArray[i];
+	var sublist = this.attrs.get(feat, "Sublist");
+	if (sublist) { delete sublist; }
+       // if (featArray[i][this.sublistIndex])
+       //     delete featArray[i][this.sublistIndex];
     }
-    this.fill(featArray, this.sublistIndex);
+//    this.fill(featArray, this.sublistIndex);
+    this.fill(featArray, this.attrs);
     this.featIdMap[id] = feat;
 };
 
@@ -251,11 +257,15 @@ NCList.prototype.deleteEntry = function(id) {
                          if (feat !== toDelete) featArray.push(feat);
                      });
         for (var i = 0; i < featArray.length; i++) {
-            if (featArray[i][this.sublistIndex])
-                delete featArray[i][this.sublistIndex];
+	    var feat = featArray[i];
+	    var sublist = this.attrs.get(feat, "Sublist");
+	    if (sublist) { delete sublist; }
+            // if (featArray[i][this.sublistIndex])
+            //    delete featArray[i][this.sublistIndex];
         }
         delete this.featIdMap[id];
-        this.fill(featArray, this.sublistIndex);
+        // this.fill(featArray, this.sublistIndex);
+	this.fill(featArray, this.attrs);
     } else {
         throw new Error("NCList.deleteEntry: id " + id + " doesn't exist");
     }
