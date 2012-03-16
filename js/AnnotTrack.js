@@ -1868,7 +1868,7 @@ AnnotTrack.prototype.sortAnnotationsByLocation = function(annots) {
 	    var start1 = atts.get(annot1, "Start");
             var end1 = atts.get(annot1, "End");
 	    var start2 = atts.get(annot2, "Start");
-            var end2 = atts.get(annoot2, "End");
+            var end2 = atts.get(annot2, "End");
 
             if (start1 != start2)  { return start1 - start2; }
 	    else if (end1 != end2) { return end1 - end2; }
