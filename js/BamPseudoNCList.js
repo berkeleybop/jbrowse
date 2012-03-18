@@ -7,14 +7,27 @@
 
 /**
  *   NOT a true NCList!
+ *   constructor also fills function that importExisting does for NCList
  */
-function BamPseudoNCList(bamfile, refSeq) {
+function BamPseudoNCList(bamfile, refSeq, attrs) {
     this.make_cigar_subfeats = true;
+    // bamfile is a BamFile from dalliance/js/bam.js, includes both bam and bai fetchables etc.
     this.bamfile = bamfile;
     this.refSeq = refSeq;
+    this.attrs = attrs;
+    this.start = attrs.makeFastGetter("Start");
+    this.end = attrs.makeFastGetter("End");
+    this.getId = attrs.makeGetter("Id");
+    this.getChunk = this.attrs.makeGetter("Chunk");
+    this.getSublist = this.attrs.makeFastGetter("Sublist");
+    this.setSublist = this.attrs.makeFastSetter("Sublist");
+
     this.refLength = refSeq.length;
-    this.lazyIndex = BamUtils.lazyIndex;
-    this.sublistIndex = BamUtils.sublistIndex;
+
+    this.lazyClass = BamUtils.lazyClass;
+//    this.lazyIndex = BamUtils.lazyIndex;
+//    this.sublistIndex = BamUtils.sublistIndex;
+
     this.topList = [];
     // for now make topList an array of lazy-load chunks, each of length chunk_size
     //   like NCList, if iterate() touches lazy-load chunk, will trigger loading (but via bamfile rather than urltemplate)
@@ -26,10 +39,10 @@ function BamPseudoNCList(bamfile, refSeq) {
 	var chunk_max = chunk_min + chunk_size;
 	if (chunk_max > this.refLength) { chunk_max = this.refLength; }
 	// includes empty Object at chunk[lazyIndex] to indicate it's a "fake" lazy loading feature
-	var chunk = [ chunk_min, chunk_max, {} ]; 
+	var chunk = [ this.lazyClass, chunk_min, chunk_max, {} ]; 
 	this.topList.push(chunk);
     }
-}
+};
 
 // BamPseudoNCList.prototype.importExisting   // similar functionality merged into constructor
 
@@ -52,25 +65,35 @@ BamPseudoNCList.prototype.makeSubLists = function(intervals, parent_list)  {
     //              in the NCList seems like a waste (TODO: measure that waste).
     //half-open?
     // this.sublistIndex = sublistIndex;
-    var sublistIndex = this.sublistIndex;
+    var start = this.start;
+    var end = this.end;
+//    var sublistIndex = this.sublistIndex;
     if (intervals.length == 0) {
-	parent_list[sublistIndex] = [];
+	// parent_list[sublistIndex] = [];
+	this.setSublist(parent_list, []);
         // this.topList = [];
         return;
     }
     var myIntervals = intervals;//.concat();
     //sort by OL
      myIntervals.sort(function(a, b) {
-        if (a[0] != b[0])
+        if (start(a) != start(b))
+            return start(a) - start(b);
+        else
+            return end(b) - end(a);
+	/*
+	if (a[0] != b[0])
             return a[0] - b[0];
         else
             return b[1] - a[1];
+	 */
     });
 
     var sublistStack = new Array();
     var curList = new Array();
     //    this.topList = curList;
-    parent_list[sublistIndex] = curList;
+//    parent_list[sublistIndex] = curList;
+    this.setSublist(parent_list, curList);
 
     curList.push(myIntervals[0]);
     if (myIntervals.length == 1) return;
@@ -82,7 +105,8 @@ BamPseudoNCList.prototype.makeSubLists = function(intervals, parent_list)  {
             //create a new sublist starting with this interval
             sublistStack.push(curList);
             curList = new Array(curInterval);
-            myIntervals[i - 1][sublistIndex] = curList;
+//            myIntervals[i - 1][sublistIndex] = curList;
+            this.setSublist(myIntervals[i - 1], curList);
         } else {
             //find the right sublist for this interval
             while (true) {
@@ -105,15 +129,14 @@ BamPseudoNCList.prototype.makeSubLists = function(intervals, parent_list)  {
     }
 };
 
-BamPseudoNCList.prototype.binarySearch = function(arr, item, itemIndex) {
+BamPseudoNCList.prototype.binarySearch = function(arr, item, getter) {
     var low = -1;
     var high = arr.length;
     var mid;
 
     while (high - low > 1) {
         mid = (low + high) >>> 1;
-//        console.log("mid: " + mid + ", arr: " + dojo.toJson(arr));
-        if (arr[mid][itemIndex] > item)
+        if (getter(arr[mid]) > item)
             high = mid;
         else
             low = mid;
@@ -121,19 +144,26 @@ BamPseudoNCList.prototype.binarySearch = function(arr, item, itemIndex) {
 
     //if we're iterating rightward, return the high index;
     //if leftward, the low index
-    if (1 == itemIndex) return high; else return low;
+    if (getter === this.end) return high; else return low;
+
 };
 
 BamPseudoNCList.prototype.iterHelper = function(arr, from, to, fun, finish,
-                                       inc, searchIndex, testIndex, path) {
+                                       inc, searchGet, testGet, path)  {
     var len = arr.length;
-    var i = this.binarySearch(arr, from, searchIndex);
+    var getSublist = this.getSublist;
+    var i = this.binarySearch(arr, from, searchGet);
     while ((i < len)
            && (i >= 0)
-           && ((inc * arr[i][testIndex]) < (inc * to)) ) {
+           && ((inc * testGet(arr[i])) < (inc * to)) ) {
 	var feat = arr[i];
-	var lazyField =feat[this.lazyIndex];
-        if ("object" == typeof lazyField) {
+	// var lazyField = feat[this.lazyIndex];
+        // if ("object" == typeof lazyField) {
+	// 
+	// var lazyField = this.getChunk(feat);
+	// if (getChunk(feat))  {
+	if (feat[BamUtils.CINDEX] === this.lazyClass)  {
+	    var lazyField = this.getChunk(feat);
 	    var lazyFeat = feat;
             var ncl = this;
             // lazy node
@@ -146,7 +176,7 @@ BamPseudoNCList.prototype.iterHelper = function(arr, from, to, fun, finish,
                         function(parentIndex) {
                             return function(o) {
                                 ncl.iterHelper(o, from, to, fun, finish, inc,
-                                               searchIndex, testIndex,
+                                               searchGet, testGet,
                                                path.concat(parentIndex));
                                 finish.dec();
                             };
@@ -165,8 +195,10 @@ BamPseudoNCList.prototype.iterHelper = function(arr, from, to, fun, finish,
                 lazyField.state = "loading";
                 lazyField.callbacks = [];
                 finish.inc();
-		var chunkMin = lazyFeat[0];
-		var chunkMax = lazyFeat[1];
+		// var chunkMin = lazyFeat[0];
+		// var chunkMax = lazyFeat[1];
+		var chunkMin = this.start(lazyFeat);
+		var chunkMax = this.end(lazyFeat);
 
 		// this.bamfile.fetch(ncl.refSeq.name, bamMin, bamMax, 
 		this.bamfile.fetch(ncl.refSeq.name, chunkMin, chunkMax, 
@@ -188,12 +220,13 @@ BamPseudoNCList.prototype.iterHelper = function(arr, from, to, fun, finish,
 				  //     (using modified NCList.fill() method
 				  // populate lazyFeat[sublistIndex] with NCL array
 				  ncl.makeSubLists(bamfeats, lazyFeat);
-				  var sublists = lazyFeat[ncl.sublistIndex];
+				  // var sublists = lazyFeat[ncl.sublistIndex];
+				  var sublists = getSublist(lazyFeat);
 
 				  // call iterHelper on newly created NCL sublist array
 				  ncl.iterHelper(sublists, from, to,
 						 fun, finish, inc,
-						 searchIndex, testIndex,
+						 searchGet, testGet,
 						 path.concat(i));
 
 				  // handle any callbacks that were postponed while loading was in progress
@@ -210,10 +243,13 @@ BamPseudoNCList.prototype.iterHelper = function(arr, from, to, fun, finish,
         }
 
 	// SUBLIST_ITERATE: now if feat contain sublists, recurse into sublists
-        if (feat[this.sublistIndex])
-            this.iterHelper(feat[this.sublistIndex], from, to,
-                            fun, finish, inc, searchIndex, testIndex,
+//        if (feat[this.sublistIndex])
+//            this.iterHelper(feat[this.sublistIndex], from, to,
+	if (getSublist(feat)) {
+              this.iterHelper(getSublist(feat), from, to,
+                            fun, finish, inc, searchGet, testGet,
                             path.concat(i));
+	}
         i += inc;
     }  // END main while loop
 };
@@ -227,17 +263,24 @@ BamPseudoNCList.prototype.iterate = function(from, to, fun, postFun) {
     //inc: iterate leftward or rightward
     var inc = (from > to) ? -1 : 1;
     //searchIndex: search on start or end
-    var searchIndex = (from > to) ? 0 : 1;
+//    var searchIndex = (from > to) ? 0 : 1;
     //testIndex: test on start or end
-    var testIndex = (from > to) ? 1 : 0;
+//    var testIndex = (from > to) ? 1 : 0;
+
+    //searchGet: search on start or end
+    var searchGet = (from > to) ? this.start : this.end;
+    //testGet: test on start or end
+    var testGet = (from > to) ? this.end : this.start;
+
     var finish = new Finisher(postFun);
     if (this.topList.length > 0) {
         this.iterHelper(this.topList, from, to, fun, finish,
-                        inc, searchIndex, testIndex, []);
+                        inc, searchGet, testGet, []);
     }
     finish.finish();
 };
 
+/* NOT YET IMPLEMENTED */
 BamPseudoNCList.prototype.histogram = function(from, to, numBins, callback) {
     //calls callback with a histogram of the feature density
     //in the given interval
