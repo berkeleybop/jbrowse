@@ -5,6 +5,36 @@
 //Bioinformatics, doi:10.1093/bioinformatics/btl647
 //http://bioinformatics.oxfordjournals.org/cgi/content/abstract/btl647v1
 
+/**
+*  When JSON data structures changed (from version 1.2.1 to ?? in March 2012), 
+*  NCList() also changed how lazy data loading is handled
+*  instead of insertion of lazily loaded sublist into intervals data struct (as in 1.2.1), now 
+*  keep track of lazy-loaded sublists via a lazyChunks array (lazyChunks[chunknum])
+* 
+* For example:
+* Jbrowse 1.2.1:
+*   trackInfo (trackData): lazyIndex = 2, sublistIndex = 6
+* pre-load intervals feat:
+*   [ start, end, { chunk : chunknum } ]
+* post-load:
+*   [start, end, { chunk : chunknum, state : "loaded" }, null, null, null, [ LOADED_SUBLIST ]
+* and operations that recurse into lazy-loaded sublists (once loaded) 
+* get to them  through lazyfeat[sublistIndex]
+* 
+* New JBrowse (> 1.2.1)
+* trackData: lazyClass = 4,
+*            classes[4] = { "Start", "End", "Chunk" }  // class as 0 index of actual entry is implicit
+* pre-load:
+*    [ 4, start, end, chunknum ]
+*    lazyChunks[chunknum] = undefined
+* post-load
+*    [ 4, start, end, chunknum ]  // intervals struct is unchanged
+*    lazyChunks[chunknum] = { state : "loaded", data : [LOADED_SUBLIST] }
+* 
+*  and operations that recurse into lazy-loaded sublists (once loaded) 
+*  get to them through lazychunks[lazyfeat[chunknum]].data
+*
+*/
 function NCList() {
     this.featIdMap = {};
     this.topList = [];
@@ -127,6 +157,10 @@ NCList.prototype.iterHelper = function(arr, from, to, fun, finish,
             }
             var chunk = this.lazyChunks[chunkNum];
             finish.inc();
+	    // call to maybeLoad will set chunk.data to lazy-loaded sublist once loaded, 
+	    //     and call iterHelper on sublist
+	    // if lazy-load data already loaded ( chunk.state = loaded ), maybeLoad() 
+	    //     will just immediated call iterHelper on sublist (chunk.data)
             Util.maybeLoad(Util.resolveUrl(this.baseURL,
                                            this.lazyUrlTemplate.replace(
                                                    /\{Chunk\}/g, chunkNum
