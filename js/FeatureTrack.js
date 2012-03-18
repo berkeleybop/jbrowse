@@ -24,20 +24,18 @@ function FeatureTrack(trackMeta, refSeq, browserParams) {
     // GAH newJSON merge notes
     // this.fields no longer used, relying on new ArrayRepr class instead for fields, subfields, etc.
     //     this.fields = {};
-    // 
-
-    // GAH: newJSON merge notes
-    // url fiddling no longer needed, GMOD/jbrowse Util.resolveUrl used instead?
-    //     // baseUrl is dataRoot param passed to Browser constructor in index.html
-    //    this.baseUrl = (browserParams.baseUrl ? browserParams.baseUrl : "");
-    //    this.url = url;
-    //    this.trackBaseUrl = (this.baseUrl + url).match(/^.+\//);
 
     this.refSeq = refSeq;
+
     // this.features = new NCList();  // moved to loadSuccess
-    this.url = Util.resolveUrl(trackMeta.sourceUrl,
-                               Util.fillTemplate(trackMeta.config.urlTemplate,
-                                                 {'refseq': refSeq.name}) );
+    if (trackMeta.config && trackMeta.config.urlTemplate)  {
+	// template URLs are specified  relative to a sourceUrl, which is URL trackList was loaded from
+	//     trackMeta.sourceUrl is set (in Browser) for every trackMeta from a trackList
+	this.url = Util.resolveUrl(trackMeta.sourceUrl,
+				   Util.fillTemplate(trackMeta.config.urlTemplate,
+                                                     {'refseq': refSeq.name}) );
+    }
+
     //number of histogram bins per block
     this.numBins = 25;
     this.histLabel = false;
@@ -45,9 +43,7 @@ function FeatureTrack(trackMeta, refSeq, browserParams) {
     this.glyphHeightPad = 2;
     this.levelHeightPad = 2;
     this.trackPadding = browserParams.trackPadding;
-    console.log("baseUrl: " + this.baseUrl);
     console.log("url: " + this.url);
-    console.log("trackBaseUrl: " + this.trackBaseUrl);
     this.trackMeta = trackMeta;
 
     var thisObj = this;
@@ -56,8 +52,15 @@ function FeatureTrack(trackMeta, refSeq, browserParams) {
     // need to redo this to go through new config.events setup
     this.featureClick = function(event) { thisObj.onFeatureClick(event); };
 
-    this.config = trackMeta.config;  
+    this.config = trackMeta.config;
+    // if no configuration file, create a blank (will get filled in by initializeConfig later)
+    if (! this.config)  {
+	this.config = {};
+    }
     // base Track.load() doesn't use trackMeta arg, but some subclasses FeatureTrack.load() do
+
+    // if no urlTemplate, then this.url will be undefined (but data needed to load may be present in 
+    //      in trackMeta)
     this.load(this.url, trackMeta);
 }
 
@@ -139,66 +142,8 @@ FeatureTrack.prototype.loadSuccess = function(trackInfo, url) {
                                  url,
                                  trackInfo.intervals.urlTemplate,
                                  trackInfo.intervals.lazyClass);
-    var defaultConfig = {
-        style: {
-            className: "feature2"
-        },
-        scaleThresh: {  // hist, label, subfeature all specified in pixels/avg_feature
-            hist: 4,    // switch to histograms is typical feature is <= 4 pixels
-            label: 50,  // show feature labels if typical feature size >= 50 pixels
-            subfeature: 80  // show subfeatures if typical feature size >= 80 pixels  
-        },
-        hooks: {
-            create: function(track, feat, attrs) {
-                var featDiv;
-                var featUrl = track.featureUrl(feat);
-                if (featUrl) {
-                    featDiv = document.createElement("a");
-                    featDiv.href = featUrl;
-                    featDiv.target = "_new";
-                } else {
-                    featDiv = document.createElement("div");
-                }
-                return featDiv;
-            }
-        },
-        events: {
-        }
-    };
-
-    /*
-      if (! this.config.linkTemplate) {
-        defaultConfig.events.click =
-            function(track, elem, feat, attrs, event) {
-	        alert("clicked on feature\n" +
-                      "start: " + (Number(attrs.get(feat, "Start"))+1) +
-	              ", end: " + Number(attrs.get(feat, "End")) +
-	              ", strand: " + attrs.get(feat, "Strand") +
-	              ", label: " + attrs.get(feat, "Name") +
-	              ", ID: " + attrs.get(feat, "ID") );
-            };
-    }
-    */
-
-    Util.deepUpdate(defaultConfig, this.config);
-    this.config = defaultConfig;
-
-    this.config.hooks.create = this.evalHook(this.config.hooks.create);
-    this.config.hooks.modify = this.evalHook(this.config.hooks.modify);
-
-    // JBrowse supports specifying event handler function in track metadata (in config.event.[EVENT] property)
-    //     these are called when [EVENT] occurs on a feature div within the track
-    // But for WebApollo, allowing click, doubleclick, etc. to be configured in track metadata would conflict 
-    //      with important WebApollo behavior (such as selection)
-    // Therfore WebApollo does NOT support specifying event handlers in track metadata (at least for now)
-/*
-    this.eventHandlers = {};
-    for (var event in this.config.events) {
-        this.eventHandlers[event] =
-            this.wrapHandler(this.evalHook(this.config.events[event]));
-    }
-*/
-
+    this.initializeConfig();
+ 
     if (trackInfo.histograms) {
         this.histograms = trackInfo.histograms;
         for (var i = 0; i < this.histograms.meta.length; i++) {
@@ -239,6 +184,68 @@ FeatureTrack.prototype.loadSuccess = function(trackInfo, url) {
 
     this.setLoaded();
 };
+
+
+FeatureTrack.prototype.initializeConfig = function()  {
+       var defaultConfig = {
+        style: {
+            className: "feature2"
+        },
+        scaleThresh: {  // hist, label, subfeature all specified in pixels/avg_feature
+            hist: 4,    // switch to histograms is typical feature is <= 4 pixels
+            label: 50,  // show feature labels if typical feature size >= 50 pixels
+            subfeature: 80  // show subfeatures if typical feature size >= 80 pixels  
+        },
+        hooks: {
+            create: function(track, feat, attrs) {
+                var featDiv;
+                var featUrl = track.featureUrl(feat);
+                if (featUrl) {
+                    featDiv = document.createElement("a");
+                    featDiv.href = featUrl;
+                    featDiv.target = "_new";
+                } else {
+                    featDiv = document.createElement("div");
+                }
+                return featDiv;
+            }
+        },
+        events: {
+        }
+    };
+    /*
+      if (! this.config.linkTemplate) {
+        defaultConfig.events.click =
+            function(track, elem, feat, attrs, event) {
+	        alert("clicked on feature\n" +
+                      "start: " + (Number(attrs.get(feat, "Start"))+1) +
+	              ", end: " + Number(attrs.get(feat, "End")) +
+	              ", strand: " + attrs.get(feat, "Strand") +
+	              ", label: " + attrs.get(feat, "Name") +
+	              ", ID: " + attrs.get(feat, "ID") );
+            };
+    }
+    */
+    Util.deepUpdate(defaultConfig, this.config);
+    this.config = defaultConfig;
+
+    this.config.hooks.create = this.evalHook(this.config.hooks.create);
+    this.config.hooks.modify = this.evalHook(this.config.hooks.modify);
+
+    // JBrowse supports specifying event handler function in track metadata (in config.event.[EVENT] property)
+    //     these are called when [EVENT] occurs on a feature div within the track
+    // But for WebApollo, allowing click, doubleclick, etc. to be configured in track metadata would conflict 
+    //      with important WebApollo behavior (such as selection)
+    // Therfore WebApollo does NOT support specifying event handlers in track metadata (at least for now)
+/*
+    this.eventHandlers = {};
+    for (var event in this.config.events) {
+        this.eventHandlers[event] =
+            this.wrapHandler(this.evalHook(this.config.events[event]));
+    }
+*/
+
+}
 
 /*  if arg is a string, returns eval of arg, otherwise just returns arg */
 FeatureTrack.prototype.evalHook = function(hook) {
@@ -406,7 +413,9 @@ FeatureTrack.prototype.fillHist = function(blockIndex, block,
 };
 
 FeatureTrack.prototype.endZoom = function(destScale, destBlockBases) {
-    if (destScale < (this.density * this.config.scaleThresh.hist)) {
+    if (this.config.scaleThresh && 
+	this.config.scaleThresh.hist && 
+	(destScale < (this.density * this.config.scaleThresh.hist))) {
         this.setLabel(this.key + "<br>per " + Math.round(destBlockBases / this.numBins) + "bp");
     } else {
         this.setLabel(this.key);
