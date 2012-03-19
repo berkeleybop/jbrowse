@@ -33,8 +33,7 @@ function AnnotTrack(trackMeta, refSeq, browserParams) {
     
     /**
      *   map keeping track of set of y positions for top-level feature divs of selected features
-     *   (selected features can have same y position, in which case
-     *   y position is 
+     *   (for better residue-overlay to be implemented TBD)
      */
 //    this.selectionYPosition = null;
 
@@ -697,31 +696,44 @@ AnnotTrack.prototype.makeTrackDroppable = function() {
 	//    (see explanation in feature droppable for why we catch drop at track div rather than feature div child)
 	//    cause is possible bug in JQuery droppable where droppable over(), drop() and hoverclass 
 	//       collision calcs may be off (at least when tolerance=pointer)?
+	// 
+	// Update 3/2012
+	// deactivate behavior changed?  Now getting called every time dragged features are release, 
+	//     regardless of whether they are over this track or not
+	// so added another hack to get around drop problem
+	// combination of deactivate and keeping track via over()/out() of whether drag is above this track when released
+	// really need to look into actual drop calc fix -- maybe fixed in new JQuery releases?
 	//         
 	// drop: function(event, ui)  { 
+        over: function(event, ui) {
+	    target_track.track_under_mouse_drag = true;
+	}, 
+	out: function(event, ui) {
+	    target_track.track_under_mouse_drag = false;
+	}, 
 	deactivate: function(event, ui)  {	
 	    // console.log("trackdiv droppable detected: draggable deactivated");
 	    // "this" is the div being dropped on, so same as target_trackdiv
-	    if (target_track.verbose_drop)  {
-		console.log("draggable dropped on AnnotTrack");
-		console.log(ui);
-	    }
+	    if (target_track.verbose_drop)  { console.log("draggable deactivated"); }
+
 	    var dropped_feats = DraggableFeatureTrack.selectionManager.getSelection();
 	    // problem with making individual annotations droppable, so checking for "drop" on annotation here, 
 	    //    and if so re-routing to add to existing annotation
 	    if (target_track.annot_under_mouse != null)  {
 		if (target_track.verbose_drop)  {
-		    console.log("dropped onto annot: ");
+		    console.log("draggable dropped onto annot: ");
 		    console.log(target_track.annot_under_mouse.feature);
 		}
 		target_track.addToAnnotation(target_track.annot_under_mouse.feature, dropped_feats);
 	    }
-	    else  {
+	    else if (target_track.track_under_mouse_drag) {
+		if (target_track.verbose_drop)  { console.log("draggable dropped on AnnotTrack"); }
 		target_track.createAnnotations(dropped_feats);
 	    }
 	    // making sure annot_under_mouse is cleared 
 	    //   (should do this in the drop?  but need to make sure _not_ null when 
 	    target_track.annot_under_mouse = null;
+	    target_track.track_under_mouse_drag = false;
 	}    
     } );
     if (target_track.verbose_drop) { console.log("finished making droppable target"); }
