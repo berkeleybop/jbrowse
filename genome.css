@@ -1318,6 +1318,85 @@ div.generic_parent-hist {
     -ms-box-sizing: border-box;
 }
 
+/****************************************************
+*  OGSv3 styling
+*****************************************************/
+
+.ogsv3-transcript, 
+.plus-ogsv3-transcript, 
+.minus-ogsv3-transcript  {
+    position: absolute;
+    height: 16px;
+    margin-top: 0px;
+    z-index: 6;
+    min-width: 1px;
+    cursor: pointer;
+}
+
+.ogsv3-transcript-render  {
+    position: absolute;
+    height: 4px;
+    margin-top: 6px;
+    margin-bottom: 6px;  /* don't think this actually is needed */
+    background-color: #AAAAAA;
+    /* annotline div may be added to annot div _after_ child feature divs, so 
+       if want child divs in front of annotline, make sure has lower 
+       z-index than child divs */
+    z-index: 2;  
+    min-width: 1px;
+    cursor: pointer;
+    width: 100%;
+}
+.ogsv3-exon,
+.plus-ogsv3-exon, 
+.minus-ogsv3-exon {
+    position: absolute;
+    height: 16px;
+    margi-top: 0px;
+    z-index: 6;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+.ogsv3-CDS, 
+.plus-ogsv3-CDS, 
+.minus-ogsv3-CDS  {
+    position: absolute;
+    height: 12px;
+    margin-top: 2px;
+    background-color: #21D61F;
+    border-style: solid;
+    border-color: #555;
+    border-width: 1px;
+    cursor: pointer;
+    z-index: 10;
+    min-width: 1px;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+.ogsv3-UTR, 
+.plus-ogsv3-UTR, 
+.minus-ogsv3-UTR {
+    position: absolute;
+    height: 8px; 
+    margin-top: 4px;
+    background-color: #8DB890;
+    z-index: 8;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
 
 /****************************************************
 *  SGP2 styling
@@ -1639,8 +1718,6 @@ div.generic_parent-hist {
 }
 
 
-
-
 /***************************************************************
 *  OGSv1 alignment styling
 ****************************************************************/
@@ -1719,6 +1796,51 @@ div.generic_parent-hist {
 .dmel-alignment-part, 
 .plus-dmel-alignment-part, 
 .minus-dmel-alignment-part  {
+    position: absolute;
+    height: 8px; 
+    margin-top: 4px;
+    background-color: #7CC1C8;
+    z-index: 8;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+/***************************************************************
+*  NCBI EST alignment styling
+****************************************************************/
+.est-alignment-match, 
+.plus-est-alignment-match, 
+.minus-est-alignment-match {
+    position: absolute;
+    height: 16px;
+    margin-top: 0px;
+    z-index: 6;
+    min-width: 1px;
+    cursor: pointer;
+}
+
+.est-alignment-render  {
+    position: absolute;
+    height: 4px;
+    margin-top: 6px;
+    margin-bottom: 6px;  /* don't think this actually is needed */
+    background-color: #B9E2E6;
+    /* annotline div may be added to annot div _after_ child feature divs, so 
+       if want child divs in front of annotline, make sure has lower 
+       z-index than child divs */
+    z-index: 2;  
+    min-width: 1px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.est-alignment-part, 
+.plus-est-alignment-part, 
+.minus-est-alignment-part  {
     position: absolute;
     height: 8px; 
     margin-top: 4px;
