@@ -128,7 +128,7 @@ Browser.prototype.addDeferred = function(f) {
 };
 
 Browser.prototype.addTracklist = function(url, trackList) {
-    console.log("called Browser.addTrackList");
+    console.log("called Browser.addTrackList, url: " + url);
     if (1 == trackList.formatVersion) {
         for (var i = 0; i < trackList.tracks.length; i++)
             trackList.tracks[i].sourceUrl = url;
@@ -434,7 +434,9 @@ Browser.prototype.navigateTo = function(loc) {
         }
 
         // lastly, try to search our feature names for it
-        this.searchNames( loc );
+	if (this.names) {
+            this.searchNames( loc );
+	}
     }
 };
 
@@ -494,6 +496,10 @@ Browser.prototype.navigateToLocation = function( location ) {
 // view location to any that match
 Browser.prototype.searchNames = function( loc ) {
     var brwsr = this;
+    if (! this.names)  {
+	 alert("name search not supported");
+	return;
+    }
     this.names.exactMatch( loc, function(nameMatches) {
             var goingTo;
             //first check for exact case match
