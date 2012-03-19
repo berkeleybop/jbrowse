@@ -1,22 +1,21 @@
-<!DOCTYPE html 
+<!DOCTYPE html
 	  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
 	  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-  
+
   <head>
-    <title>Apollo 2 JBrowse</title>
+    <title>WebApollo</title>
     <link rel="stylesheet" type="text/css" href="jslib/dijit/themes/tundra/tundra.css"></link>
     <link rel="stylesheet" type="text/css" href="jslib/dojo/resources/dojo.css"></link>
 
     <!-- load JQuery theme CSS remotely from Google CDN: -->
-    <link rel="stylesheet" type="text/css"
-	  href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/themes/base/jquery-ui.css"/>  
+    <!--
+    <link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/themes/base/jquery-ui.css"/>  
+     -->
 
     <!-- load JQuery theme CSS from WebApollo server -->
-    <!--    
     <link rel="stylesheet" type="text/css" href="jslib/jquery-ui.css"/> 
-    -->
 
     <style type="text/css">
       html, body { height: 100%; width: 100%; padding: 0; border: 0; }
@@ -24,19 +23,21 @@
     <link rel="stylesheet" type="text/css" title="genome_styles" href="genome.css"></link>
 
     <!--  Load JQuery, JQuery-UI, Dojo remotely from Google CDN: -->
-   <script src="http://www.google.com/jsapi" type="text/javascript"></script>
+    <!--   
+    <script src="http://www.google.com/jsapi" type="text/javascript"></script>
     <script type="text/javascript"> 
       google.load("jquery", "1.5"); 
       google.load("jqueryui", "1.8.10");
       google.load("dojo", "1.5");
     </script>
+    -->
 
     <!--  Load JQuery, JQuery-ui, Dojo from WebApollo server: -->
-    <!--
+
    <script type="text/javascript" src="jslib/jquery-1.5/jquery-1.5.min.js" ></script> 
     <script type="text/javascript" src="jslib/jquery-ui-1.8.9.custom/js/jquery-ui-1.8.9.custom.min.js"></script> 
     <script type="text/javascript" src="jslib/dojo-1.5.0/dojo/dojo.js"></script>
-    -->
+
     
     <!-- using modernizr for easy testing of browser support for HTML5 / CSS3 / etc. features -->
    <!-- <script type="text/javascript" src="jslib/modernizr-1.7.min.js"></script> -->
@@ -51,6 +52,7 @@
     <!--    <script type="text/javascript"
             src="jslib/jquery_plugins/mod.jquery.ui.multidraggable-1.8.8.js"></script>  -->   
     <script type="text/javascript" src="js/Util.js"></script>
+    <script type="text/javascript" src="js/ArrayRepr.js"></script>
     <script type="text/javascript" src="js/NCList.js"></script>
     <script type="text/javascript" src="js/LazyPatricia.js"></script>
     <script type="text/javascript" src="js/LazyArray.js"></script>
@@ -59,13 +61,17 @@
     <script type="text/javascript" src="js/Layout.js"></script>
     <script type="text/javascript" src="js/FeatureSelectionManager.js"></script>
     <script type="text/javascript" src="js/FeatureTrack.js"></script>
-    <script type="text/javascript" src="js/DraggableFeatureTrack.js"></script>
+   <script type="text/javascript" src="js/DraggableFeatureTrack.js"></script>
     <!-- for testing draggable etc. -->
     <!--   <script type="text/javascript" src="js/BasicDraggableFeatureTrack.js"></script>   -->
     <script type="text/javascript" src="js/DasFeatureTrack.js"></script>
     <script type="text/javascript" src="js/AnnotTrack.js"></script>
-   <script type="text/javascript" src="js/UITracks.js"></script>
-    <script type="text/javascript" src="js/ImageTrack.js"></script>
+    <!-- UITracks replaced by StaticTrack and GridTrack
+         <script type="text/javascript" src="js/UITracks.js"></script>
+    -->
+   <script type="text/javascript" src="js/StaticTrack.js"></script>
+   <script type="text/javascript" src="js/GridTrack.js"></script>
+   <script type="text/javascript" src="js/ImageTrack.js"></script>
 
     <!-- for testing CanvasTrack -->
     <script type="text/javascript" src="js/CanvasTrack.js"></script>
@@ -91,24 +97,31 @@
     <script type="text/javascript" src="js/BamPseudoNCList.js"></script>
     <script type="text/javascript" src="js/BamUtils.js"></script>
 
-<!-- Dalliance code in berkeleybop/jbrowse repository  -->
+<!-- Dalliance code in berkeleybop/jbrowse repository
   <script language="javascript" src="jslib/dalliance_static/jszlib/js/inflate.js"></script>
   <script language="javascript" src="jslib/dalliance_static/js/utils.js"></script>
   <script language="javascript" src="jslib/dalliance_static/js/bin.js"></script>
   <script language="javascript" src="jslib/dalliance_static/js/bam.js"></script>
+  -->
 
-<!--  Dalliance code from GreggHelt2/dalliance fork (apollo branch) 
+<!--  Dalliance code from GreggHelt2/dalliance fork (apollo branch) -->
   <script language="javascript" src="jslib/dalliance/jszlib/js/inflate.js"></script>
   <script language="javascript" src="jslib/dalliance/js/utils.js"></script>
   <script language="javascript" src="jslib/dalliance/js/bin.js"></script>
   <script language="javascript" src="jslib/dalliance/js/bam.js"></script>
--->
-
 
 <!-- js_source_files -->
 
-   <script type="text/javascript" src="data/refSeqs.js"></script>
-    <script type="text/javascript" src="data/trackInfo.js"></script>
+<!--    repalced by refSeqs param to Browser  <script type="text/javascript" src="data/refSeqs.js"></script> -->
+<!--    replaced by tracklists param to Browser <script type="text/javascript" src="data/trackInfo.js"></script> -->
+   <script type="text/javascript" src="js/touchJBrowse.js"></script>
+
+    <script type="text/javascript">
+        window.onerror=function(msg){
+            document.body.setAttribute("JSError",msg);
+        }
+    </script>
+
 
    <script type="text/javascript" src="jslib/colour/jquery.color.js"></script>
     <script type="text/javascript" src="jslib/farbtastic/mod-farbtastic.js"></script>
@@ -120,7 +133,7 @@
 
 
     <script type="text/javascript">
-      /* <![CDATA[ */
+     /* <![CDATA[ */
            var queryParams = dojo.queryToObject(window.location.search.slice(1));
            var bookmarkCallback = function(brwsr) {
                return window.location.protocol
@@ -129,17 +142,36 @@
                       + "?loc=" + brwsr.visibleRegion()
                       + "&tracks=" + brwsr.visibleTracks();
            }
+           var dataRoot = queryParams.data || 'data';
+           // var dataRoot = queryParams.data || '';  // blank dataRoot for dm3
            var b = new Browser({
                                    containerID: "GenomeBrowser",
-                                   refSeqs: refSeqs,
-                                   trackData: trackInfo,
-                                   defaultTracks: "DNA,Annotations,RefSeq",
+	                           // dataRoot: "data/"  // for Amel4.5
+				   // dataRoot: ""  // for dm3
+                                   // refSeqs: refSeqs,
+                                  refSeqs: {url: dataRoot + "/seq/refSeqs.json"},
+                                   // trackData: trackInfo,
+                                  tracklists: [
+
+ 				       {url: dataRoot + "/bam_trackList.json"}, 
+                                       {url: dataRoot + "/annotation_trackList.json"}, 
+                                       {url: dataRoot + "/trackList.json"}
+                                   ],
+                                   nameUrl: dataRoot + "/names/root.json",
+                                   // defaultTracks: "DNA,Annotations,RefSeq",
+                                   defaultTracks: "DNA,Annotations",
+                                   queryParams: queryParams,
                                    location: queryParams.loc,
                                    tracks: queryParams.tracks,
-                                   bookmark: bookmarkCallback,
-                                   dataRoot: "data/"  // for Amel4.5
-                                   // dataRoot: ""  // for dm3
+                                   // is bookmark superceded by show_nav, show_tracklist, show_overview
+                                  //  after merge from GMOD/jbrowse:master ???
+                                  bookmark: bookmarkCallback,
+				   show_nav: queryParams.nav,
+				   show_tracklist: queryParams.tracklist,
+				   show_overview: queryParams.overview
                                });
+          b.deferredFunctions.push(function() { loadTouch(); });
+
     /* ]]> */
       <!-- standard jbrowse dataRoot setting in Browser constructor... -->
       <!-- dataRoot: "data/" -->

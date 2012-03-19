@@ -1,7 +1,7 @@
 
 /*  Subclass of FeatureTrack that allows features to be dragged and dropped into the annotation track to create annotations. */
-function DraggableFeatureTrack(trackMeta, url, refSeq, browserParams) {
-    FeatureTrack.call(this, trackMeta, url, refSeq, browserParams);
+function DraggableFeatureTrack(trackMeta, refSeq, browserParams) {
+    FeatureTrack.call(this, trackMeta, refSeq, browserParams);
     //  console.log("DragableFeatureTrack constructor called");
 
     var thisObj = this;
@@ -143,9 +143,11 @@ DraggableFeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
     } );
 
 
-    $div.bind("click", function(e) {
+/*  track click diagnostic (and example of how to add additional track mouse listener?)
+     $div.bind("click", function(e) {
 	console.log("track click, base position: " + track.gview.getGenomeCoord(e));
     } );
+*/
 
 };
 
@@ -225,10 +227,11 @@ DraggableFeatureTrack.prototype.renderFeature = function(feature, uniqueId, bloc
 
 	// if renderClassName field exists in trackData.json for this track, then add a child 
 	//    div to the featdiv with class for CSS styling set to renderClassName value
-	if (this.renderClassName)  {
+	var rclass = this.config.style.renderClassName;
+	if (rclass)  {
 	    // console.log("in FeatureTrack.renderFeature, creating annot div");
 	    var rendiv = document.createElement("div");
-	    rendiv.className = this.renderClassName;
+	    rendiv.className = rclass;
 	    if (Util.is_ie6) rendiv.appendChild(document.createComment());
 	    featdiv.appendChild(rendiv);
 	}
@@ -259,8 +262,9 @@ DraggableFeatureTrack.prototype.handleSubFeatures = function(feature, featDiv,
 						    displayStart, displayEnd, block)  {
     // only way to get here is via renderFeature(parent,...), 
     //   so parent guaranteed to have unique ID set by now
+    var attrs = this.attrs;
     var parentId = feature.uid;  
-    var subfeats = feature[this.fields["subfeatures"]];
+    var subfeats = attrs.get(feature, "Subfeatures");
     var slength = subfeats.length;
     var subfeat;
     var wholeCDS = null;
@@ -268,15 +272,15 @@ DraggableFeatureTrack.prototype.handleSubFeatures = function(feature, featDiv,
     var i;
     for (i=0; i < slength; i++)  {
 	subfeat = subfeats[i];
-	subtype = subfeat[this.subFields["type"]];
+	subtype = attrs.get(subfeat, "Type");
 	if (subtype === "wholeCDS") {
 	    wholeCDS = subfeat;
 	    break;
 	}
     }
     if (wholeCDS) {
-	var cdsStart = wholeCDS[this.subFields["start"]];
-	var cdsEnd = wholeCDS[this.subFields["end"]];
+	var cdsStart = attrs.get(wholeCDS, "Start" );
+	var cdsEnd = attrs.get(wholeCDS, "End" );
 	//    current convention is start = min and end = max regardless of strand, but checking just in case
 	var cdsMin = Math.min(cdsStart, cdsEnd);
 	var cdsMax = Math.max(cdsStart, cdsEnd);
@@ -290,7 +294,7 @@ DraggableFeatureTrack.prototype.handleSubFeatures = function(feature, featDiv,
 	    uid = this.getSubfeatId(subfeat, i, parentId);
 	    subfeat.uid= uid;
 	}
-	subtype = subfeat[this.subFields["type"]];
+	subtype = attrs.get(subfeat, "Type");
 	// don't render "wholeCDS" type
 	// although if subfeatureClases is properly set up, wholeCDS would also be filtered out in renderFeature?
 	// if (subtype == "wholeCDS")  {  continue; }
@@ -311,13 +315,14 @@ DraggableFeatureTrack.prototype.handleSubFeatures = function(feature, featDiv,
  *  TODO: still need to factor in truncation based on displayStart and displayEnd???
  */
 DraggableFeatureTrack.prototype.renderExonSegments = function(subfeature, subDiv, cdsMin, cdsMax, displayStart, displayEnd)  {
-    var subStart = subfeature[this.subFields["start"]];
-    var subEnd = subfeature[this.subFields["end"]];
+    var attrs = this.attrs;
+    var subStart = attrs.get(subfeature, "Start");
+    var subEnd = attrs.get(subfeature, "End");
     var subLength = subEnd - subStart;
     // look for UTR and CDS subfeature class mapping from trackData
     //    if can't find, then default to parent feature class + "-UTR" or "-CDS"
-    var UTRclass = this.subfeatureClasses["UTR"];
-    var CDSclass = this.subfeatureClasses["CDS"];
+    var UTRclass = this.config.style.subfeatureClasses["UTR"];
+    var CDSclass = this.config.style.subfeatureClasses["CDS"];
     if (! UTRclass)  { UTRclass = this.className + "-UTR"; }
     if (! CDSclass)  { CDSclass = this.className + "-CDS"; }
 		       

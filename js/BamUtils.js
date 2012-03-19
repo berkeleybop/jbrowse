@@ -15,32 +15,63 @@ masks for BAM alignment bitwise FLAG field (bamrecord.flag)
 0x400	PCR or optical duplicate
 */
 
-BamUtils.START = 0;
-BamUtils.END = 1;
-BamUtils.STRAND = 2;
-BamUtils.ID = 3;
-BamUtils.CIGAR = 4;
-BamUtils.SUBFEATURES = 5;
-BamUtils.fields = {start: 0, 
-		   end: 1, 
-		   strand: 2, 
-		   id: 3, 
-		   cigar: 4, 
-		   subfeatures: 5 
+BamUtils.CINDEX = 0;
+BamUtils.START = 1;
+BamUtils.END = 2;
+BamUtils.STRAND = 3;
+BamUtils.ID = 4;
+BamUtils.CIGAR = 5;
+BamUtils.SUBFEATURES = 6;
+
+BamUtils.classes = [
+ 			{
+			    name: "bam", 
+			    "isArrayAttr":{"Subfeatures":1, "Sublist":1},
+			    "attributes":["Start","End","Strand","Id","Cigar","Subfeatures", "Sublist"]
+			},
+			{
+			    name: "bam_part", 
+			    "isArrayAttr":{},
+			    "attributes":["Start","End","Strand","Type"]
+			},
+                        {
+			    name: "lazy_load",
+			    "isArrayAttr":{"Sublist":1},
+			    "attributes":["Start","End","Chunk", "Sublist"]
+			}
+];
+
+BamUtils.feat_class_index = 0;
+BamUtils.subfeat_class_index = 1;
+
+BamUtils.lazyClass= 2; // index of class in  BamUtils.classes that specifies attributes for the lazy loading feature type 
+// BamUtils.lazyIndex = 3;  // index of chunk field in lazyclass that specifies lazy-load chunks
+// BamUtils.sublistIndex = 7;  // sublist index inf feat array (which is "chunk" index in attributes + 1)
+
+
+BamUtils.attrs = new ArrayRepr(BamUtils.classes) ;
+// BamUtils.getStart = BamUtils.attrs.makeFastGetter("Start");
+// BamUtils.getEnd = BamUtils.attrs.makeFastGetter("End");
+// BamUtils.getStrand = BamUtils.attrs.makeFastGetter("Strand");
+
+/*
+ BamUtils.fields = {cindex: 0, 
+		   start: 1, 
+		   end: 2, 
+		   strand: 3, 
+		   id: 4, 
+		   cigar: 5, 
+		   subfeatures: 6 
 		  };
-BamUtils.subFields = {start: 0, 
-		      end: 1, 
-		      strand: 2, 
-		      type: 3};
+BamUtils.subFields = {cindex: 0, 
+		      start: 1, 
+		      end: 2, 
+		      strand: 3, 
+		      type: 4};
+*/
 
-BamUtils.lazyIndex = 2;
-BamUtils.sublistIndex = 6;
-//BamUtils.fields = { }
-//for (var i=0; i<BamUtils.headers.length; i++)  {
-//  BamUtils.fields[BamUtils.headers[i]] = i;
-//}
-
-BamUtils.subfeatureClasses =  {
+/*  Put subfeatureClasses info in bam_trackList.json for now 
+/* BamUtils.subfeatureClasses =  {
     "M": "cigarM", 
     "D": "cigarD", 
     "N": "cigarN",   
@@ -50,6 +81,7 @@ BamUtils.subfeatureClasses =  {
     "I": "cigarI"
     // not making features for padding(P), soft clip(S), hard clip(H) CIGAR elements
 };
+*/
 
 /**
  *   Populates subfeatures array of given feature, based on feature's CIGAR string
@@ -99,7 +131,7 @@ BamUtils.cigarToSubfeats = function(cigar, offset, parent_strand)    {
 	         break;
 	    // other possible cases
 	}
-	var subfeat = [ min, max, parent_strand, op ];
+	var subfeat = [ BamUtils.subfeat_class_index, min, max, parent_strand, op ];
 	subfeats.push(subfeat);
 	min = max;
     }
@@ -108,10 +140,13 @@ BamUtils.cigarToSubfeats = function(cigar, offset, parent_strand)    {
 
 BamUtils.convertBamRecord = function (br, make_cigar_subfeats)  {
     var feat = [];
+    var arep = BamUtils.attrs;
     // var fields = this.fields;
     // feat[fields.start] = br.pos;
 
+    feat[BamUtils.CINDEX] = BamUtils.feat_class_index;
     feat[BamUtils.START] = br.pos;
+    
     // lref calc'd in dalliance/js/bam.js  BamFile.readBamRecords() function
     if (br.lref)  {  // determine length based on CIGAR (lref is calc'd based on CIGAR string)
 	feat[BamUtils.END] = br.pos + br.lref;

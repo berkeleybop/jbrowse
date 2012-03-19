@@ -31,18 +31,27 @@
           the trackData.json with the "uniqueIdField" setting
  */
 
-function BamFeatureTrack(trackMeta, url, refSeq, browserParams) {
-    DraggableFeatureTrack.call(this, trackMeta, url, refSeq, browserParams);
+function BamFeatureTrack(trackMeta, refSeq, browserParams) {
+    DraggableFeatureTrack.call(this, trackMeta, refSeq, browserParams);
     this.glyphHeightPad = 0;
     this.levelHeightPad = 1;
 }
 
 BamFeatureTrack.prototype = new DraggableFeatureTrack();
 
-BamFeatureTrack.prototype.load = function(bamurl, trackMeta)  {
-    console.log("called BamFeatureTrack.load(), bam url: " + bamurl);
+/**
+ *  "url" arg is present to preserve load signature, but 
+ *  index and datafile URLs are actually pulled from trackMeta
+ *  currently "url" arg passed is undefined
+ */
+BamFeatureTrack.prototype.load = function(url, trackMeta)  {
+    console.log("called BamFeatureTrack.load()");  
+    var bamurl = Util.resolveUrl(trackMeta.sourceUrl, trackMeta.data_url);
+    var baiurl = Util.resolveUrl(trackMeta.sourceUrl, trackMeta.index_url);
+    console.log("bam file " + bamurl);
+    console.log("bai file " + baiurl);
     var bamfetch = new URLFetchable(bamurl);
-    var baifetch = new URLFetchable(trackMeta.index_url);
+    var baifetch = new URLFetchable(baiurl);
     console.log("built bam and bai URLFetchables");
     var curTrack = this;
     makeBam(bamfetch, baifetch, function(bamfile) {    // makeBam from dalliance/js/bam.js
@@ -52,15 +61,20 @@ BamFeatureTrack.prototype.load = function(bamurl, trackMeta)  {
     console.log("makeBam called");
 }
 
+/**
+ *  missing but still needed?
+ *   config.scaleThresh.hist
+ * 
+ */
 BamFeatureTrack.prototype.loadSuccess = function(bamfile)  { 
     this.bamfile = bamfile;   // bamfile is a BamFile from dalliance/js/bam.js, 
     // this.trackMeta is set in FeatureTrack.beforeLoad()
-    var trackInfo = this.trackMeta;
+    // var trackInfo = this.trackMeta;
 
     console.log("BamFile created, header and index set up");
     // now set up rest of fields normally populated in loadSuccess via load of trackData.js
-    this.fields = BamUtils.fields;
-    this.subFields = BamUtils.subFields;  
+//    this.fields = BamUtils.fields;
+//    this.subFields = BamUtils.subFields;  
 
     // possibly eventually do this by splitting feature based on skips in cigar string
     // this.subFields = BamUtils.subFields;
@@ -68,28 +82,29 @@ BamFeatureTrack.prototype.loadSuccess = function(bamfile)  {
     
     // now initialize BamPseudoNCList  
 //    this.features = new BamPseudoNCList();
-    this.features = new BamPseudoNCList(bamfile, this.refSeq);
+    this.features = new BamPseudoNCList(bamfile, this.refSeq, BamUtils.attrs);
 //    this.features.importExisting(bam, sublistIndex, lazyIndex)
+    this.attrs = BamUtils.attrs;
+
+    this.initializeConfig();
 
     // don't need subfeatureAray
     // don't ned histScale (not doing histograms yet)
     // need dummy labelScale, though no labels to show
     this.labelScale = 100; // in pixels/bp, so will never get scale > labelScale since max scale is CHAR_WIDTH pixels/bp
     // need dummy subfeatureScale, though no subfeats yet (but plan to have eventually based on CIGAR splitting)
-    this.subfeatureScale = 0.01 // will attempt to show subfeatures if scale > subfeaturescale (if bp/pixel is < 100) (pixels/bp > 0.01) )
+    this.subfeatureScale = 0.01; // will attempt to show subfeatures if scale > subfeaturescale (if bp/pixel is < 100) (pixels/bp > 0.01) )
     
-    this.className = "bam";
-    // this.renderClassName = ???  // not using render class different than className yet
-    this.subfeatureClasses = BamUtils.subfeatureClasses;  // NOT NEEDED until have subfeats based on CIGAR
-    // this.arrowheadClass =  "trellis-arrowhead",
-    this.arrowheadClass =  null;  // trying no arrowheads for now
-    // this.urlTemplate = trackInfo.urlTemplate;  // NOT NEEDED
-    // this.histogramMeta = trackInfo.histogramMeta;  // NOT NEEDED
+    // className etc. now in trackMeta(.config)
+    // this.className = "bam";
+    // this.subfeatureClasses = BamUtils.subfeatureClasses;  // NOT NEEDED until have subfeats based on CIGAR
+    // this.arrowheadClass =  null;  // trying no arrowheads for now
 
+    // this.renderClassName = ???  // not using render class different than className yet
+    // this.urlTemplate = trackMeta.urlTemplate;  // NOT NEEDED
+    // this.histogramMeta = trackMeta.histogramMeta;  // NOT NEEDED
     // ignoring histogram setup code, since not doing histograms yet
     //   same for histStats, histBinBases
-
-    // ignoring trackMeta.clientConfig for now
     
     this.setLoaded();
     console.log("finished BamFeatureTrack.loadSuccess()");
@@ -130,7 +145,8 @@ BamFeatureTrack.prototype.fillBlock = function(blockIndex, block,
 BamFeatureTrack.prototype.getId = function(feature, path)  {
     var id = feature.uid;
     if (!id)  { 
-	id = feature[BamUtils.ID] + "/" + feature[BamUtils.START] + "-" + feature[BamUtils.END];
+	// id = feature[BamUtils.ID] + "/" + feature[BamUtils.START] + "-" + feature[BamUtils.END];
+	id = this.features.getId(feature) + "/" + this.features.start(feature) + "-" + this.features.end(feature);
 	if (id) { feature.uid = id; }
     }
     return id;

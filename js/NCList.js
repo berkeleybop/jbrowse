@@ -5,45 +5,82 @@
 //Bioinformatics, doi:10.1093/bioinformatics/btl647
 //http://bioinformatics.oxfordjournals.org/cgi/content/abstract/btl647v1
 
+/**
+*  When JSON data structures changed (from version 1.2.1 to ?? in March 2012), 
+*  NCList() also changed how lazy data loading is handled
+*  instead of insertion of lazily loaded sublist into intervals data struct (as in 1.2.1), now 
+*  keep track of lazy-loaded sublists via a lazyChunks array (lazyChunks[chunknum])
+* 
+* For example:
+* Jbrowse 1.2.1:
+*   trackInfo (trackData): lazyIndex = 2, sublistIndex = 6
+* pre-load intervals feat:
+*   [ start, end, { chunk : chunknum } ]
+* post-load:
+*   [start, end, { chunk : chunknum, state : "loaded" }, null, null, null, [ LOADED_SUBLIST ]
+* and operations that recurse into lazy-loaded sublists (once loaded) 
+* get to them  through lazyfeat[sublistIndex]
+* 
+* New JBrowse (> 1.2.1)
+* trackData: lazyClass = 4,
+*            classes[4] = { "Start", "End", "Chunk" }  // class as 0 index of actual entry is implicit
+* pre-load:
+*    [ 4, start, end, chunknum ]
+*    lazyChunks[chunknum] = undefined
+* post-load
+*    [ 4, start, end, chunknum ]  // intervals struct is unchanged
+*    lazyChunks[chunknum] = { state : "loaded", data : [LOADED_SUBLIST] }
+* 
+*  and operations that recurse into lazy-loaded sublists (once loaded) 
+*  get to them through lazychunks[lazyfeat[chunknum]].data
+*
+*/
 function NCList() {
     this.featIdMap = {};
     this.topList = [];
 }
 
-NCList.prototype.importExisting = function(nclist, sublistIndex,
-                                           lazyIndex, baseURL,
-                                           lazyUrlTemplate) {
+NCList.prototype.importExisting = function(nclist, attrs, baseURL,
+                                           lazyUrlTemplate, lazyClass) {
     this.topList = nclist;
-    this.sublistIndex = sublistIndex;
-    this.lazyIndex = lazyIndex;
+    this.attrs = attrs;
+    this.start = attrs.makeFastGetter("Start");
+    this.end = attrs.makeFastGetter("End");
+    this.lazyClass = lazyClass;
     this.baseURL = baseURL;
     this.lazyUrlTemplate = lazyUrlTemplate;
+    this.lazyChunks = {};
 };
 
+
 /**
- *  NOT for appending!
+ *  DO NOT USE directly for adding additional intervals!
  *  erases current topList and subarrays, repopulates from intervals
+ *  if need to add additional intervals, use multiple calls to NCList.add() 
+ *        (n calls to add is very inefficient though: O(n^2) ?)
  */
-NCList.prototype.fill = function(intervals, sublistIndex) {
+NCList.prototype.fill = function(intervals, attrs) {
     //intervals: array of arrays of [start, end, ...]
-    //sublistIndex: index into a [start, end] array for storing a sublist
-    //              array. this is so you can use those arrays for something
-    //              else, and keep the NCList bookkeeping from interfering.
-    //              That's hacky, but keeping a separate copy of the intervals
-    //              in the NCList seems like a waste (TODO: measure that waste).
+    //attrs: an ArrayRepr object
     //half-open?
-    this.sublistIndex = sublistIndex;
     if (intervals.length == 0) {
         this.topList = [];
         return;
     }
-    var myIntervals = intervals;//.concat();
+
+    this.attrs = attrs;
+    this.start = attrs.makeFastGetter("Start");
+    this.end = attrs.makeFastGetter("End");
+    var setSublist = attrs.makeSetter("Sublist");
+    var start = this.start;
+    var end = this.end;
+    var myIntervals = intervals;
     //sort by OL
-     myIntervals.sort(function(a, b) {
-        if (a[0] != b[0])
-            return a[0] - b[0];
+    myIntervals.sort(function(a, b) {
+        if (start(a) != start(b))
+            return start(a) - start(b);
         else
-            return b[1] - a[1];
+            return end(b) - end(a);
     });
 
     var sublistStack = new Array();
@@ -55,11 +92,11 @@ NCList.prototype.fill = function(intervals, sublistIndex) {
     for (var i = 1, len = myIntervals.length; i < len; i++) {
         curInterval = myIntervals[i];
         //if this interval is contained in the previous interval,
-        if (curInterval[1] < myIntervals[i - 1][1]) {
+        if (end(curInterval) < end(myIntervals[i - 1])) {
             //create a new sublist starting with this interval
             sublistStack.push(curList);
             curList = new Array(curInterval);
-            myIntervals[i - 1][sublistIndex] = curList;
+            setSublist(myIntervals[i - 1], curList);
         } else {
             //find the right sublist for this interval
             while (true) {
@@ -68,7 +105,8 @@ NCList.prototype.fill = function(intervals, sublistIndex) {
                     break;
                 } else {
                     topSublist = sublistStack[sublistStack.length - 1];
-                    if (topSublist[topSublist.length - 1][1] > curInterval[1]) {
+                    if (end(topSublist[topSublist.length - 1])
+                        > end(curInterval)) {
                         //curList is the first (deepest) sublist that
                         //curInterval fits into
                         curList.push(curInterval);
@@ -82,15 +120,14 @@ NCList.prototype.fill = function(intervals, sublistIndex) {
     }
 };
 
-NCList.prototype.binarySearch = function(arr, item, itemIndex) {
+NCList.prototype.binarySearch = function(arr, item, getter) {
     var low = -1;
     var high = arr.length;
     var mid;
 
     while (high - low > 1) {
         mid = (low + high) >>> 1;
-//        console.log("mid: " + mid + ", arr: " + dojo.toJson(arr));
-        if (arr[mid][itemIndex] > item)
+        if (getter(arr[mid]) > item)
             high = mid;
         else
             low = mid;
@@ -98,82 +135,57 @@ NCList.prototype.binarySearch = function(arr, item, itemIndex) {
 
     //if we're iterating rightward, return the high index;
     //if leftward, the low index
-    if (1 == itemIndex) return high; else return low;
+    if (getter === this.end) return high; else return low;
 };
 
 NCList.prototype.iterHelper = function(arr, from, to, fun, finish,
-                                       inc, searchIndex, testIndex, path) {
+                                       inc, searchGet, testGet, path) {
     var len = arr.length;
-    var i = this.binarySearch(arr, from, searchIndex);
+    var i = this.binarySearch(arr, from, searchGet);
+    var getChunk = this.attrs.makeGetter("Chunk");
+    var getSublist = this.attrs.makeGetter("Sublist");
+
     while ((i < len)
            && (i >= 0)
-           && ((inc * arr[i][testIndex]) < (inc * to)) ) {
+           && ((inc * testGet(arr[i])) < (inc * to)) ) {
 
-        if ("object" == typeof arr[i][this.lazyIndex]) {
+        if (arr[i][0] == this.lazyClass) {
             var ncl = this;
-            // lazy node
-            if (arr[i][this.lazyIndex].state) {
-                if ("loading" == arr[i][this.lazyIndex].state) {
-                    // node is currenly loading; finish this query once it
-                    // has been loaded
-                    finish.inc();
-                    arr[i][this.lazyIndex].callbacks.push(
-                        function(parentIndex) {
-                            return function(o) {
-                                ncl.iterHelper(o, from, to, fun, finish, inc,
-                                               searchIndex, testIndex,
-                                               path.concat(parentIndex));
-                                finish.dec();
-                            };
-                        }(i)
-                    );
-                } else if ("loaded" == arr[i][this.lazyIndex].state) {
-                    // just continue below
-                } else {
-                    console.log("unknown lazy type: " + arr[i]);
-                }
-            } else {
-                // no "state" property means this node hasn't been loaded,
-                // start loading
-                arr[i][this.lazyIndex].state = "loading";
-                arr[i][this.lazyIndex].callbacks = [];
-                finish.inc();
-                dojo.xhrGet(
-                    {
-                        url: this.baseURL +
-                            this.lazyUrlTemplate.replace(
-                                /\{chunk\}/g,
-                                arr[i][this.lazyIndex].chunk
-                            ),
-                        handleAs: "json",
-                        load: function(lazyFeat, lazyObj,
-                                       sublistIndex, parentIndex) {
-                            return function(o) {
-                                lazyObj.state = "loaded";
-                                lazyFeat[sublistIndex] = o;
-                                ncl.iterHelper(o, from, to,
-                                               fun, finish, inc,
-                                               searchIndex, testIndex,
-                                               path.concat(parentIndex));
-                                for (var c = 0;
-                                     c < lazyObj.callbacks.length;
-                                     c++)
-                                     lazyObj.callbacks[c](o);
-                                finish.dec();
-                            };
-                        }(arr[i], arr[i][this.lazyIndex], this.sublistIndex, i),
-                        error: function() {
-                            finish.dec();
-                        }
-                    });
+            var chunkNum = getChunk(arr[i]);
+            if (!(chunkNum in this.lazyChunks)) {
+                this.lazyChunks[chunkNum] = {};
             }
+            var chunk = this.lazyChunks[chunkNum];
+            finish.inc();
+	    // call to maybeLoad will set chunk.data to lazy-loaded sublist once loaded, 
+	    //     and call iterHelper on sublist
+	    // if lazy-load data already loaded ( chunk.state = loaded ), maybeLoad() 
+	    //     will just immediated call iterHelper on sublist (chunk.data)
+            Util.maybeLoad(Util.resolveUrl(this.baseURL,
+                                           this.lazyUrlTemplate.replace(
+                                                   /\{Chunk\}/g, chunkNum
+                                           ) ),
+                           chunk,
+                           (function (myChunkNum) {
+                               return function(o) {
+                                   ncl.iterHelper(o, from, to, fun, finish,
+                                                  inc, searchGet, testGet,
+                                                  [myChunkNum]);
+                                   finish.dec();
+                               };
+                            })(chunkNum),
+                           function() {
+                               finish.dec();
+                           }
+                          );
         } else {
             fun(arr[i], path.concat(i));
         }
 
-        if (arr[i][this.sublistIndex])
-            this.iterHelper(arr[i][this.sublistIndex], from, to,
-                            fun, finish, inc, searchIndex, testIndex,
+        var sublist = getSublist(arr[i]);
+        if (sublist)
+            this.iterHelper(sublist, from, to,
+                            fun, finish, inc, searchGet, testGet,
                             path.concat(i));
         i += inc;
     }
@@ -186,14 +198,30 @@ NCList.prototype.iterate = function(from, to, fun, postFun) {
 
     //inc: iterate leftward or rightward
     var inc = (from > to) ? -1 : 1;
-    //searchIndex: search on start or end
-    var searchIndex = (from > to) ? 0 : 1;
-    //testIndex: test on start or end
-    var testIndex = (from > to) ? 1 : 0;
+    //searchGet: search on start or end
+    var searchGet = (from > to) ? this.start : this.end;
+    //testGet: test on start or end
+    var testGet = (from > to) ? this.end : this.start;
     var finish = new Finisher(postFun);
+
+    //  GAH newJSON merge notes
+    //  don't understand change in GMOD of path arg from [] (in prior versions) to [0] ???
+    //     is it to deal with same issue that is fixed in berkeleybop by: if (this.topList.length > 0) 
+    //     if so, eliminate one or the other ?? -- currently doing both in merge
+    //  
+    // berkeleybop/jbrowse:master
+    //  if (this.topList.length > 0) {
+    //        this.iterHelper(this.topList, from, to, fun, finish,
+    //                        inc, searchIndex, testIndex, []);
+    //    }
+    //
+    // GMOD/jbrowse:master
+    //    this.iterHelper(this.topList, from, to, fun, finish,
+    //                    inc, searchGet, testGet, [0]);
+
     if (this.topList.length > 0) {
-        this.iterHelper(this.topList, from, to, fun, finish,
-                        inc, searchIndex, testIndex, []);
+	this.iterHelper(this.topList, from, to, fun, finish,
+			inc, searchGet, testGet, [0]);
     }
     finish.finish();
 };
@@ -204,14 +232,15 @@ NCList.prototype.histogram = function(from, to, numBins, callback) {
 
     var result = new Array(numBins);
     var binWidth = (to - from) / numBins;
+    var start = this.start;
+    var end = this.end;
     for (var i = 0; i < numBins; i++) result[i] = 0;
-    //this.histHelper(this.topList, from, to, result, numBins, (to - from) / numBins);
     this.iterate(from, to,
                  function(feat) {
 	             var firstBin =
-                         Math.max(0, ((feat[0] - from) / binWidth) | 0);
+                         Math.max(0, ((start(feat) - from) / binWidth) | 0);
                      var lastBin =
-                         Math.min(numBins, ((feat[1] - from) / binWidth) | 0);
+                         Math.min(numBins, ((end(feat) - from) / binWidth) | 0);
 	             for (var bin = firstBin; bin <= lastBin; bin++)
                          result[bin]++;
                  },
@@ -221,47 +250,82 @@ NCList.prototype.histogram = function(from, to, numBins, callback) {
                  );
 };
 
-NCList.prototype.setSublistIndex = function(index) {
+/*
+ NCList.prototype.setSublistIndex = function(index) {
     if (this.sublistIndex === undefined) {
         this.sublistIndex = index;
     } else {
         throw new Error("sublistIndex already set; can't be changed");
     }
 };
+*/
 
+/* 
+ * WARNING: to use NCList.add(), 
+ *    MUST have all features for the track (on the current sequence) already loaded!!
+ * Otherwise:
+ *    1. calling add() will force lazy loading of any features not already loaded
+ *           due to iterate(-Infinity, Infinity) call
+ *    2. NCList rebuilding will likely be incomplete, 
+ *           because featArray after iterate is called may not include all the lazy loaded features, 
+ *           since adding those features to featArray is handled asynchronously
+ */
 NCList.prototype.add = function(feat, id) {
     if (this.verbose)  {
 	console.log("NCList.add() called, id: " + id);
 	console.log(feat);
     }
+    var getSublist = this.attrs.makeGetter("Sublist");
+    var setSublist = this.attrs.makeSetter("Sublist");
     var featArray = [feat];
     this.iterate(-Infinity, Infinity, function(f) { featArray.push(f); });
+    /* remove any sublist structure, this needs to be rebuilt in fill() */
     for (var i = 0; i < featArray.length; i++) {
-        if (featArray[i][this.sublistIndex])
-            delete featArray[i][this.sublistIndex];
+	var otherfeat = featArray[i];
+	if (getSublist(otherfeat))  {
+	    setSublist(otherfeat, null);
+	}
     }
-    this.fill(featArray, this.sublistIndex);
+
+    this.fill(featArray, this.attrs);
     this.featIdMap[id] = feat;
 };
 
+
+/* 
+ * WARNING: to use NCList.deleteEntry, 
+ *    MUST have all features for the track (on the current sequence) already loaded!!
+ * Otherwise:
+ *    1. calling add() will force lazy loading of any features not already loaded
+ *           due to iterate(-Infinity, Infinity) call
+ *    2. NCList rebuilding will likely be incomplete, 
+ *           because featArray after iterate is called may not include all the lazy loaded features, 
+ *           since adding those features to featArray is handled asynchronously
+ */
 NCList.prototype.deleteEntry = function(id) {
-    var toDelete = this.featIdMap[id];
+    var featToDelete = this.featIdMap[id];
     if (this.verbose)  {
 	console.log("NCList.deleteEntry() called, id: " + id);
-	console.log(toDelete);
+	console.log(featToDelete);
     }
-    if (toDelete) {
+    if (featToDelete) {
+	var getSublist = this.attrs.makeGetter("Sublist");
+	var setSublist = this.attrs.makeSetter("Sublist");
         var featArray = [];
         this.iterate(-Infinity, Infinity,
                      function(feat) {
-                         if (feat !== toDelete) featArray.push(feat);
+                         if (feat !== featToDelete) featArray.push(feat);
                      });
+	/* remove any sublist structure, this needs to be rebuilt in fill() */
         for (var i = 0; i < featArray.length; i++) {
-            if (featArray[i][this.sublistIndex])
-                delete featArray[i][this.sublistIndex];
+	    var otherfeat = featArray[i];
+	    if (getSublist(otherfeat))  {
+		setSublist(otherfeat, null);
+	    }
         }
-        delete this.featIdMap[id];
-        this.fill(featArray, this.sublistIndex);
+        // delete featToDelete;  // deleting featToDelete doesn't delete entry in featIdMap, must be explicit
+	delete this.featIdMap[id];
+	this.fill(featArray, this.attrs);
     } else {
         throw new Error("NCList.deleteEntry: id " + id + " doesn't exist");
     }

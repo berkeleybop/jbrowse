@@ -1,10 +1,9 @@
-function SequenceTrack(trackMeta, url, refSeq, browserParams) {
+function SequenceTrack(trackMeta, refSeq, browserParams) {
     //trackMeta: object with:
     //  key:   display text track name
     //  label: internal track name (no spaces or odd characters)
-    //  className: CSS class for sequence
-    //  args: object with:
-    //    seqDir: directory in which to find the sequence chunks
+    //  config: object with:
+    //    urlTemplate: url of directory in which to find the sequence chunks
     //    chunkSize: size of sequence chunks, in characters
     //refSeq: object with:
     //  start: refseq start
@@ -12,7 +11,6 @@ function SequenceTrack(trackMeta, url, refSeq, browserParams) {
     //browserParams: object with:
     //  changeCallback: function to call once JSON is loaded
     //  trackPadding: distance in px between tracks
-    //  baseUrl: base URL for the URL in trackMeta
     //  charWidth: width, in pixels, of sequence base characters
     //  seqHeight: height, in pixels, of sequence elements
 
@@ -22,8 +20,10 @@ function SequenceTrack(trackMeta, url, refSeq, browserParams) {
     this.trackMeta = trackMeta;
     this.setLoaded();
     this.chunks = [];
-    this.chunkSize = trackMeta.args.chunkSize;
-    this.baseUrl = (browserParams.baseUrl ? browserParams.baseUrl : "") + url;
+    this.chunkSize = trackMeta.config.chunkSize;
+    this.url = Util.resolveUrl(trackMeta.sourceUrl,
+                               Util.fillTemplate(trackMeta.config.urlTemplate,
+                                                 {'refseq': refSeq.name}) );
 }
 
 SequenceTrack.prototype = new Track("");
@@ -41,6 +41,9 @@ SequenceTrack.prototype.endZoom = function(destScale, destBlockBases) {
 SequenceTrack.prototype.setViewInfo = function(genomeView, numBlocks,
                                                trackDiv, labelDiv,
                                                widthPct, widthPx, scale) {
+    console.log("SequenceTrack.setViewInfo called, first param: ");
+    console.log(genomeView);
+		
     Track.prototype.setViewInfo.apply(this, [genomeView, numBlocks,
                                              trackDiv, labelDiv,
                                              widthPct, widthPx, scale]);
@@ -48,26 +51,43 @@ SequenceTrack.prototype.setViewInfo = function(genomeView, numBlocks,
         this.show();
     } else {
         this.hide();
+        this.heightUpdate(0);
     }
     this.setLabel(this.key);
 };
+
+SequenceTrack.nbsp = String.fromCharCode(160);
 
 /**
  *   GAH
  *   not entirely sure, but I think this strategy of calling getRange() only works as long as 
  *   seq chunk sizes are a multiple of block sizes
  *   or in other words for a given block there is only one chunk that overlaps it
- *      (otherwise in the callback would need to fiddle with horizontal position of seqNode within the block)
+ *      (otherwise in the callback would need to fiddle with horizontal position of seqNode within the block) ???
  */
 SequenceTrack.prototype.fillBlock = function(blockIndex, block,
                                              leftBlock, rightBlock,
                                              leftBase, rightBase,
                                              scale, stripeWidth,
                                              containerStart, containerEnd) {
+    if (scale == this.browserParams.charWidth) {
+        this.show();
+    } else {
+        this.hide();
+        this.heightUpdate(0);
+    }
     if (this.shown) {
         this.getRange(leftBase, rightBase,
                       function(start, end, seq) {
                           // console.log("blockIndex: %d, adding seq from %d to %d: %s", blockIndex, start, end, seq);
+
+                          // fill with leading blanks if the
+                          // sequence does not extend all the way
+                          // across our range
+                          for( ; start < 0; start++ ) {
+                              seq = SequenceTrack.nbsp + seq; //nbsp is an "&nbsp;" entity
+                          }
+
                           var seqNode = document.createElement("div");
                           seqNode.className = "sequence";
                           seqNode.appendChild(document.createTextNode(seq));
@@ -93,7 +113,7 @@ SequenceTrack.prototype.getRange = function(start, end, callback) {
     //    interbase, so residues retrieved from chunk are start to end-1
     //callback: function called for every chunk that overlaps range, 
     //            takes (chunkstart, chunkend, chunkseq)
-    var firstChunk = Math.floor((start) / this.chunkSize);
+    var firstChunk = Math.floor( Math.max(0,start) / this.chunkSize);
     var lastChunk = Math.floor((end - 1) / this.chunkSize);
     // var callbackInfo = {start: start, end: end, callback: callback};
     var chunkSize = this.chunkSize;
@@ -127,7 +147,7 @@ SequenceTrack.prototype.getRange = function(start, end, callback) {
             };
             this.chunks[i] = chunk;
             dojo.xhrGet({
-                            url: this.baseUrl + i + ".txt",
+                            url: this.url + i + ".txt",
                             load: function (response) {
                                 var ci;
                                 chunk.sequence = response;

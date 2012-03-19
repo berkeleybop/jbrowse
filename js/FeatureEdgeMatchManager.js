@@ -54,14 +54,21 @@ FeatureEdgeMatchManager.prototype.selectionRemoved = function(feat)  {
 // assumes all tracks have two-level features, and thus track.fields and track.subFields are populated
 FeatureEdgeMatchManager.prototype.selectionAdded = function(feat)  {
     if (! FeatureEdgeMatchManager.SHOW_EDGE_MATCHES)  { return; }
-    var  source_feat = feat;
+    var source_feat = feat;
     var verbose_edges = this.verbose_edges;
     if (verbose_edges)  { console.log("EdgeMatcher.selectionAdded called"); }
     var source_track = source_feat.track;
-    var source_fields = source_track.fields;
-    var source_subfields = source_track.subFields;
-    var source_subfeats = null;
+    // var source_fields = source_track.fields;
+    // var source_subfields = source_track.subFields;
+    var source_attrs = source_track.attrs;
 
+
+    var source_subfeats = source_attrs.get(source_feat, "Subfeatures");
+    if (! source_subfeats) {
+	source_subfeats = [ source_feat ];
+    }
+/*
+    var source_subfeats = null;
     if (source_feat.parent)  {  // selection is a subfeature
 	source_subfeats = [ source_feat ]; 
     }
@@ -76,17 +83,21 @@ FeatureEdgeMatchManager.prototype.selectionAdded = function(feat)  {
     else { // no way of munging subfeatures, so give up
 	return;    
     }
+*/
     if (verbose_edges) {  console.dir(source_subfeats); }
 
     var sourceid = source_feat.uid; 
-    var qmin = source_feat[source_fields["start"]];
-    var qmax = source_feat[source_fields["end"]];
-    var smindex = source_subfields["start"];
-    var smaxdex = source_subfields["end"]; 
+    
+    var qmin = source_attrs.get(source_feat, "Start");
+    var qmax = source_attrs.get(source_feat, "End");
+    // var smindex = source_attrs.get(source_subfields["start"];
+    // var smaxdex = source_subfields["end"]; 
+
     if (verbose_edges)  { console.log("qmin = " + qmin + ", qmax = " + qmax); }
     
     var ftracks = $("div.track").each( function(index, trackdiv)  {  
-        var target_track = trackdiv.track;	
+        var target_track = trackdiv.track;
+				   
 //	if (target_track && target_track.features)  {
 // TEMPORARY FIX for error when dragging track into main view --
 //     if something selected, edge matching attempted on new track, which throws an error:
@@ -94,24 +105,21 @@ FeatureEdgeMatchManager.prototype.selectionAdded = function(feat)  {
 //             at "var tmindex = target_subfields["start"];" line below
 //     error possibly due to track's trackData not yet being fully loaded, so check track load field
          if (target_track && target_track.features && target_track.loaded)  {
+	     var target_attrs = target_track.attrs;				   
 	    if (verbose_edges)  { console.log("edge matching for: " + target_track.name); console.log(trackdiv); }
 	    var nclist = target_track.features;
-	    var target_fields = target_track.fields;
-	    var target_subfields = target_track.subFields;
-	    var tmindex = target_subfields["start"];
-	    var tmaxdex = target_subfields["end"];
+	     
+	    // var target_fields = target_track.fields;
+	    // var target_subfields = target_track.subFields;
+	   //  var tmindex = target_subfields["start"];
+	   //  var tmaxdex = target_subfields["end"];
 
 	    // only look at features that overlap source_feat min/max
 	    // NCList.iterate only calls function for features that overlap qmin/qmax coords
 	    nclist.iterate(qmin, qmax, function(target_feat, path) {
 		if (verbose_edges)  {  console.log("checking feature: "); console.log(target_feat); }
-		var target_subfeats = null;
-		if (target_subfields)  {
-		    target_subfeats = target_feat[target_fields["subfeatures"]];
-		}
-		else  {
-		    // if target feat has no subfeatures, treat subfeature as single subfeature
-		    target_subfields = target_fields;
+		var target_subfeats = target_attrs.get(target_feat, "Subfeatures");
+                if (! target_subfeats) {
 		    target_subfeats = [ target_feat ];
 		}
 		if (verbose_edges)  { console.log(target_subfeats); }
@@ -127,12 +135,12 @@ FeatureEdgeMatchManager.prototype.selectionAdded = function(feat)  {
 			    // console.log(rsubdivs);
 			    for (var i in source_subfeats)  {
 				var ssfeat = source_subfeats[i];
-				var ssmin = ssfeat[smindex];
-				var ssmax = ssfeat[smaxdex];
+				var ssmin = source_attrs.get(ssfeat, "Start");
+				var ssmax = source_attrs.get(ssfeat, "End");
 				for (var j in target_subfeats)  {
 				    var tsfeat = target_subfeats[j];
-				    var tsmin = tsfeat[tmindex];
-				    var tsmax = tsfeat[tmaxdex];
+				    var tsmin = target_attrs.get(tsfeat, "Start");
+				    var tsmax = target_attrs.get(tsfeat, "End");
 				    if (ssmin === tsmin || ssmax === tsmax)  {
 					var tsid = tsfeat.uid;
 					if (tsid)   {
