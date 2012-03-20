@@ -117,7 +117,6 @@ BamUtils.cigarToSubfeats = function(cigar, offset, parent_strand)    {
 	   case 'M':
 	   case 'D':
 	   case 'N':
-	   // case '=':
 	   case 'E':
 	   case 'X':
 	      max = min + lop;
@@ -132,7 +131,9 @@ BamUtils.cigarToSubfeats = function(cigar, offset, parent_strand)    {
 	    // other possible cases
 	}
 	var subfeat = [ BamUtils.subfeat_class_index, min, max, parent_strand, op ];
-	subfeats.push(subfeat);
+	if (op !== 'N')  {
+	    subfeats.push(subfeat);
+	}
 	min = max;
     }
     return subfeats;
