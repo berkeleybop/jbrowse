@@ -666,7 +666,8 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
     //and arrowheads if applicable
     var featureEnd = this.attrs.get(feature, "End");
     var featureStart = this.attrs.get(feature, "Start");
-    if (this.arrowheadClass) {
+    //scale: pixels per base at the current zoom level
+    if (this.config.style.arrowheadClass) {
         switch (this.attrs.get(feature, "Strand")) {
         case 1:
         case '+':
