@@ -1645,16 +1645,13 @@ AnnotTrack.prototype.changeAnnotationLocation = function()  {
 };
 
 AnnotTrack.prototype.handleError = function(response) {
-    console.log("ERROR: ");
-    console.log(response);  // in Firebug, allows retrieval of stack trace, jump to code, etc.
-    return false;
-/*  doesn't work on Firefox: error gets assigned null, so error.error is undefined 
- 	var error = eval('(' + response.responseText + ')');
+	console.log("ERROR: ");
+	console.log(response);  // in Firebug, allows retrieval of stack trace, jump to code, etc.
+	var error = eval('(' + response.responseText + ')');
 	if (error.error) {
 		alert(error.error);
 		return false;
 	}
-*/
 };
 
 AnnotTrack.prototype.handleConfirm = function(response) {
@@ -1779,7 +1776,7 @@ AnnotTrack.prototype.initContextMenu = function() {
 		},
 		// The ERROR function will be called in an error case.
 		error: function(response, ioArgs) { //
-		    thisObj.handleError(response);
+//		    thisObj.handleError(response);
 		}
 	});
 

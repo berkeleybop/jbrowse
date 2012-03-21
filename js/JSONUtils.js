@@ -83,7 +83,7 @@ JSONUtils.createJBrowseFeature = function(arep, afeature, classIndex)  {
    //  if (arep.fastGet(jfeature, "Name"))  {
     if (arep.hasDefinedAttribute(jfeature, "Name")) {
     	var name = afeature.name ? afeature.name : uid;
-	arep.set(jfeature, "Name", uid);
+	arep.set(jfeature, "Name", name);
     }
     jfeature.uid = uid;
 
