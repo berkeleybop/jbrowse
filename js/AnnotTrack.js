@@ -561,13 +561,14 @@ AnnotTrack.prototype.addToAnnotation = function(annot, feats_to_add)  {
 		var flength = feats_to_add.length;
 		for (var i=0; i<flength; i++)  { 
 			var feat = feats_to_add[i];
+
 			var is_subfeature = (!!feat.parent);  // !! is shorthand for returning true if value is defined and non-null
 			if (is_subfeature)  {
 				subfeats.push(feat);
 			}
 			else  {
 				var source_track = feat.track;
-			        var satts = source_track.attrs;
+		            var satts = source_track.attrs;
 			        if (satts.hasDefinedAttribute(feat, "Subfeatures")) {
 				// if (source_track.fields["subfeatures"])  {
 					// var subs = feat[source_track.fields["subfeatures"]];
@@ -644,6 +645,7 @@ AnnotTrack.prototype.addToAnnotation = function(annot, feats_to_add)  {
 			}
 			else  {
 				var source_track = feat.track;
+		                var satts = source_track.attrs;
 				// if (source_track.fields["subfeatures"])  {
 			        if (satts.hasDefinedAttribute(feat, "Subfeatures")) {
 			            // var subs = feat[source_track.fields["subfeatures"]];
