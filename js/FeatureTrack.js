@@ -213,8 +213,7 @@ FeatureTrack.prototype.initializeConfig = function()  {
         events: {
         }
     };
-    /*
-      if (! this.config.linkTemplate) {
+    if (! this.config.style.linkTemplate) {
         defaultConfig.events.click =
             function(track, elem, feat, attrs, event) {
 	        alert("clicked on feature\n" +
@@ -225,7 +224,6 @@ FeatureTrack.prototype.initializeConfig = function()  {
 	              ", ID: " + attrs.get(feat, "ID") );
             };
     }
-    */
     Util.deepUpdate(defaultConfig, this.config);
     this.config = defaultConfig;
 
@@ -850,17 +848,19 @@ FeatureTrack.prototype.handleSubFeatures = function(feature, featDiv,
 FeatureTrack.prototype.featureUrl = function(feature) {
     var urlValid = true;
     var attrs = this.attrs;
-    if (this.urlTemplate) {
-        var href = this.urlTemplate.replace(/\{([^}]+)\}/g,
-        function(match, group) {
-            var val = attrs.get(feature, group);
-            if (val !== undefined)
-                return val;
-            else
-                urlValid = false;
-            return 0;
-        });
-        if(urlValid) return href;
+    if (this.config.style.linkTemplate) {
+        var href = this.config.style.linkTemplate.replace(
+                /\{([^}]+)\}/g,
+               function(match, group) {
+		   var val = attrs.get(feature, group);
+                   if (val !== undefined)
+                       return val;
+                   else
+                       urlValid = false;
+                   return 0;
+               });
+        if( urlValid )
+            return href;
     }
     return undefined;
 };
