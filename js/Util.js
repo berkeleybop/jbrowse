@@ -99,11 +99,13 @@ Util.fillTemplate = function(template, fillWith) {
  */
 Util.maybeLoad = function (lurl, stateObj, successCallback, errorCallback) {
     var url = lurl;
+    /*
     console.log("Util.maybeLoad called: url = " + url);
     console.log(stateObj.state);
     console.log(stateObj);
     console.log("successCallback: " + successCallback);
     console.log("errorCallback: " + errorCallback);
+*/
 
     if (stateObj.state) {
         if ("loaded" == stateObj.state) {
@@ -126,9 +128,9 @@ Util.maybeLoad = function (lurl, stateObj, successCallback, errorCallback) {
                     stateObj.state = "loaded";
                     stateObj.data = o;
                     var cbs = stateObj.successCallbacks;
-		    console.log("in maybeload.load: " + url);
+		    // console.log("in maybeload.load: " + url);
                     for (var c = 0; c < cbs.length; c++) cbs[c](o);
-		    console.log("finished maybeload.load: " + url);
+		    // console.log("finished maybeload.load: " + url);
                 },
                 error: function(msg) {
                     stateObj.state = "error";

@@ -428,9 +428,10 @@ FeatureTrack.prototype.fillBlock = function(blockIndex, block,
                                             leftBase, rightBase,
                                             scale, stripeWidth,
                                             containerStart, containerEnd) {
-    //console.log("scale: %d, histScale: %d", scale, this.histScale);
+    // console.log("scale: %d, histScale: %d", scale, this.histScale);
+    var thresh = this.density * this.config.scaleThresh.hist;
     if (this.histograms &&
-        (scale < (this.density * this.config.scaleThresh.hist)) ) {
+        (scale < thresh)) {
 	this.fillHist(blockIndex, block, leftBase, rightBase, stripeWidth,
                       containerStart, containerEnd);
     } else {
