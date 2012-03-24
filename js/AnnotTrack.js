@@ -637,11 +637,21 @@ AnnotTrack.prototype.addToAnnotation = function(annot, feats_to_add)  {
 	}
 	else {
 		var subfeats = new Array();
+		var allSameStrand = 1;
 		for (var i = 0; i < feats_to_add.length; ++i)  { 
 			var feat = feats_to_add[i];
 			var isSubfeature = (!!feat.parent);  // !! is shorthand for returning true if value is defined and non-null
+			var annotStrand = tatts.get(annot, "Strand");
 			if (isSubfeature)  {
-				subfeats.push(feat);
+				var featStrand = tatts.get(feat, "Strand");
+				var featToAdd = feat;
+				if (featStrand != annotStrand) {
+					allSameStrand = 0;
+					featToAdd = new Array();
+					$.extend(featToAdd, feat);
+					tatts.set(featToAdd, "Strand", annotStrand);
+				}
+				subfeats.push(featToAdd);
 			}
 			else  {
 				var source_track = feat.track;
@@ -650,16 +660,34 @@ AnnotTrack.prototype.addToAnnotation = function(annot, feats_to_add)  {
 			        if (satts.hasDefinedAttribute(feat, "Subfeatures")) {
 			            // var subs = feat[source_track.fields["subfeatures"]];
 				    var subs = satts.get(feat, "Subfeatures");
-				    $.merge(subfeats, subs);
+				    for (var i = 0; i < subs.length; ++i) {
+				    	var feat = subs[i];
+						var featStrand = tatts.get(feat, "Strand");
+				    	var featToAdd = feat;
+						if (featStrand != annotStrand) {
+							allSameStrand = 0;
+							featToAdd = new Array();
+							$.extend(featToAdd, feat);
+							tatts.set(featToAdd, "Strand", annotStrand);
+						}
+						subfeats.push(featToAdd);
+				    }
+//				    $.merge(subfeats, subs);
 				}
 			}
 		}
-		
+
+		if (!allSameStrand && !confirm("Adding features of opposite strand.  Continue?")) {
+			return;
+		}
+
 		var featuresString = "";
 		for (var i = 0; i < subfeats.length; ++i) {
 			var subfeat = subfeats[i];
 			// if (subfeat[target_track.subFields["type"]] != "wholeCDS") {
-		        if (tatts.get(subfeat, "Type") != "wholeCDS") {
+			var source_track = subfeat.track;
+			var satts = source_track.attrs;
+		        if (satts.get(subfeat, "Type") != "wholeCDS") {
 				var jsonFeature = JSONUtils.createApolloFeature(tatts, subfeats[i], "exon");
 				featuresString += ", " + JSON.stringify(jsonFeature);
 			}
