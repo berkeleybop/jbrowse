@@ -198,16 +198,9 @@ FeatureTrack.prototype.initializeConfig = function()  {
         },
         hooks: {
             create: function(track, feat, attrs) {
-                var featDiv;
-                var featUrl = track.featureUrl(feat);
-                if (featUrl) {
-                    featDiv = document.createElement("a");
-                    featDiv.href = featUrl;
-                    featDiv.target = "_new";
-                } else {
-                    featDiv = document.createElement("div");
-                }
-                return featDiv;
+		// for WebApollo, do not make feature click-linkouts (since click is used for selection)
+		//      however feature labels are given click-linkouts elsewhere)
+                return document.createElement("div");
             }
         },
         events: {
