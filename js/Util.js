@@ -123,7 +123,8 @@ Util.maybeLoad = function (lurl, stateObj, successCallback, errorCallback) {
         dojo.xhrGet(
             {
                 url: url,
-                handleAs: "json",
+                handleAs: "json", 
+		sync: true, 
                 load: function(o) {
                     stateObj.state = "loaded";
                     stateObj.data = o;
