@@ -124,7 +124,7 @@ Util.maybeLoad = function (lurl, stateObj, successCallback, errorCallback) {
             {
                 url: url,
                 handleAs: "json", 
-		sync: true, 
+		// sync: true, 
                 load: function(o) {
                     stateObj.state = "loaded";
                     stateObj.data = o;
