@@ -9,15 +9,15 @@
 *  When JSON data structures changed (from version 1.2.1 to ?? in March 2012), 
 *  NCList() also changed how lazy data loading is handled
 *  instead of insertion of lazily loaded sublist into intervals data struct (as in 1.2.1), now 
-*  keep track of lazy-loaded sublists via a lazyChunks array (lazyChunks[chunknum])
+*  keep track of lazy-loaded sublists via a lazyChunks object, where lazyChunks[chunkId] maps to sublist for that chunk
 * 
 * For example:
 * Jbrowse 1.2.1:
 *   trackInfo (trackData): lazyIndex = 2, sublistIndex = 6
 * pre-load intervals feat:
-*   [ start, end, { chunk : chunknum } ]
+*   [ start, end, { chunk : chunkId } ]
 * post-load:
-*   [start, end, { chunk : chunknum, state : "loaded" }, null, null, null, [ LOADED_SUBLIST ]
+*   [start, end, { chunk : chunkId, state : "loaded" }, null, null, null, [ LOADED_SUBLIST ]
 * and operations that recurse into lazy-loaded sublists (once loaded) 
 * get to them  through lazyfeat[sublistIndex]
 * 
@@ -25,14 +25,16 @@
 * trackData: lazyClass = 4,
 *            classes[4] = { "Start", "End", "Chunk" }  // class as 0 index of actual entry is implicit
 * pre-load:
-*    [ 4, start, end, chunknum ]
-*    lazyChunks[chunknum] = undefined
+*    [ 4, start, end, chunkId ]
+*    lazyChunks[chunkId] = undefined
 * post-load
-*    [ 4, start, end, chunknum ]  // intervals struct is unchanged
-*    lazyChunks[chunknum] = { state : "loaded", data : [LOADED_SUBLIST] }
+*    [ 4, start, end, chunkId ]  // intervals struct is unchanged
+*    lazyChunks[chunkId] = { state : "loaded", data : [LOADED_SUBLIST] }
 * 
 *  and operations that recurse into lazy-loaded sublists (once loaded) 
-*  get to them through lazychunks[lazyfeat[chunknum]].data
+*  get to them through lazychunks[lazyfeat[chunkId]].data
+*  get to them through lazychunks[atts.get(lazyfeat, "Chunk")].data
+*  (this implies "Chunk" field values are unique within this NCList)
 *
 */
 function NCList() {
@@ -151,11 +153,11 @@ NCList.prototype.iterHelper = function(arr, from, to, fun, finish,
 
         if (arr[i][0] == this.lazyClass) {
             var ncl = this;
-            var chunkNum = getChunk(arr[i]);
-            if (!(chunkNum in this.lazyChunks)) {
-                this.lazyChunks[chunkNum] = {};
+            var chunkId = getChunk(arr[i]);
+            if (!(chunkId in this.lazyChunks)) {
+                this.lazyChunks[chunkId] = {};
             }
-            var chunk = this.lazyChunks[chunkNum];
+            var chunk = this.lazyChunks[chunkId];
             finish.inc();
 	    // call to maybeLoad will set chunk.data to lazy-loaded sublist once loaded, 
 	    //     and call iterHelper on sublist
@@ -163,17 +165,17 @@ NCList.prototype.iterHelper = function(arr, from, to, fun, finish,
 	    //     will just immediated call iterHelper on sublist (chunk.data)
             Util.maybeLoad(Util.resolveUrl(this.baseURL,
                                            this.lazyUrlTemplate.replace(
-                                                   /\{Chunk\}/g, chunkNum
+                                                   /\{Chunk\}/ig, chunkId
                                            ) ),
                            chunk,
-                           (function (myChunkNum) {
+                           (function (myChunkId) {
                                return function(o) {
                                    ncl.iterHelper(o, from, to, fun, finish,
                                                   inc, searchGet, testGet,
-                                                  [myChunkNum]);
+                                                  [myChunkId]);
                                    finish.dec();
                                };
-                            })(chunkNum),
+                            })(chunkId),
                            function() {
                                finish.dec();
                            }
