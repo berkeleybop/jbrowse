@@ -1809,6 +1809,51 @@ div.generic_parent-hist {
     -ms-box-sizing: border-box;
 }
 
+
+/***************************************************************
+*  generic alignment styling
+****************************************************************/
+.alignment-match, 
+.plus-alignment-match, 
+.minus-alignment-match {
+    position: absolute;
+    height: 16px;
+    margin-top: 0px;
+    z-index: 6;
+    min-width: 1px;
+    cursor: pointer;
+}
+
+.alignment-render  {
+    position: absolute;
+    height: 4px;
+    margin-top: 6px;
+    margin-bottom: 6px;  /* don't think this actually is needed */
+    background-color: #B9E2E6;
+    z-index: 2;  
+    min-width: 1px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.alignment-part, 
+.plus-alignment-part, 
+.minus-alignment-part  {
+    position: absolute;
+    height: 8px; 
+    margin-top: 4px;
+    background-color: #7CC1C8;
+    z-index: 8;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+
+
 /***************************************************************
 *  NCBI EST alignment styling
 ****************************************************************/
