@@ -1,3 +1,6 @@
+var USE_GRIDLINES = true;
+var DRAW_TRACK_BORDER = false;
+
 function Animation(subject, callback, time) {
     //subject: what's being animated
     //callback: function to call at the end of the animation
@@ -462,18 +465,22 @@ function GenomeView(elem, stripeWidth, refseq, zoomLevel, browserRoot) {
     this.zoomContainer.appendChild(trackDiv);
     this.waitElems.push(trackDiv);
 
-    var gridTrackDiv = document.createElement("div");
-    gridTrackDiv.className = "track";
-    gridTrackDiv.style.cssText = "top: 0px; height: 100%;";
-    gridTrackDiv.id = "gridtrack";
-    var gridTrack = new GridTrack("gridtrack");
-    gridTrack.setViewInfo(function(height) {}, this.stripeCount,
-                          gridTrackDiv, undefined, this.stripePercent,
-                          this.stripeWidth, this.pxPerBp,
-                          this.trackPadding);
-    this.zoomContainer.appendChild(gridTrackDiv);
-
-    this.uiTracks = [this.staticTrack, gridTrack];
+    if (USE_GRIDLINES)  {
+	var gridTrackDiv = document.createElement("div");
+	gridTrackDiv.className = "track";
+	gridTrackDiv.style.cssText = "top: 0px; height: 100%;";
+	gridTrackDiv.id = "gridtrack";
+	var gridTrack = new GridTrack("gridtrack");
+	gridTrack.setViewInfo(function(height) {}, this.stripeCount,
+                              gridTrackDiv, undefined, this.stripePercent,
+                              this.stripeWidth, this.pxPerBp,
+                              this.trackPadding);
+	this.zoomContainer.appendChild(gridTrackDiv);
+	this.uiTracks = [this.staticTrack, gridTrack];
+    }
+    else  {
+	this.uiTracks = [this.staticTrack];
+    }
 
     dojo.forEach(this.uiTracks, function(track) {
 	track.showRange(0, this.stripeCount - 1,
@@ -1236,6 +1243,9 @@ GenomeView.prototype.addTrack = function(track) {
     trackDiv.className = "track";
     trackDiv.id = "track_" + track.name;
     trackDiv.track = track;
+    if (DRAW_TRACK_BORDER)  {
+	trackDiv.style.border = "1px solid gray"
+    }
 
     if (track.name == "Annotations") {
 	trackDiv.style.backgroundColor = "#FFFFDD";
@@ -1257,6 +1267,8 @@ GenomeView.prototype.addTrack = function(track) {
     labelDiv.style.position = "absolute";
     labelDiv.style.top = "0px";
     labelDiv.style.left = this.getX() + "px";
+
+
     trackDiv.appendChild(labelDiv);
 
     return trackDiv;
