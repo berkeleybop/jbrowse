@@ -273,7 +273,7 @@ DraggableFeatureTrack.prototype.handleSubFeatures = function(feature, featDiv,
     for (i=0; i < slength; i++)  {
 	subfeat = subfeats[i];
 	subtype = attrs.get(subfeat, "Type");
-	if (subtype === "wholeCDS") {
+	if (subtype === "wholeCDS" || subtype === "polypeptide") {
 	    wholeCDS = subfeat;
 	    break;
 	}
