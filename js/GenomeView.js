@@ -117,6 +117,7 @@ Zoomer.prototype.step = function(pos) {
 };
 
 function GenomeView(elem, stripeWidth, refseq, zoomLevel, browserRoot) {
+    this.DEBUG_SPLITTER = false;
     //all coordinates are interbase
     // this.EDGE_MATCHING_ENABLED = false;
 
@@ -159,6 +160,9 @@ function GenomeView(elem, stripeWidth, refseq, zoomLevel, browserRoot) {
     // the scrollContainer is the element that changes position
     // when the user scrolls
     this.scrollContainer = document.createElement("div");
+    if (this.DEBUG_SPLITTER)  {
+	dojo.connect(this.scrollContainer, "mousedown", function(e)  { console.log("scrollContainer mouseDown: "); console.log(e); } );
+    }
     this.scrollContainer.id = "container";
     this.scrollContainer.style.cssText =
 	"position: absolute; left: 0px; top: 0px;";
@@ -170,6 +174,9 @@ function GenomeView(elem, stripeWidth, refseq, zoomLevel, browserRoot) {
     //
     // GAH zoomContainer is the container that track divs get added to, 
     this.zoomContainer = document.createElement("div");
+    if (this.DEBUG_SPLITTER)  {
+	dojo.connect(this.zoomContainer, "mousedown", function(e)  { console.log("zoomContainer mouseDown: "); console.log(e); } );
+    }
     this.zoomContainer.id = "zoomContainer";
     this.zoomContainer.style.cssText =
 	"position: absolute; left: 0px; top: 0px; height: 100%;";
@@ -371,7 +378,7 @@ function GenomeView(elem, stripeWidth, refseq, zoomLevel, browserRoot) {
     };
 
     view.mouseDown = function(event) {
-	//        console.log("GenomeView.mouseDown " + event); // DEL
+        if (this.DEBUG_SPLITTER)  { console.log("GenomeView.mouseDown " + event); } // DEL 
 	if ("animation" in view) {
 	    if (view.animation instanceof Zoomer) {
 		dojo.stopEvent(event);
