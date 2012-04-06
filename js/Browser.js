@@ -28,6 +28,7 @@ var Browser = function(params) {
     dojo.require("dijit.layout.BorderContainer");
 
     var brwsr = this;
+    this.DEBUG_SPLITTER = false;
     this.params = params;
     console.log(params);
     this.deferredFunctions = [];
@@ -60,6 +61,10 @@ Browser.prototype.initialize = function() {
     this.navbox = this.createNavBox( topPane, 25 );
 
     var viewElem = document.createElement("div");
+    if (this.DEBUG_SPLITTER)  {
+	dojo.connect(this.container, "mousedown", function(e)  { console.log("Browser.container mouseDown: "); console.log(e); } );
+	dojo.connect(viewElem, "mousedown", function(e)  { console.log("viewElem mouseDown: "); console.log(e); } );
+    }
     this.viewElem = viewElem;
     this.container.appendChild(viewElem);
     viewElem.className = "dragWindow";
@@ -266,10 +271,18 @@ Browser.prototype.onFineMove = function(startbp, endbp) {
 Browser.prototype.createTrackList = function(parent, params) {
     var leftPane = document.createElement("div");
     leftPane.id = "trackPane";
-    leftPane.style.cssText= params.show_tracklist == 0 ? "width: 0": "width: 10em";
+//    leftPane.style.cssText= params.show_tracklist == 0 ? "width: 0": "width: 10em";
+    leftPane.style.cssText= params.show_tracklist == 0 ? "width: 0": "width: 15em";
     parent.appendChild(leftPane);
     //splitter on left side
-    var leftWidget = new dijit.layout.ContentPane({region: "left", splitter: true}, leftPane);
+    // GAH Turned off splitter, because after GMOD:JBrowse merge in March 2012, 
+    //      was getting bug when dragging splitter: dijitSplitterCover (auto-created in Dijit when dragging splitter,
+    //           to prevent bleed-through of mouse drag into other divs) not going away after mouse release of splitter 
+    //      and therefore after split drag, no mouse input accepted in main view any more!!!
+    //  can probably fix by catching mouse release of splitter and manually destroying dijitSplitterCover??
+    //      but for quick fix just turn off splitter option (and partially compensate for need to split by making tracklist div wider)
+    // var leftWidget = new dijit.layout.ContentPane({region: "left", splitter: true}, leftPane);
+    var leftWidget = new dijit.layout.ContentPane({region: "left", splitter: false}, leftPane);
     var trackListDiv = document.createElement("div");
     trackListDiv.id = "tracksAvail";
     trackListDiv.className = "container handles";
@@ -280,6 +293,11 @@ Browser.prototype.createTrackList = function(parent, params) {
         + (params.browserRoot ? params.browserRoot : "")
         + "img/right_arrow.png\"/> to view)<br/><br/>";
     leftPane.appendChild(trackListDiv);
+    if (this.DEBUG_SPLITTER)  {
+	dojo.connect(leftPane, "mousedown", function(e)  { console.log("leftPane mouseDown: "); console.log(e); } );
+	dojo.connect(leftWidget, "mousedown", function(e)  { console.log("leftWidget mouseDown: "); console.log(e); } );
+	dojo.connect(trackListDiv, "mousedown", function(e)  { console.log("trackListDiv mouseDown: "); console.log(e); } );
+    }
 
     var brwsr = this;
 
@@ -289,12 +307,18 @@ Browser.prototype.createTrackList = function(parent, params) {
 
     var trackListCreate = function(track, hint) {
         var node = document.createElement("div");
+	if (brwsr.DEBUG_SPLITTER)  {
+	    dojo.connect(node, "mousedown", function(e)  { console.log("track label node mouseDown: "); console.log(e); } );
+	}
         node.className = "tracklist-label";
         node.innerHTML = track.key;
         //in the list, wrap the list item in a container for
         //border drag-insertion-point monkeying
         if ("avatar" != hint) {
             var container = document.createElement("div");
+	    if (brwsr.DEBUG_SPLITTER)  {
+		dojo.connect(container, "mousedown", function(e)  { console.log("track label container mouseDown: "); console.log(e); } );
+	    }
             container.className = "tracklist-container";
             container.appendChild(node);
             node = container;

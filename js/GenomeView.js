@@ -1,3 +1,6 @@
+var USE_GRIDLINES = true;
+var DRAW_TRACK_BORDER = false;
+
 function Animation(subject, callback, time) {
     //subject: what's being animated
     //callback: function to call at the end of the animation
@@ -114,6 +117,7 @@ Zoomer.prototype.step = function(pos) {
 };
 
 function GenomeView(elem, stripeWidth, refseq, zoomLevel, browserRoot) {
+    this.DEBUG_SPLITTER = false;
     //all coordinates are interbase
     // this.EDGE_MATCHING_ENABLED = false;
 
@@ -156,6 +160,9 @@ function GenomeView(elem, stripeWidth, refseq, zoomLevel, browserRoot) {
     // the scrollContainer is the element that changes position
     // when the user scrolls
     this.scrollContainer = document.createElement("div");
+    if (this.DEBUG_SPLITTER)  {
+	dojo.connect(this.scrollContainer, "mousedown", function(e)  { console.log("scrollContainer mouseDown: "); console.log(e); } );
+    }
     this.scrollContainer.id = "container";
     this.scrollContainer.style.cssText =
 	"position: absolute; left: 0px; top: 0px;";
@@ -167,6 +174,9 @@ function GenomeView(elem, stripeWidth, refseq, zoomLevel, browserRoot) {
     //
     // GAH zoomContainer is the container that track divs get added to, 
     this.zoomContainer = document.createElement("div");
+    if (this.DEBUG_SPLITTER)  {
+	dojo.connect(this.zoomContainer, "mousedown", function(e)  { console.log("zoomContainer mouseDown: "); console.log(e); } );
+    }
     this.zoomContainer.id = "zoomContainer";
     this.zoomContainer.style.cssText =
 	"position: absolute; left: 0px; top: 0px; height: 100%;";
@@ -368,7 +378,7 @@ function GenomeView(elem, stripeWidth, refseq, zoomLevel, browserRoot) {
     };
 
     view.mouseDown = function(event) {
-	//        console.log("GenomeView.mouseDown " + event); // DEL
+        if (this.DEBUG_SPLITTER)  { console.log("GenomeView.mouseDown " + event); } // DEL 
 	if ("animation" in view) {
 	    if (view.animation instanceof Zoomer) {
 		dojo.stopEvent(event);
@@ -462,18 +472,22 @@ function GenomeView(elem, stripeWidth, refseq, zoomLevel, browserRoot) {
     this.zoomContainer.appendChild(trackDiv);
     this.waitElems.push(trackDiv);
 
-    var gridTrackDiv = document.createElement("div");
-    gridTrackDiv.className = "track";
-    gridTrackDiv.style.cssText = "top: 0px; height: 100%;";
-    gridTrackDiv.id = "gridtrack";
-    var gridTrack = new GridTrack("gridtrack");
-    gridTrack.setViewInfo(function(height) {}, this.stripeCount,
-                          gridTrackDiv, undefined, this.stripePercent,
-                          this.stripeWidth, this.pxPerBp,
-                          this.trackPadding);
-    this.zoomContainer.appendChild(gridTrackDiv);
-
-    this.uiTracks = [this.staticTrack, gridTrack];
+    if (USE_GRIDLINES)  {
+	var gridTrackDiv = document.createElement("div");
+	gridTrackDiv.className = "track";
+	gridTrackDiv.style.cssText = "top: 0px; height: 100%;";
+	gridTrackDiv.id = "gridtrack";
+	var gridTrack = new GridTrack("gridtrack");
+	gridTrack.setViewInfo(function(height) {}, this.stripeCount,
+                              gridTrackDiv, undefined, this.stripePercent,
+                              this.stripeWidth, this.pxPerBp,
+                              this.trackPadding);
+	this.zoomContainer.appendChild(gridTrackDiv);
+	this.uiTracks = [this.staticTrack, gridTrack];
+    }
+    else  {
+	this.uiTracks = [this.staticTrack];
+    }
 
     dojo.forEach(this.uiTracks, function(track) {
 	track.showRange(0, this.stripeCount - 1,
@@ -1236,6 +1250,9 @@ GenomeView.prototype.addTrack = function(track) {
     trackDiv.className = "track";
     trackDiv.id = "track_" + track.name;
     trackDiv.track = track;
+    if (DRAW_TRACK_BORDER)  {
+	trackDiv.style.border = "1px solid gray"
+    }
 
     if (track.name == "Annotations") {
 	trackDiv.style.backgroundColor = "#FFFFDD";
@@ -1257,6 +1274,8 @@ GenomeView.prototype.addTrack = function(track) {
     labelDiv.style.position = "absolute";
     labelDiv.style.top = "0px";
     labelDiv.style.left = this.getX() + "px";
+
+
     trackDiv.appendChild(labelDiv);
 
     return trackDiv;
