@@ -103,7 +103,8 @@ dojo.require("dijit.MenuItem");
 dojo.require("dijit.Dialog");
 var annot_context_menu;
 var contextMenuItems;
-var context_path = "/ApolloWeb";
+// var context_path = "/ApolloWeb";
+var context_path = "..";
 // var context_path = "";
 
 dojo.addOnLoad( function()  {  /* add dijit menu stuff here? */ } );
