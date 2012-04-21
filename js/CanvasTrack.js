@@ -31,12 +31,16 @@ function CanvasTrack(trackMeta, refSeq, browserParams)  {
     Track.call(this, trackMeta.label, trackMeta.key, false, browserParams.changeCallback);
     this.refSeq = refSeq;
     this.baseUrl = (browserParams.baseUrl ? browserParams.baseUrl : "");
-    this.trackBaseUrl = (this.baseUrl + trackMeta.sourceUrl).match(/^.+\//);
+//    this.trackBaseUrl = (this.baseUrl + trackMeta.sourceUrl).match(/^.+\//);
     this.padding = 5;
     this.trackPadding = browserParams.trackPadding;
     this.trackMeta = trackMeta;
     var canvas_track = this;
-    var dataurl = trackMeta.dataurl;
+//    var dataurl = trackMeta.config.dataurl;
+
+    var dataurl = Util.resolveUrl(trackMeta.sourceUrl,
+                               Util.fillTemplate(trackMeta.config.dataurl,
+                                                 {'refseq': refSeq.name}) );
     
     $.ajax(
 	{ 
