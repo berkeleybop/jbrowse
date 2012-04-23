@@ -109,6 +109,9 @@ var context_path = "..";
 
 dojo.addOnLoad( function()  {  /* add dijit menu stuff here? */ } );
 
+dojo.require("dojox.grid.DataGrid");
+dojo.require("dojo.data.ItemFileWriteStore");
+
 AnnotTrack.prototype.loadSuccess = function(trackInfo) {
     
     DraggableFeatureTrack.prototype.loadSuccess.call(this, trackInfo);
@@ -1201,11 +1204,7 @@ AnnotTrack.prototype.flipStrandForSelectedFeatures = function(annots) {
     var track = this;
     var uniqueNames = new Object();
     for (var i in annots)  {
-    	var annot = annots[i];
-    	// get top level feature
-    	while (annot.parent) {
-    		annot = annot.parent;
-    	}
+    	var annot = AnnotTrack.getTopLevelAnnotation(annots[i]);
     	var uniqueName = annot.uid;
     	// just checking to ensure that all features in selection are from this track
     	if (annot.track === track)  {
@@ -1264,11 +1263,7 @@ AnnotTrack.prototype.setLongestORFForSelectedFeatures = function(annots) {
     var track = this;
     var features = '"features": [';
     for (var i in annots)  {
-    	var annot = annots[i];
-    	// get top level feature
-    	while (annot.parent) {
-    		annot = annot.parent;
-    	}
+    	var annot = AnnotTrack.getTopLevelAnnotation(annots[i]);
     	var uniqueName = annot.uid;
     	// just checking to ensure that all features in selection are from this track
     	if (annot.track === track)  {
@@ -1312,6 +1307,240 @@ AnnotTrack.prototype.setLongestORFForSelectedFeatures = function(annots) {
     }
 }
 
+AnnotTrack.prototype.editComments = function()  {
+    var selected = this.selectionManager.getSelection();
+    this.editCommentsForSelectedFeatures(selected);
+};
+
+AnnotTrack.prototype.editCommentsForSelectedFeatures = function(annots) {
+	var track = this;
+	var content = dojo.create("div");
+	var table = dojo.create("table", { class: "comments" }, content);
+	var addButtonDiv = dojo.create("div", { class: "comment_add_button_div" }, content);
+	var addButton = dojo.create("button", { class: "comment_button", innerHTML: "Add comment" }, addButtonDiv);
+	var cannedCommentsDiv = dojo.create("div", { }, content);
+	var cannedCommentsComboBox = dojo.create("select", { }, cannedCommentsDiv);
+	var comments;
+	var commentTextFields;
+	var cannedComments;
+
+	var trackName = track.getUniqueTrackName();
+	var annot = AnnotTrack.getTopLevelAnnotation(annots[0]);
+	var uniqueName = annot.uid;
+	
+	var getComments = function(annot) {
+		var features = '"features": [ ';
+		// just checking to ensure that all features in selection are from this track
+		if (annot.track === track)  {
+		    features += ' { "uniquename": "' + uniqueName + '" } ';
+		}
+		features += ']';
+		var operation = "get_comments";
+    	var postData = '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }';
+    	dojo.xhrPost( {
+    	    postData: postData,
+    	    url: context_path + "/AnnotationEditorService",
+    	    handleAs: "json",
+    	    sync: true,
+    	    timeout: 5000 * 1000, // Time in milliseconds
+    	    load: function(response, ioArgs) {
+    	    	var feature = response.features[0];
+    	    	comments = feature.comments;
+    	    },
+    	    // The ERROR function will be called in an error case.
+    	    error: function(response, ioArgs) { // 
+    			track.handleError(response);
+    	    	console.error("HTTP status code: ", ioArgs.xhr.status); 
+    	    	return response;
+    	    }
+
+    	});
+
+	};
+	
+	var addComment = function(comment) {
+		var features = '"features": [ ';
+		// just checking to ensure that all features in selection are from this track
+		if (annot.track === track)  {
+		    features += ' { "uniquename": "' + uniqueName + '", "comments": [ "' + comment + '" ] }';
+		}
+		features += ']';
+		var operation = "add_comments";
+    	var postData = '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }';
+    	dojo.xhrPost( {
+    	    postData: postData,
+    	    url: context_path + "/AnnotationEditorService",
+    	    handleAs: "json",
+    	    timeout: 5000 * 1000, // Time in milliseconds
+    	    load: function(response, ioArgs) {
+    	    },
+    	    // The ERROR function will be called in an error case.
+    	    error: function(response, ioArgs) { // 
+    			track.handleError(response);
+    	    	console.error("HTTP status code: ", ioArgs.xhr.status); 
+    	    	return response;
+    	    }
+
+    	});
+	};
+	
+	var deleteComment = function(comment) {
+		var features = '"features": [ ';
+		// just checking to ensure that all features in selection are from this track
+		if (annot.track === track)  {
+		    features += ' { "uniquename": "' + uniqueName + '", "comments": [ "' + comment + '" ] }';
+		}
+		features += ']';
+		var operation = "delete_comments";
+    	var postData = '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }';
+    	dojo.xhrPost( {
+    	    postData: postData,
+    	    url: context_path + "/AnnotationEditorService",
+    	    handleAs: "json",
+    	    timeout: 5000 * 1000, // Time in milliseconds
+    	    load: function(response, ioArgs) {
+    	    },
+    	    // The ERROR function will be called in an error case.
+    	    error: function(response, ioArgs) { // 
+    			track.handleError(response);
+    	    	console.error("HTTP status code: ", ioArgs.xhr.status); 
+    	    	return response;
+    	    }
+
+    	});
+	};
+
+	var updateComment = function(oldComment, newComment) {
+		var features = '"features": [ ';
+		// just checking to ensure that all features in selection are from this track
+		if (annot.track === track)  {
+		    features += ' { "uniquename": "' + uniqueName + '", "old_comments": [ "' + oldComment + '" ], "new_comments": [ "' + newComment + '"] }';
+		}
+		features += ']';
+		var operation = "update_comments";
+    	var postData = '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }';
+    	dojo.xhrPost( {
+    	    postData: postData,
+    	    url: context_path + "/AnnotationEditorService",
+    	    handleAs: "json",
+    	    timeout: 5000 * 1000, // Time in milliseconds
+    	    load: function(response, ioArgs) {
+    	    },
+    	    // The ERROR function will be called in an error case.
+    	    error: function(response, ioArgs) { // 
+    			track.handleError(response);
+    	    	console.error("HTTP status code: ", ioArgs.xhr.status); 
+    	    	return response;
+    	    }
+
+    	});
+	};
+
+	var updateTable = function() {
+		while (table.hasChildNodes()) {
+			table.removeChild(table.lastChild);
+		}
+		commentTextFields = new Array();
+		for (var i = 0; i < comments.length; ++i) {
+			var row = dojo.create("tr", { }, table);
+			var col1 = dojo.create("td", { }, row);
+			var comment = dojo.create("textarea", { rows: 1, innerHTML: comments[i], row: i, readonly: true, class: "comment_area" }, col1);
+			commentTextFields.push(comment);
+			dojo.connect(comment, "onblur", comment, function() {
+				var index = dojo.attr(this, "row");
+				var newComment = dojo.attr(this, "value");
+				var oldComment = comments[index];
+				comments[index] = newComment;
+				dojo.attr(this, "readonly", true);
+				if (newComment && newComment.length > 0) {
+					if (oldComment.length == 0) {
+						addComment(newComment);
+					}
+					else {
+						updateComment(oldComment, newComment);
+					}
+					dojo.style(cannedCommentsDiv, { display: "none" } );
+				}
+			});
+			dojo.connect(comment, "onkeyup", comment, function() {
+				var newComment = dojo.attr(this, "value");
+				if (newComment && newComment.length > 0) {
+					dojo.style(cannedCommentsDiv, { display: "none" } );
+				}
+				else {
+					dojo.style(cannedCommentsDiv, { display: "block" } );
+				}
+			});
+			var col2 = dojo.create("td", { }, row);
+			var delButton = dojo.create("button", { class: "comment_button", innerHTML: "Delete" /* "<img class='table_icon' src='img/trash.png' />" */, row: i }, col2);
+			dojo.connect(delButton, "onclick", delButton, function() {
+				var index = dojo.attr(this, "row");
+				var oldComment = comments[index];
+				comments.splice(index, 1);
+				updateTable();
+				deleteComment(oldComment);
+			});
+			var col3 = dojo.create("td", { }, row);
+			var editButton = dojo.create("button", { class: "comment_button", innerHTML: "Edit" /*"<img class='table_icon' src='img/pencil.png' />*/, row: i }, col3);
+			dojo.connect(editButton, "onclick", editButton, function() {
+				var index = dojo.attr(this, "row");
+				dojo.attr(commentTextFields[index], "readonly", false);
+				commentTextFields[index].focus();
+			});
+		}
+	};
+
+	var getCannedComments = function() {
+		dojo.style(cannedCommentsDiv, { display: "none"} );
+		
+		var operation = "get_canned_comments";
+    	var postData = '{ "track": "' + trackName + '", "operation": "' + operation + '" }';
+    	dojo.xhrPost( {
+    	    postData: postData,
+    	    url: context_path + "/AnnotationEditorService",
+    	    handleAs: "json",
+    	    sync: true,
+    	    timeout: 5000 * 1000, // Time in milliseconds
+    	    load: function(response, ioArgs) {
+    	    	cannedComments = response.comments;
+    	    },
+    	    // The ERROR function will be called in an error case.
+    	    error: function(response, ioArgs) { // 
+    			track.handleError(response);
+    	    	console.error("HTTP status code: ", ioArgs.xhr.status); 
+    	    	return response;
+    	    }
+    	});
+
+		for (var i = 0; i < cannedComments.length; ++i) {
+			dojo.create("option", { value: cannedComments[i], innerHTML: cannedComments[i] }, cannedCommentsComboBox);
+		}
+		dojo.connect(cannedCommentsComboBox, "onchange", cannedCommentsComboBox, function() {
+			var commentTextField = commentTextFields[commentTextFields.length - 1];
+			dojo.attr(commentTextField, "value", dojo.attr(this, "value"));
+			commentTextField.focus();
+			dojo.style(cannedCommentsDiv, { display : "none" });
+		});
+		
+
+	};
+	
+	dojo.connect(addButton, "onclick", null, function() {
+		comments.push("");
+		updateTable();
+		var comment = commentTextFields[commentTextFields.length - 1];
+		dojo.attr(comment, "readonly", false);
+		dojo.style(cannedCommentsDiv, { display: "block" });
+		comment.focus();
+	});
+
+	getComments(annots[0]);
+	getCannedComments();
+	updateTable();
+	track.openDialog("Comments for " + track.attrs.get(annot, "Name"), content);
+
+};
+
 AnnotTrack.prototype.undo = function()  {
     var selected = this.selectionManager.getSelection();
     this.selectionManager.clearSelection();
@@ -1323,11 +1552,7 @@ AnnotTrack.prototype.undoSelectedFeatures = function(annots) {
     var features_nclist = track.features;
     var features = '"features": [';
     for (var i in annots)  {
-    	var annot = annots[i];
-    	// get top level feature
-    	while (annot.parent) {
-    		annot = annot.parent;
-    	}
+    	var annot = AnnotTrack.getTopLevelAnnotation(annots[i]);
     	var uniqueName = annot.uid;
     	// just checking to ensure that all features in selection are from this track
     	if (annot.track === track)  {
@@ -1395,11 +1620,7 @@ AnnotTrack.prototype.redoSelectedFeatures = function(annots) {
     var features_nclist = track.features;
     var features = '"features": [';
     for (var i in annots)  {
-    	var annot = annots[i];
-    	// get top level feature
-    	while (annot.parent) {
-    		annot = annot.parent;
-    	}
+    	var annot = AnnotTrack.getTopLevelAnnotation(annots[i]);
     	var uniqueName = annot.uid;
     	// just checking to ensure that all features in selection are from this track
     	if (annot.track === track)  {
@@ -1452,11 +1673,7 @@ AnnotTrack.prototype.getInformationForSelectedFeatures = function(annots) {
     var track = this;
     var features = '"features": [';
     for (var i in annots)  {
-    	var annot = annots[i];
-    	// get top level feature
-    	while (annot.parent) {
-    		annot = annot.parent;
-    	}
+    	var annot = AnnotTrack.getTopLevelAnnotation(annots[i]);
     	var uniqueName = annot.uid;
     	// just checking to ensure that all features in selection are from this track
     	if (annot.track === track)  {
@@ -1761,6 +1978,13 @@ AnnotTrack.prototype.initContextMenu = function() {
 				} ));
 				contextMenuItems["flip_strand"] = index++;
 				annot_context_menu.addChild(new dijit.MenuItem( {
+					label: "Comments",
+					onClick: function(event) {
+						thisObj.editComments();
+					}
+				} ));
+				contextMenuItems["edit_comments"] = index++;
+				annot_context_menu.addChild(new dijit.MenuItem( {
 					label: "Undo",
 					onClick: function(event) {
 						thisObj.undo();
@@ -1860,6 +2084,7 @@ AnnotTrack.prototype.updateMenu = function() {
 	this.updateSplitMenuItem();
 	this.updateMakeIntronMenuItem();
 	this.updateFlipStrandMenuItem();
+	this.updateEditCommentsMenuItem();
 	this.updateUndoMenuItem();
 	this.updateRedoMenuItem();
 	this.updateZoomToBaseLevelMenuItem();
@@ -1931,6 +2156,19 @@ AnnotTrack.prototype.updateMakeIntronMenuItem = function() {
 
 AnnotTrack.prototype.updateFlipStrandMenuItem = function() {
 	var menuItem = this.getMenuItem("flip_strand");
+};
+
+AnnotTrack.prototype.updateEditCommentsMenuItem = function() {
+	var menuItem = this.getMenuItem("edit_comments");
+	var selected = this.selectionManager.getSelection();
+	var parent = AnnotTrack.getTopLevelAnnotation(selected[0]);
+	for (var i = 1; i < selected.length; ++i) {
+		if (AnnotTrack.getTopLevelAnnotation(selected[i]) != parent) {
+			menuItem.set("disabled", true);
+			return;
+		}
+	}
+	menuItem.set("disabled", false);
 };
 
 AnnotTrack.prototype.updateUndoMenuItem = function() {
@@ -2173,6 +2411,13 @@ AnnotTrack.prototype.endZoom = function(destScale, destBlockBases) {
 */
 
 };
+
+AnnotTrack.getTopLevelAnnotation = function(annotation) {
+	while (annotation.parent) {
+		annotation = annotation.parent;
+	}
+	return annotation;
+}
 
 
 /*
