@@ -2,8 +2,6 @@
 /data/
 .#*
 \#*\#
-tiles
-names
 *.index
 bin/wig2png
 *.pyc
@@ -13,3 +11,9 @@ Makefile
 wig2png/config.log
 wig2png/config.status
 wig2png/src/config.h
+docs/jsdoc/
+/index-debug.html
+jslib/dojo-release-*-src/
+/extlib/
+autom4te.cache
+sample_data/raw/tomato

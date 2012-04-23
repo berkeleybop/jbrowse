@@ -1,3 +1,8 @@
+// VIEW
+
+/**
+ * @class
+ */
 function Track(name, key, loaded, changeCallback) {
     this.name = name;
     this.key = key;
@@ -9,12 +14,15 @@ function Track(name, key, loaded, changeCallback) {
 }
 
 Track.prototype.load = function(url) {
-    var curTrack = this;
-    dojo.xhrGet({url: url,
-                 handleAs: "json",
-                 load: function(o) { curTrack.loadSuccess(o, url); },
-                 error: function(o) { curTrack.loadFail(o, url); }
+    dojo.xhrGet({ url: url,
+                  handleAs: "json",
+                  load:  dojo.hitch( this, function(o) { this.loadSuccess(o, url); }),
+                  error: dojo.hitch( this, function(o) { this.loadFail(o, url);    })
 	        });
+};
+
+Track.prototype.loadSuccess = function(error) {
+    this.setLoaded();
 };
 
 Track.prototype.loadFail = function(error) {
@@ -22,22 +30,27 @@ Track.prototype.loadFail = function(error) {
     this.setLoaded();
 };
 
+
+Track.prototype.heightUpdate = function(height, blockIndex) {
+    if (!this.shown) {
+        this.heightUpdateCallback(0);
+        return;
+    }
+
+    if (blockIndex !== undefined)
+        this.blockHeights[blockIndex] = height;
+
+    this.height = Math.max( this.height, height );
+    if ( ! this.inShowRange ) {
+        this.heightUpdateCallback( Math.max( this.labelHeight, this.height ) );
+    }
+};
+
 Track.prototype.setViewInfo = function(heightUpdate, numBlocks,
                                        trackDiv, labelDiv,
                                        widthPct, widthPx, scale) {
-    var track = this;
-    this.heightUpdate = function(height, blockIndex) {
-        if (!this.shown) {
-            heightUpdate(0);
-            return;
-        }
-        if (blockIndex !== undefined) track.blockHeights[blockIndex] = height;
 
-        track.height = Math.max(track.height, height);
-        if (!track.inShowRange) {
-            heightUpdate(Math.max(track.labelHeight, track.height));
-        }
-    };
+    this.heightUpdateCallback = heightUpdate;
     this.div = trackDiv;
     this.label = labelDiv;
     this.widthPct = widthPct;
@@ -151,6 +164,7 @@ Track.prototype.showRange = function(first, last, startBase, bpPerBlock, scale,
     this._adjustBlanks();
     this.inShowRange = false;
     this.heightUpdate(this.height);
+    return 1;
 };
 
 Track.prototype.cleanupBlock = function() {};
@@ -342,6 +356,16 @@ Track.prototype.sizeInit = function(numBlocks, widthPct, blockDelta) {
         this.initBlocks();
     }
 };
+
+/**
+ * Called by GenomeView when the view is scrolled: communicates the
+ * new x, y, width, and height of the view.  This is needed by tracks
+ * for positioning stationary things like axis labels.
+ */
+Track.prototype.updateViewDimensions = function( /**Object*/ coords ) {
+    this.window_info = dojo.mixin( this.window_info || {}, coords );
+};
+
 
 /*
 

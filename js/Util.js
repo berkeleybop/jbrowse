@@ -1,3 +1,9 @@
+// MISC
+
+/**
+ * @namespace
+ */
+
 var Util = {};
 
 Util.is_ie = navigator.appVersion.indexOf('MSIE') >= 0;
@@ -5,9 +11,9 @@ Util.is_ie6 = navigator.appVersion.indexOf('MSIE 6') >= 0;
 Util.addCommas = function(nStr)
 {
 	nStr += '';
-	x = nStr.split('.');
-	x1 = x[0];
-	x2 = x.length > 1 ? '.' + x[1] : '';
+	var x = nStr.split('.');
+	var x1 = x[0];
+	var x2 = x.length > 1 ? '.' + x[1] : '';
 	var rgx = /(\d+)(\d{3})/;
 	while (rgx.test(x1)) {
 		x1 = x1.replace(rgx, '$1' + ',' + '$2');
@@ -92,21 +98,20 @@ Util.fillTemplate = function(template, fillWith) {
 
 /**
  * function to load a specified resource only once
- * @param url URL to get
- * @param stateObj object that stores the state of the load
- * @param successCalback function to call on a successful load
- * @param errorCallback function to call on an unsuccessful load
+ * @param {Object}   dojoXhrArgs object containing arguments for dojo.xhrGet,
+ *                               like <code>url</code> and <code>handleAs</code>
+ * @param {Object}   stateObj object that stores the state of the load
+ * @param {Function} successCallback function to call on a successful load
+ * @param {Function} errorCallback function to call on an unsuccessful load
  */
-Util.maybeLoad = function (lurl, stateObj, successCallback, errorCallback) {
-    var url = lurl;
+Util.maybeLoad = function ( dojoXhrArgs, stateObj, successCallback, errorCallback) {
     /*
-    console.log("Util.maybeLoad called: url = " + url);
+    console.log("Util.maybeLoad called: url = " + dojoXhrArgs.url);
     console.log(stateObj.state);
     console.log(stateObj);
     console.log("successCallback: " + successCallback);
     console.log("errorCallback: " + errorCallback);
-*/
-
+     */
     if (stateObj.state) {
         if ("loaded" == stateObj.state) {
             successCallback(stateObj.data);
@@ -120,27 +125,21 @@ Util.maybeLoad = function (lurl, stateObj, successCallback, errorCallback) {
         stateObj.state = "loading";
         stateObj.successCallbacks = [successCallback];
         stateObj.errorCallbacks = [errorCallback];
-        dojo.xhrGet(
-            {
-                url: url,
-                handleAs: "json", 
-		// sync: true, 
-                load: function(o) {
-                    stateObj.state = "loaded";
-                    stateObj.data = o;
-                    var cbs = stateObj.successCallbacks;
-		    // console.log("in maybeload.load: " + url);
-                    for (var c = 0; c < cbs.length; c++) cbs[c](o);
-		    // console.log("finished maybeload.load: " + url);
-                },
-                error: function(msg) {
-                    stateObj.state = "error";
-                    var cbs = stateObj.errorCallbacks;
-		    console.log("in maybeload.error: " + url + ", message: " + msg);
-                    for (var c = 0; c < cbs.length; c++) cbs[c]();
-		    console.log("finished maybeload.error: " + url + ", message: " + msg);
-                }
-            });
+        var args = dojo.clone( dojoXhrArgs );
+        args.load = function(o) {
+            stateObj.state = "loaded";
+            stateObj.data = o;
+            var cbs = stateObj.successCallbacks;
+            for (var c = 0; c < cbs.length; c++) cbs[c](o);
+        };
+        args.error = function(error) {
+            console.error(''+error);
+            stateObj.state = "error";
+            var cbs = stateObj.errorCallbacks;
+            for (var c = 0; c < cbs.length; c++) cbs[c]();
+        };
+
+        dojo.xhrGet( args );
     }
 };
 
@@ -153,10 +152,11 @@ Util.deepUpdate = function(a, b) {
             && ("object" == typeof b[prop])
             && ("object" == typeof a[prop]) ) {
             Util.deepUpdate(a[prop], b[prop]);
-        } else {
+        } else if( typeof a[prop] == 'undefined' || typeof b[prop] != undefined ){
             a[prop] = b[prop];
         }
     }
+    return a;
 };
 
 // from http://bugs.dojotoolkit.org/ticket/5794
@@ -188,7 +188,7 @@ Util.parseLocString = function( locstring ) {
     locstring = dojo.trim( locstring );
 
     //                                (chromosome)    (    start      )   (  sep     )     (    end   )
-    var matches = locstring.match(/^(((\S*)\s*:)?\s*(-?[0-9,.]*[0-9])\s*(\.\.|-|\s+))?\s*(-?[0-9,.]+)$/i);
+    var matches = locstring.match(/^(((\S*)\s*:)?\s*(-?[\d,.']+)\s*(\.\.|-|\s+))?\s*(-?[\d,.']+)$/i);
     //matches potentially contains location components:
     //matches[3] = chromosome (optional)
     //matches[4] = start base (optional)
@@ -200,7 +200,8 @@ Util.parseLocString = function( locstring ) {
     // parses a number from a locstring that's a coordinate, and
     // converts it from 1-based to interbase coordinates
     var parseCoord = function( coord ) {
-        var num = parseInt( String(coord).replace(/[,.]/g, "") );
+        coord = (coord+'').replace(/\D/g,'');
+        var num = parseInt( coord, 10 );
         return typeof num == 'number' && !isNaN(num) ? num : null;
     };
 
@@ -227,19 +228,19 @@ Util.assembleLocString = function( loc_in ) {
         }
     }
 
-    //finally assembly our string
+    //finally assemble our string
     if( 'ref' in location ) {
         s += location.ref;
         if( location.start || location.end )
             s += ':';
     }
     if( 'start' in location ) {
-        s += (Math.round(location.start)+1).toLocaleString();
+        s += (Math.round(location.start)+1).toFixed(0).toLocaleString();
         if( 'end' in location )
             s+= '..';
     }
     if( 'end' in location )
-        s += Math.round(location.end).toLocaleString();
+        s += Math.round(location.end).toFixed(0).toLocaleString();
 
     return s;
 };
@@ -265,6 +266,19 @@ Util.matchRefSeqName = function( name, refseqs ) {
         }
     }
     return null;
+};
+
+/**
+ * Wrap a handler function to be called 1ms later in a window timeout.
+ * This will usually give a better stack trace for figuring out where
+ * errors are happening.
+ */
+Util.debugHandler = function( context, func ) {
+    var debuggedHandler = function() {
+        var args = arguments;
+        window.setTimeout( function() { func.apply(context,args);}, 1);
+    };
+    return debuggedHandler;
 };
 
 if (!Array.prototype.reduce)
@@ -377,6 +391,9 @@ if (!Array.prototype.indexOf)
   };
 }
 
+/**
+ * @class
+ */
 function Finisher(fun) {
     this.fun = fun;
     this.count = 0;

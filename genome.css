@@ -1,3 +1,10 @@
+/** TODO: need to remove all standard JBrowse styles, since they're now in either "main.css" or "feature_style.css", 
+     and keep added / modified styles here (or break out into additional "webapollo.css" ? */
+/* main application CSS styles */
+@import url("main.css");
+/* CSS styles for the various types of feature glyphs */
+@import url("feature_styles.css");
+
 html, body {
     height: 100%;
     width: 100%;
@@ -2726,3 +2733,5 @@ input.nav {
     font-size: 9px !important;
 }
 */
+
+

@@ -1,9 +1,22 @@
-//After
-//Alekseyenko, A., and Lee, C. (2007).
-//Nested Containment List (NCList): A new algorithm for accelerating
-//   interval query of genome alignment and interval databases.
-//Bioinformatics, doi:10.1093/bioinformatics/btl647
-//http://bioinformatics.oxfordjournals.org/cgi/content/abstract/btl647v1
+// MODEL
+
+/**
+
+Nested containment list.
+
+@class
+
+After
+<pre>
+  Alekseyenko, A., and Lee, C. (2007).
+  Nested Containment List (NCList): A new algorithm for accelerating
+     interval query of genome alignment and interval databases.
+  Bioinformatics, doi:10.1093/bioinformatics/btl647
+</pre>
+
+<a href="http://bioinformatics.oxfordjournals.org/cgi/content/abstract/btl647v1">http://bioinformatics.oxfordjournals.org/cgi/content/abstract/btl647v1</a>
+
+ */
 
 /**
 *  When JSON data structures changed (from version 1.2.1 to ?? in March 2012), 
@@ -162,11 +175,13 @@ NCList.prototype.iterHelper = function(arr, from, to, fun, finish,
 	    // call to maybeLoad will set chunk.data to lazy-loaded sublist once loaded, 
 	    //     and call iterHelper on sublist
 	    // if lazy-load data already loaded ( chunk.state = loaded ), maybeLoad() 
-	    //     will just immediated call iterHelper on sublist (chunk.data)
-            Util.maybeLoad(Util.resolveUrl(this.baseURL,
+	    //     will just immediately call iterHelper on sublist (chunk.data)
+            Util.maybeLoad({ url: Util.resolveUrl(this.baseURL,
                                            this.lazyUrlTemplate.replace(
                                                    /\{Chunk\}/ig, chunkId
                                            ) ),
+                             handleAs: 'json'
+                           },
                            chunk,
                            (function (myChunkId) {
                                return function(o) {

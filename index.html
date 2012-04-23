@@ -37,7 +37,7 @@
    <script type="text/javascript" src="jslib/jquery-1.5/jquery-1.5.min.js" ></script> 
     <script type="text/javascript" src="jslib/jquery-ui-1.8.9.custom/js/jquery-ui-1.8.9.custom.min.js"></script> 
     <script type="text/javascript" src="jslib/dojo-1.5.0/dojo/dojo.js"></script>
-
+    <!--    <script type="text/javascript" src="jslib/jquery_plugins/mod.jquery.ui.multidraggable-1.8.8.js"></script>  -->   
     
     <!-- using modernizr for easy testing of browser support for HTML5 / CSS3 / etc. features -->
    <!-- <script type="text/javascript" src="jslib/modernizr-1.7.min.js"></script> -->
@@ -49,8 +49,9 @@
 <!-- the files between the "js_source_files" comments get replaced
      when the JS gets minified (see the minification rule in the Makefile) -->
    <script type="text/javascript" src="js/Browser.js"></script>
-    <!--    <script type="text/javascript"
-            src="jslib/jquery_plugins/mod.jquery.ui.multidraggable-1.8.8.js"></script>  -->   
+    <script type="text/javascript" src="js/ConfigAdaptor/JB_json_v1.js"></script>
+    <script type="text/javascript" src="js/ConfigAdaptor/JB_json_v0.js"></script>
+
     <script type="text/javascript" src="js/Util.js"></script>
     <script type="text/javascript" src="js/ArrayRepr.js"></script>
     <script type="text/javascript" src="js/NCList.js"></script>
@@ -59,9 +60,31 @@
     <script type="text/javascript" src="js/Track.js"></script>
     <script type="text/javascript" src="js/SequenceTrack.js"></script>
     <script type="text/javascript" src="js/Layout.js"></script>
+<<<<<<< HEAD:index.html
+
+    <script type="text/javascript" src="js/Store.js"></script>
+  <script type="text/javascript" src="js/SeqFeatureStore.js"></script>
+  <script type="text/javascript" src="js/SeqFeatureStore/NCList.js"></script>
+  <script type="text/javascript" src="js/TiledImageStore/Fixed.js"></script>
+  <script type="text/javascript" src="js/SequenceStore/StaticChunked.js"></script>
+
+  <script type="text/javascript" src="js/Ruler.js"></script>
+  <script type="text/javascript" src="js/Track/YScaleMixin.js"></script>
+
+ <script type="text/javascript" src="js/FeatureTrack.js"></script>
+   <script type="text/javascript" src="js/StaticTrack.js"></script>
+   <script type="text/javascript" src="js/GridTrack.js"></script>
+   <script type="text/javascript" src="js/ImageTrack.js"></script>
+   <script type="text/javascript" src="js/ImageTrack/Wiggle.js"></script>
+
+   <script type="text/javascript" src="js/Animation.js"></script>
+   <script type="text/javascript" src="js/Slider.js"></script>
+   <script type="text/javascript" src="js/Zoomer.js"></script>
+   <script type="text/javascript" src="js/BehaviorManager.js"></script>
+   <script type="text/javascript" src="js/GenomeView.js"></script>
+
     <script type="text/javascript" src="js/FeatureSelectionManager.js"></script>
-    <script type="text/javascript" src="js/FeatureTrack.js"></script>
-   <script type="text/javascript" src="js/DraggableFeatureTrack.js"></script>
+  <script type="text/javascript" src="js/DraggableFeatureTrack.js"></script>
     <!-- for testing draggable etc. -->
     <!--   <script type="text/javascript" src="js/BasicDraggableFeatureTrack.js"></script>   -->
     <script type="text/javascript" src="js/DasFeatureTrack.js"></script>
@@ -69,9 +92,6 @@
     <!-- UITracks replaced by StaticTrack and GridTrack
          <script type="text/javascript" src="js/UITracks.js"></script>
     -->
-   <script type="text/javascript" src="js/StaticTrack.js"></script>
-   <script type="text/javascript" src="js/GridTrack.js"></script>
-   <script type="text/javascript" src="js/ImageTrack.js"></script>
 
     <!-- for testing CanvasTrack -->
     <script type="text/javascript" src="js/CanvasTrack.js"></script>
@@ -83,8 +103,7 @@
     <script type="text/javascript" src="js/canvas_track_renderers/AvgRange_MinMaxRange_Renderer.js"></script>  
     <script type="text/javascript" src="js/canvas_track_renderers/AvgLine_Renderer.js"></script>  
     
-    <script type="text/javascript" src="js/GenomeView.js"></script>
-    <script type="text/javascript" src="js/JSONUtils.js"></script>
+   <script type="text/javascript" src="js/JSONUtils.js"></script>
     <script type="text/javascript" src="js/BioFeatureUtils.js"></script>
     <script type="text/javascript" src="js/FeatureEdgeMatchManager.js"></script>
     <script type="text/javascript" src="js/Permission.js"></script>
@@ -109,12 +128,12 @@
   <script language="javascript" src="jslib/dalliance/js/utils.js"></script>
   <script language="javascript" src="jslib/dalliance/js/bin.js"></script>
   <script language="javascript" src="jslib/dalliance/js/bam.js"></script>
+   <script type="text/javascript" src="js/touchJBrowse.js"></script>
 
 <!-- js_source_files -->
 
 <!--    repalced by refSeqs param to Browser  <script type="text/javascript" src="data/refSeqs.js"></script> -->
 <!--    replaced by tracklists param to Browser <script type="text/javascript" src="data/trackInfo.js"></script> -->
-   <script type="text/javascript" src="js/touchJBrowse.js"></script>
 
     <script type="text/javascript">
         window.onerror=function(msg){
@@ -122,8 +141,7 @@
         }
     </script>
 
-
-   <script type="text/javascript" src="jslib/colour/jquery.color.js"></script>
+  <script type="text/javascript" src="jslib/colour/jquery.color.js"></script>
     <script type="text/javascript" src="jslib/farbtastic/mod-farbtastic.js"></script>
 <!--    <script type="text/javascript" src="jslib/jlayout/jquery.jlayout.js"></script> -->
 <!--    <script type="text/javascript" src="jslib/jlayout/jlayout.grid.js"></script> -->
@@ -149,29 +167,31 @@
 	                           // dataRoot: "data/"  // for Amel4.5
 				   // dataRoot: ""  // for dm3
                                    // refSeqs: refSeqs,
-                                  refSeqs: {url: dataRoot + "/seq/refSeqs.json"},
                                    // trackData: trackInfo,
-                                  tracklists: [
-
- 				       {url: dataRoot + "/bam_trackList.json"}, 
-                                       {url: dataRoot + "/annotation_trackList.json"}, 
-                                       {url: dataRoot + "/trackList.json"}
+                                   // tracklists: [
+ 				   //    {url: dataRoot + "/bam_trackList.json"}, 
+                                   //      {url: dataRoot + "/annotation_trackList.json"}, 
+                                   //      {url: dataRoot + "/trackList.json"} ], 
+                                   refSeqs: dataRoot + "/seq/refSeqs.json",
+                                   include: [
+                                     dataRoot + "/bam_trackList.json", 
+                                     dataRoot + "/annotation_trackList.json", 
+                                     dataRoot + "/trackList.json"
                                    ],
                                    nameUrl: dataRoot + "/names/root.json",
                                    // defaultTracks: "DNA,Annotations,RefSeq",
                                    defaultTracks: "DNA,Annotations",
                                    queryParams: queryParams,
                                    location: queryParams.loc,
-                                   tracks: queryParams.tracks,
+                                   // tracks: queryParams.tracks,
                                    // is bookmark superceded by show_nav, show_tracklist, show_overview
                                   //  after merge from GMOD/jbrowse:master ???
-                                  bookmark: bookmarkCallback,
+                                  // bookmark: bookmarkCallback,
+                                   forceTracks: queryParams.tracks,
 				   show_nav: queryParams.nav,
 				   show_tracklist: queryParams.tracklist,
 				   show_overview: queryParams.overview
                                });
-          b.deferredFunctions.push(function() { loadTouch(); });
-
     /* ]]> */
       <!-- standard jbrowse dataRoot setting in Browser constructor... -->
       <!-- dataRoot: "data/" -->
