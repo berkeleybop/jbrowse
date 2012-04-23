@@ -13,3 +13,6 @@ Makefile
 wig2png/config.log
 wig2png/config.status
 wig2png/src/config.h
+jslib/dojo-1.5.0/*
+jslib/jquery-1.5/*
+jslib/jquery-ui-1.8.9.custom/*

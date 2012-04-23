@@ -10,9 +10,9 @@
     <link rel="stylesheet" type="text/css" href="jslib/dojo/resources/dojo.css"></link>
 
     <!-- load JQuery theme CSS remotely from Google CDN: -->
-    <!-- 
+    <!--
     <link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/themes/base/jquery-ui.css"/>  
-    -->
+     -->
 
     <!-- load JQuery theme CSS from WebApollo server -->
     <link rel="stylesheet" type="text/css" href="jslib/jquery-ui.css"/> 
@@ -23,7 +23,7 @@
     <link rel="stylesheet" type="text/css" title="genome_styles" href="genome.css"></link>
 
     <!--  Load JQuery, JQuery-UI, Dojo remotely from Google CDN: -->
-    <!--
+    <!--   
     <script src="http://www.google.com/jsapi" type="text/javascript"></script>
     <script type="text/javascript"> 
       google.load("jquery", "1.5"); 
@@ -33,12 +33,14 @@
     -->
 
     <!--  Load JQuery, JQuery-ui, Dojo from WebApollo server: -->
-    <script type="text/javascript" src="jslib/jquery-1.5/jquery-1.5.min.js" ></script> 
+
+   <script type="text/javascript" src="jslib/jquery-1.5/jquery-1.5.min.js" ></script> 
     <script type="text/javascript" src="jslib/jquery-ui-1.8.9.custom/js/jquery-ui-1.8.9.custom.min.js"></script> 
     <script type="text/javascript" src="jslib/dojo-1.5.0/dojo/dojo.js"></script>
+
     
     <!-- using modernizr for easy testing of browser support for HTML5 / CSS3 / etc. features -->
-    <!-- <script type="text/javascript" src="jslib/modernizr-1.7.min.js"></script> -->
+   <!-- <script type="text/javascript" src="jslib/modernizr-1.7.min.js"></script> -->
      <script type="text/javascript" src="jslib/modernizr-2.0.6.js"></script>
 
     <!--  djConfig="isDebug: true" -->
@@ -79,7 +81,9 @@
     <script type="text/javascript" src="js/canvas_track_renderers/AvgBar_MaxBar_Renderer.js"></script>  
     <script type="text/javascript" src="js/canvas_track_renderers/AvgBar_MinPoint_MaxPoint_Renderer.js"></script>
     <script type="text/javascript" src="js/canvas_track_renderers/AvgRange_MinMaxRange_Renderer.js"></script>  
-    <script type="text/javascript" src="js/canvas_track_renderers/AvgLine_Renderer.js"></script>  
+    <script type="text/javascript" src="js/canvas_track_renderers/AvgLine_Renderer.js"></script> 
+    <script type="text/javascript" src="js/canvas_track_renderers/HeatMap_Renderer.js"></script>   
+    <script type="text/javascript" src="js/canvas_track_renderers/AllBars_Renderer.js"></script>   
     
     <script type="text/javascript" src="js/GenomeView.js"></script>
     <script type="text/javascript" src="js/JSONUtils.js"></script>
@@ -95,19 +99,18 @@
     <script type="text/javascript" src="js/BamPseudoNCList.js"></script>
     <script type="text/javascript" src="js/BamUtils.js"></script>
 
-<!-- Dalliance code in berkeleybop/jbrowse repository -->
+<!-- Dalliance code in berkeleybop/jbrowse repository
   <script language="javascript" src="jslib/dalliance_static/jszlib/js/inflate.js"></script>
   <script language="javascript" src="jslib/dalliance_static/js/utils.js"></script>
   <script language="javascript" src="jslib/dalliance_static/js/bin.js"></script>
   <script language="javascript" src="jslib/dalliance_static/js/bam.js"></script>
+  -->
 
 <!--  Dalliance code from GreggHelt2/dalliance fork (apollo branch) -->
-<!--
   <script language="javascript" src="jslib/dalliance/jszlib/js/inflate.js"></script>
   <script language="javascript" src="jslib/dalliance/js/utils.js"></script>
   <script language="javascript" src="jslib/dalliance/js/bin.js"></script>
   <script language="javascript" src="jslib/dalliance/js/bam.js"></script>
--->
 
 <!-- js_source_files -->
 
@@ -129,7 +132,6 @@
 <!--    <script type="text/javascript" src="jslib/jlayout/jlayout.flexgrid.js"></script> -->
  <link rel="stylesheet" href="jslib/farbtastic/farbtastic.css" type="text/css" />
  <link rel="stylesheet" href="styles/get_sequence.css" type="text/css" />
- <link rel="stylesheet" href="styles/edit_comments.css" type="text/css" />
 
 
     <script type="text/javascript">
@@ -142,23 +144,15 @@
                       + "?loc=" + brwsr.visibleRegion()
                       + "&tracks=" + brwsr.visibleTracks();
            }
-           var dataRoot = queryParams.data || 'data';
-           // var dataRoot = queryParams.data || '';  // blank dataRoot for dm3
+           var dataRoot = queryParams.data || 'trellis_dm3_data';
            var b = new Browser({
-                                   containerID: "GenomeBrowser",
-	                           // dataRoot: "data/"  // for Amel4.5
-				   // dataRoot: ""  // for dm3
-                                   // refSeqs: refSeqs,
+                                  containerID: "GenomeBrowser",
                                   refSeqs: {url: dataRoot + "/seq/refSeqs.json"},
-                                   // trackData: trackInfo,
                                   tracklists: [
-
-                                       {url: dataRoot + "/annotation_trackList.json"}, 
-                                       {url: dataRoot + "/trackList.json"},
-                                       {url: dataRoot + "/bam_trackList.json"}
+                                       {url: dataRoot + "/trackList.json"}
+                                       , {url: "http://localhost:8080/jbrowse/das2/ucsc/dm3/types?format=jbrowse-trackList" }
                                    ],
                                    nameUrl: dataRoot + "/names/root.json",
-                                   // defaultTracks: "DNA,Annotations,RefSeq",
                                    defaultTracks: "DNA,Annotations",
                                    queryParams: queryParams,
                                    location: queryParams.loc,
