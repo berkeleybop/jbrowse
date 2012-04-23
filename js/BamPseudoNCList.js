@@ -150,9 +150,11 @@ BamPseudoNCList.prototype.binarySearch = function(arr, item, getter) {
 
 BamPseudoNCList.prototype.iterHelper = function(arr, from, to, fun, finish,
                                        inc, searchGet, testGet, path)  {
+    var ncl = this;
     var len = arr.length;
-    var getSublist = this.getSublist;
-    var i = this.binarySearch(arr, from, searchGet);
+
+    var getSublist = ncl.getSublist;
+    var i = ncl.binarySearch(arr, from, searchGet);
     while ((i < len)
            && (i >= 0)
            && ((inc * testGet(arr[i])) < (inc * to)) ) {
@@ -162,10 +164,11 @@ BamPseudoNCList.prototype.iterHelper = function(arr, from, to, fun, finish,
 	// 
 	// var lazyField = this.getChunk(feat);
 	// if (getChunk(feat))  {
-	if (feat[BamUtils.CINDEX] === this.lazyClass)  {
-	    var lazyField = this.getChunk(feat);
-	    var lazyFeat = feat;
-            var ncl = this;
+	if (feat[BamUtils.CINDEX] === ncl.lazyClass)  {
+	    var lazyField = ncl.getChunk(feat);
+	    var cmin = ncl.start(feat);
+	    var cmax = ncl.end(feat);
+
             // lazy node
             if (lazyField.state) {
                 if ("loading" == lazyField.state) {
@@ -187,7 +190,7 @@ BamPseudoNCList.prototype.iterHelper = function(arr, from, to, fun, finish,
 		    // (but not doing callback fun(feat), since feat  
 		    //    is a "fake" feature meant to trigger lazy loading, rather than a real feature
                 } else {
-                    console.log("unknown lazy type: " + lazyFeat);
+                    console.log("unknown lazy type: " + feat);
                 }
             } else {
                 // no "state" property means this node hasn't been loaded,
@@ -195,48 +198,61 @@ BamPseudoNCList.prototype.iterHelper = function(arr, from, to, fun, finish,
                 lazyField.state = "loading";
                 lazyField.callbacks = [];
                 finish.inc();
-		// var chunkMin = lazyFeat[0];
-		// var chunkMax = lazyFeat[1];
-		var chunkMin = this.start(lazyFeat);
-		var chunkMax = this.end(lazyFeat);
 
 		// this.bamfile.fetch(ncl.refSeq.name, bamMin, bamMax, 
-		this.bamfile.fetch(ncl.refSeq.name, chunkMin, chunkMax, 
-			  function(bamrecords, error) {
-			      if (error) { finish.dec(); }
-			      else {
-				  // set state to "loaded"
-				  lazyField.state = "loaded";
 
-				  // create JBrowse JSON feats array from returned BAM records
-				  var bamfeats = [];
-				  for (var bindex = 0; bindex < bamrecords.length; bindex++)  {
-				      var record = bamrecords[bindex];
-				      var bamfeat = BamUtils.convertBamRecord(record, ncl.make_cigar_subfeats);
-				      bamfeats.push(bamfeat);
-				  }
+		// making this bit a self-invoking function since need closure
+		(function(parentIndex)  {
+		     var lazyFeat = arr[parentIndex];
+		     var lfield = ncl.getChunk(lazyFeat);
+		     var chunkMin = ncl.start(lazyFeat);
+		     var chunkMax = ncl.end(lazyFeat);
 
-				  // construct nested containment list array from JSON feats
-				  //     (using modified NCList.fill() method
-				  // populate lazyFeat[sublistIndex] with NCL array
-				  ncl.makeSubLists(bamfeats, lazyFeat);
-				  // var sublists = lazyFeat[ncl.sublistIndex];
-				  var sublists = getSublist(lazyFeat);
+		     console.log("initiated loading of BAM chunk: " + chunkMin + " -- " + chunkMax);		     
+		     ncl.bamfile.fetch(ncl.refSeq.name, chunkMin, chunkMax, 
+			               function(bamrecords, error) {
+					   // console.log("fetch returned for BAM chunk: " + chunkMin + " -- " + chunkMax);
+					   if (error) { 
+					       console.log("error loading BAM chunk: " + chunkMin + " -- " + chunkMax);
+					       console.log(error);
+					       finish.dec(); 
+					   }
+					   else {
+					       // set state to "loaded"
+					       console.log("finished load of BAM chunk: " + chunkMin + " -- " + chunkMax);
+					       // if (chunkMin != cmin)  { console.log("chunk starts don't match!  chunkMin = " + chunkMin + ", cmin = " + cmin); }
+					       lfield.state = "loaded";
 
-				  // call iterHelper on newly created NCL sublist array
-				  ncl.iterHelper(sublists, from, to,
-						 fun, finish, inc,
-						 searchGet, testGet,
-						 path.concat(i));
+					       // create JBrowse JSON feats array from returned BAM records
+					       var bamfeats = [];
+					       for (var bindex = 0; bindex < bamrecords.length; bindex++)  {
+						   var record = bamrecords[bindex];
+						   var bamfeat = BamUtils.convertBamRecord(record, ncl.make_cigar_subfeats);
+						   bamfeats.push(bamfeat);
+					       }
+					       // console.log("loaded BAM feature count: " + bamrecords.length);
+					       // construct nested containment list array from JSON feats
+					       //     (using modified NCList.fill() method
+					       // populate lazyFeat[sublistIndex] with NCL array
+					       ncl.makeSubLists(bamfeats, lazyFeat);
+					       // var sublists = lazyFeat[ncl.sublistIndex];
+					       var sublists = getSublist(lazyFeat);
 
-				  // handle any callbacks that were postponed while loading was in progress
-                                  for (var c = 0; c < lazyField.callbacks.length; c++) {
-                                      lazyField.callbacks[c](sublists);
-				  }
+					       // call iterHelper on newly created NCL sublist array
+					       ncl.iterHelper(sublists, from, to,
+							      fun, finish, inc,
+							      searchGet, testGet,
+							      path.concat(parentIndex));
 
-				  finish.dec();
-			      }
-			  } );
+					       // handle any callbacks that were postponed while loading was in progress
+					       for (var c = 0; c < lfield.callbacks.length; c++) {
+						   lfield.callbacks[c](sublists);
+					       }
+
+					       finish.dec();
+					   }
+				       } );
+		 })(i);
             }
         } else {
             fun(feat, path.concat(i));
@@ -246,7 +262,7 @@ BamPseudoNCList.prototype.iterHelper = function(arr, from, to, fun, finish,
 //        if (feat[this.sublistIndex])
 //            this.iterHelper(feat[this.sublistIndex], from, to,
 	if (getSublist(feat)) {
-              this.iterHelper(getSublist(feat), from, to,
+              ncl.iterHelper(getSublist(feat), from, to,
                             fun, finish, inc, searchGet, testGet,
                             path.concat(i));
 	}
