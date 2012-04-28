@@ -19,15 +19,22 @@ function FeatureTrack( config, refSeq, browserParams ) {
     //                trackPadding: distance in px between tracks
     //                baseUrl: base URL for the URL in config
 
+    if (arguments.length == 0)
+      return;
+    if (browserParams === undefined)  {return;}
+
     Track.call(this, config.label, config.key,
                false, browserParams.changeCallback);
-    this.fields = {};
+// as of pre-1.3, no longer using this.fields?
+//    this.fields = {};
     this.refSeq = refSeq;
 
     // TODO: this featureStore object should eventuallly be
     // instantiated by Browser and passed into this constructor, not
     // constructed here.
     var storeclass = config.backendVersion == 0 ? SeqFeatureStore.NCList_v0 : SeqFeatureStore.NCList;
+    // 1.3.1 MERGE: for BamFeatureTrack, possibly others, will need to pass in entire config (was trackMeta), so 
+    //     need to change signature of featurestore constructor
     this.featureStore = new storeclass({
         urlTemplate: config.urlTemplate,
         baseUrl: config.baseUrl,
@@ -40,7 +47,7 @@ function FeatureTrack( config, refSeq, browserParams ) {
     dojo.connect( this.featureStore, 'loadSuccess', this, 'loadSuccess' );
     dojo.connect( this.featureStore, 'loadFail',    this, 'loadFail' );
 
-    this.featureStore.load();
+
 
     //number of histogram bins per block
     this.numBins = 25;
@@ -51,6 +58,26 @@ function FeatureTrack( config, refSeq, browserParams ) {
     this.trackPadding = browserParams.trackPadding;
 
     this.config = config;
+    this.config = trackMeta.config;
+    // if no configuration file, create a blank (will get filled in by initializeConfig later)
+    if (! this.config)  {
+	this.config = {};
+    }
+
+
+    var thisObj = this;
+    // GAH newJSON merge notes
+    // need to redo this to go through new config.events setup
+    this.featureClick = function(event) { thisObj.onFeatureClick(event); };
+
+    // base Track.load() doesn't use trackMeta arg, but some subclasses FeatureTrack.load() do
+
+    // if no urlTemplate, then this.url will be undefined (but data needed to load may be present in 
+    //      in trackMeta)
+// 1.3.1 MERGE -- call featurestore load (no FeatureTrack load anymore)
+//    this.load(this.url, trackMeta);
+
+    this.featureStore.load();
 }
 
 FeatureTrack.prototype = new Track("");
@@ -60,7 +87,136 @@ FeatureTrack.prototype = new Track("");
  */
 dojo.mixin( FeatureTrack.prototype, Track.YScaleMixin );
 
+
+// 1.3.1 MERGE -- call to FeatureTrack.loadSuccess() is triggered by call to featurestore.loadSuccess(), 
+//     because of prior connection via dojo.connect (this.featureStore, 'loadSuccess', this, 'loadSuccess' );
+//  
 FeatureTrack.prototype.loadSuccess = function(trackInfo, url) {
+    var startTime = new Date().getTime();
+    this.count = trackInfo.featureCount;
+    this.uniqueIdField = trackInfo.uniqueIdField;
+
+    // GAH newJSON merge notes
+    //    no longer need fields, subFields etc. -- replace with calls to new ArrayRepr objects
+//    this.fields = {};
+//    for (var i = 0; i < trackInfo.headers.length; i++)  { this.fields[trackInfo.headers[i]] = i; }
+//    this.subFields = {};
+//    if (trackInfo.subfeatureHeaders) {
+//        for (var i = 0; i < trackInfo.subfeatureHeaders.length; i++) { this.subFields[trackInfo.subfeatureHeaders[i]] = i; } }
+
+    // average feature density per base (features/bp)
+    if (trackInfo.featureCount)  {
+	this.density = trackInfo.featureCount / this.refSeq.length; 
+    }
+    else  { // set a default density?
+	this.density = 0.001;  // one feature per kilobase as default
+    }
+
+    // GAH newJSON merge notes
+    //   URL fiddling handled now by Util.resolveUrl() ??  
+    //      url passed as arg to loadSuccess already resolved and ready to pass to importExisting
+/*    var importBaseUrl; 
+    // ignoreTrackBaseUrl is deprecated (eventually TO BE REMOVED)
+    if (trackInfo.ignoreTrackBaseUrl)  {
+	console.log("ignoreTrackBaseUrl param true, so ignoring trackBaseUrl: " + this.trackBaseUrl);
+	importBaseUrl = "";
+    }
+    else if (Util.startsWith(trackInfo.lazyfeatureUrlTemplate, "http:") || 
+	     Util.startsWith(trackInfo.lazyfeatureUrlTemplate, "file:")) {
+	console.log("lazyfeatureUrlTemplate is full URI, so ignoring trackBaseUrl: " + this.trackBaseUrl);
+	importBaseUrl = "";
+    }
+    else  {
+	console.log("trackBaseUrl: " + this.trackBaseUrl);
+	importBaseUrl = this.trackBaseUrl;
+    }
+    console.log("url_template: " + trackInfo.lazyfeatureUrlTemplate);
+*/
+
+
+    /*  
+     *   features Object contract:
+     *        for FeatureTrack, features Object must implement:
+     *             iterate()
+     *             importExisting()   (only in FeatureTrack.loadSuccess())
+     *             histogram()        (only in FeatureTrack.fillHist())
+     *       Also, it's possible other NCList methods may get called in subclasses (ex: AnnotTrack)
+     *       For subclasses that need features Object to be class other than NCList:
+     *           If featureTrack.loadSuccess() is overriden to handle features initialization differently, then
+     *                features need not implement importExisting()
+     *           If no histogram mode, or histograms handled differently, then may not need histogram()
+     *           Then only method absolutely needed is iterate() 
+     *                 (though as of 2/2012, even features.iterate() is only used in:
+     *                     FeatureTrack.fillFeatures() and
+     *                     FeatureEdgeMatchManager.selectionAdded(), 
+     *           
+     */
+// 1.3.1 MERGE -- NCList now created by SeqFeatureStore
+ //    this.features = new NCList();  // moved to loadSuccess()
+
+/*  GAH newJSON merge notes:  berkeleybop importExisting() call 
+ *     this.features.importExisting(trackInfo.featureNCList,
+                                 trackInfo.sublistIndex,
+                                 trackInfo.lazyIndex,
+                                 this.trackBaseUrl,
+                                 importBaseUrl,
+                                 trackInfo.lazyfeatureUrlTemplate);
+*/
+    // 1.3.1 MERGE for now keeping this.attrs var, until can update all code to use get/set accessors attached to feats/subfeats
+    //  this.attrs = new ArrayRepr(trackInfo.intervals.classes);
+    this.attrs = featurestore.attrs;
+/*  1.3.1 MERGE now handled in SeqFeatureStore
+     this.features.importExisting(trackInfo.intervals.nclist,
+                                 this.attrs,
+                                 url,
+                                 trackInfo.intervals.urlTemplate,
+                                 trackInfo.intervals.lazyClass);
+*/
+    this.initializeConfig();
+ 
+/*  1.3.1 MERGE now handled in SeqFeatureStore
+    if (trackInfo.histograms) {
+        this.histograms = trackInfo.histograms;
+        for (var i = 0; i < this.histograms.meta.length; i++) {
+            this.histograms.meta[i].lazyArray =
+                new LazyArray(this.histograms.meta[i].arrayParams, url);
+        }
+    }
+*/
+
+/*
+    // GAH newJSON merge notes:  LazyArray no longer used for subfeatures, only for histograms 
+    //    if (trackInfo.subfeatureArray)
+    //        this.subfeatureArray = new LazyArray(trackInfo.subfeatureArray,
+    //                                 importBaseUrl);
+    
+    // GAH newJSON merge notes: need to add back in histScale direct specification
+    // if histScale is specified in track metadata, then use value directly as histScale (in pixels_per_base), 
+    //     rather than also factoring in feature density
+    // if current scale is < histscale then switch to histogram view
+
+    // GAH newJSON merge notes: histScale, labelScale, subfeautreScale not used?  GMOD calc'ing in-place when needed instead
+    // histScale: scale (in pixels/bp) below which histograms are displayed instead of individual features
+    this.histScale = config.scaleThres.hist * (trackInfo.featureCount / this.refSeq.length);  
+    // labelScale: scale (in pixels/bp above which labels are displayed)
+    this.labelScale = config.scaleThres.label * (trackInfo.featureCount / this.refSeq.length);
+    // subfeatureScale: scale (in pixels/bp) above which subfeatures are displayed)
+    this.subfeatureScale = config.scaleThres.subfeature * (trackInfo.featureCount / this.refSeq.length);
+    // replaced by this.config.style.className
+    this.className = trackInfo.className;
+
+    //    this.renderClassName = trackInfo.renderClassName;
+    this.renderClassName = this.config.style.renderClassName; // ???
+    this.subfeatureClasses = trackInfo.subfeatureClasses; // replaced by config.style.subfeatureClasses
+    //    this.arrowheadClass = trackInfo.arrowheadClass;  // replaced by config.style.arrowheadClass
+
+    // this.urlTemplate = trackInfo.urlTemplate;
+    // this.histogramMeta = trackInfo.histogramMeta;
+*/
+
+    this.setLoaded();
+};
+
 
 FeatureTrack.prototype.initializeConfig = function()  {
        var defaultConfig = {
@@ -73,18 +229,15 @@ FeatureTrack.prototype.initializeConfig = function()  {
             subfeature: 80  // show subfeatures if typical feature size >= 80 pixels  
         },
         hooks: {
-            create: function(track, feat ) {
-                var featDiv;
-                var featUrl = track.featureUrl(feat);
-                if (featUrl) {
-                    featDiv = document.createElement("a");
-                    featDiv.href = featUrl;
-                    featDiv.target = "_new";
-                } else {
-                    featDiv = document.createElement("div");
-                }
+	    /*   creation of feature div */
+            create: function(track, feat, attrs) {
+		// in JBrowse, feature click-linkouts are created here
+		// for WebApollo, do not make feature click-linkouts (since click is used for selection)
+		//      however feature labels are given click-linkouts elsewhere)
+                var featDiv = document.createElement("div");
                 return featDiv;
-            }
+	    }
+
         },
         events: {
         }
@@ -119,8 +272,6 @@ FeatureTrack.prototype.initializeConfig = function()  {
             this.wrapHandler(this.evalHook(this.config.events[event]));
     }
 */
-
-    this.setLoaded();
 };
 
 /*  if arg is a string, returns eval of arg, otherwise just returns arg */
@@ -184,13 +335,17 @@ FeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
     this.setLabel(this.key);
 };
 
+//FeatureTrack.prototype.fillHist = function(blockIndex, block,
+//                                           leftBase, rightBase,
+//                                           stripeWidth) {
+
+
 /**
  * Return an object with some statistics about the histograms we will
  * draw for a given block size in base pairs.
  * @private
  */
 FeatureTrack.prototype._histDimensions = function( blockSizeBp ) {
-
     // bases in each histogram bin that we're currently rendering
     var bpPerBin = blockSizeBp / this.numBins;
     var pxPerCount = 2;
@@ -220,6 +375,8 @@ FeatureTrack.prototype._histDimensions = function( blockSizeBp ) {
 FeatureTrack.prototype.fillHist = function(blockIndex, block,
                                            leftBase, rightBase,
                                            stripeWidth) {
+    //    if (this.histogramMeta === undefined)  {return;}
+    if (this.featureStore.histograms.meta === undefined)  { return; }
 
     var dims = this._histDimensions( Math.abs( rightBase - leftBase ) );
 
@@ -322,7 +479,9 @@ FeatureTrack.prototype.fillBlock = function(blockIndex, block,
     // only update the label once for each block size
     var blockBases = Math.abs( leftBase-rightBase );
     if( this._updatedLabelForBlockSize != blockBases ){
-        if ( scale < (this.featureStore.density * this.config.scaleThresh.hist)) {
+        if (this.config.scaleThresh && 
+	    this.config.scaleThresh.hist && 
+	    scale < (this.featureStore.density * this.config.scaleThresh.hist)) {
             this.setLabel(this.key + "<br>per " + Math.round( blockBases / this.numBins) + "bp");
         } else {
             this.setLabel(this.key);
@@ -333,6 +492,7 @@ FeatureTrack.prototype.fillBlock = function(blockIndex, block,
     //console.log("scale: %d, histScale: %d", scale, this.histScale);
     if (this.featureStore.histograms &&
         (scale < (this.featureStore.density * this.config.scaleThresh.hist)) ) {
+
 	this.fillHist(blockIndex, block, leftBase, rightBase, stripeWidth,
                       containerStart, containerEnd);
     } else {
@@ -622,7 +782,6 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
     //featureStart and featureEnd indicate how far left or right
     //the feature extends in bp space, including labels
     //and arrowheads if applicable
-
     var featureEnd = feature.get('end');
     var featureStart = feature.get('start');
     if( typeof featureEnd == 'string' )
@@ -630,6 +789,21 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
     if( typeof featureStart == 'string' )
         featureStart = parseInt(featureStart);
 
+    //scale: pixels per base at the current zoom level
+    // 1.3.1 MERGE -- 
+    //     JBrowse now draws arrowheads within feature genome coord bounds
+    //     For WebApollo we're keeping arrow outside of feature genome coord bounds, 
+    //           because otherwise arrow can obscure edge-matching, CDS/UTR transitions, small inton/exons, etc.
+    if (this.config.style.arrowheadClass) {
+        switch (feature.get('strand')) {
+        case 1:
+        case '+':
+            featureEnd   += (this.plusArrowWidth / scale); break;
+        case -1:
+        case '-':
+            featureStart -= (this.minusArrowWidth / scale); break;
+        }
+    }
 
     var levelHeight = this.glyphHeight + this.levelHeightPad;
 
@@ -650,7 +824,13 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
                                           featureEnd,
                                           levelHeight);
 
-    var featDiv = this.config.hooks.create(this, feature );
+    // default create() makes <a> link if linkable URL, or <div> if no URL
+    var featDiv = this.config.hooks.create(this, feature, this.attrs);  
+
+    block.featureNodes[uniqueId] = featDiv;
+    if (!feature.track)  { feature.track = this; }
+
+    /*  WebApollo doesn't use configurable event handlers
     for (var event in this.eventHandlers) {
         featDiv["on" + event] = this.eventHandlers[event];
     }
@@ -753,13 +933,13 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
     }
 
     if( featwidth > minFeatWidth ) {
+	//    var subfeatures = this.attrs.get(feature, "Subfeatures");
         var subfeatures = feature.get('subfeatures');
         if( subfeatures ) {
-            for (var i = 0; i < subfeatures.length; i++) {
-                this.renderSubfeature(feature, featDiv,
-                                      subfeatures[i],
-                                      displayStart, displayEnd);
-            }
+	    //   refactoring subfeature handling/loading into 
+	    //   handleSubFeatures() method to allow for subclasses to 
+	    //   handle differently
+	    this.handleSubFeatures(feature, featDiv, displayStart, displayEnd, block);
         }
     }
 
@@ -816,7 +996,8 @@ FeatureTrack.prototype.featureUrl = function(feature) {
 };
 
 FeatureTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
-                                                   displayStart, displayEnd) {
+                                                   displayStart, displayEnd, block) {
+    if (!subfeature.parent)  { subfeature.parent = feature; }
     var subStart = subfeature.get('start');
     var subEnd = subfeature.get('end');
     var featLength = displayEnd - displayStart;
@@ -825,17 +1006,42 @@ FeatureTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
 	subfeature.track = this;
     }
 
-    if( this.config.style.subfeatureClasses ) {
-        var type = subfeature.get('type');
-        subDiv.className = this.config.style.subfeatureClasses[type] || this.config.style.className + '-' + type;
-        switch ( subfeature.get('strand') ) {
-            case 1:
-            case '+':
-                subDiv.className += " plus-" + subDiv.className; break;
-            case -1:
-            case '-':
-                subDiv.className += " minus-" + subDiv.className; break;
-        }
+    var className = "unknown";
+    if (this.config.style.subfeatureClasses) {
+	// type undefined, then assign "unknown" className root 
+	//     (so subfeature is rendered with default "unknown" CSS styling)
+	// if type = null, then className = null (so subfeature is not rendered as a div at all)
+	// otherwise use tempName as className root (so subfeature is rendered with based on type name
+        // var type = this.attrs.get(subfeature, "Type");
+	var type = subfeature.get('type');
+        className = this.config.style.subfeatureClasses[type];
+	// if (className === undefined)  { className = this.config.style.className + '-' + type;}  // JBrowse
+	if (className === undefined)  { className = "unknown"; }  // WebApollo 
+
+	// if subfeatureClasses specifies that subfeature type explicitly maps to null classNmae, 
+	//     or no config.style.subfeatureClasses to do map types, 
+	//     then don't render the feature
+	if (className === null) { return; }  
+    }
+
+    var subDiv = document.createElement("div");
+
+    var strand = this.attrs.get(subfeature, "Strand");
+    switch (strand)  {
+    case 1:
+    case '+':
+    case '1':
+	subDiv.className= "plus-" + className; break;
+    case 0:
+    case '0':
+    case '.':
+    case null:   
+    case undefined:   
+	subDiv.className = className; break;
+    case -1:
+    case '-':
+    case '-1':
+	subDiv.className = "minus-" + className; break;
     }
     // if (debug_feat)  {  console.log("className: " + className); }
     block.featureNodes[subfeature.uid] = subDiv;

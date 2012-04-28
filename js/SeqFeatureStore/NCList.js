@@ -4,6 +4,8 @@ var SeqFeatureStore; if( !SeqFeatureStore) SeqFeatureStore = function() {};
  * Implementation of SeqFeatureStore using nested containment
  * lists held in static files that are lazily fetched from the web
  * server.
+ * 
+ * Uses ../NCList.js as internal NCList
  *
  * @class
  * @extends SeqFeatureStore
