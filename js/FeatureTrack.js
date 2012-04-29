@@ -892,7 +892,9 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
         case '+':
             if( featwidth_px > this.plusArrowWidth*1.1 ) {
                 ah.className = "plus-" + this.config.style.arrowheadClass;
-                ah.style.cssText = "position: absolute; right: 0px; top: 0px; z-index: 100;";
+                // ah.style.cssText = "position: absolute; right: 0px; top: 0px; z-index: 100;";
+		// in WebApollo, arrowheads extend beyond feature coords
+		ah.style.cssText =  "left: 100%; top: 0px;";
                 featDiv.appendChild(ah);
             }
             break;
@@ -900,8 +902,9 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
         case '-':
             if( featwidth_px > this.minusArrowWidth*1.1 ) {
                 ah.className = "minus-" + this.config.style.arrowheadClass;
-                ah.style.cssText =
-                    "position: absolute; left: 0px; top: 0px; z-index: 100;";
+                // ah.style.cssText = "position: absolute; left: 0px; top: 0px; z-index: 100;";
+		// in WebApollo, arrowheads extend beyond feature coords
+		ah.style.cssText = "left: " + (-this.minusArrowWidth) + "px; top: 0px;";
                 featDiv.appendChild(ah);
             }
             break;
