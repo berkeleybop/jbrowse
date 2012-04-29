@@ -574,7 +574,7 @@ Browser.prototype.createTrackList = function( /**Element*/ parent ) {
     }
 
     var trackCreate = /**@inner*/ function( trackConfig, hint) {
-	console.log("called (Browser).trackCreate() for track: " + trackConfig.name);
+	console.log("called (Browser).trackCreate() for track: " + trackConfig.label);
 	console.log(trackConfig);
         var node;
         if ("avatar" == hint) {
@@ -635,7 +635,7 @@ Browser.prototype.onVisibleTracksChanged = function() {
 Browser.prototype.addTracks = function(trackList, replace) {
     if (!this.isInitialized) {
         var brwsr = this;
-	console.log("pushed Browser.addTracks to deferred functions");
+	// console.log("pushed Browser.addTracks to deferred functions");
         this.deferredFunctions.push(
             function() {brwsr.addTracks(trackList, show);}
         );
@@ -808,7 +808,7 @@ Browser.prototype.showTracks = function(trackNameList) {
     console.log(trackNameList);
     if (!this.isInitialized) {
         var brwsr = this;
-	console.log("pushed Browser.showTracks to deferred functions");
+	// console.log("pushed Browser.showTracks to deferred functions");
         this.deferredFunctions.push(
             function() {brwsr.showTracks(trackNameList);}
         );
@@ -822,8 +822,6 @@ Browser.prototype.showTracks = function(trackNameList) {
 	console.log("trackName: " + trackNames[n]);
         this.trackListWidget.forInItems(function(obj, id, map) {
                 if (trackNames[n] == obj.data.label) {
-		    console.log("calling vieDndWidget.insertNodes");
-		    console.log(obj);
                     brwsr.viewDndWidget.insertNodes(false, [obj.data]);
                     removeFromList.push(id);
                 }

@@ -1433,7 +1433,7 @@ GenomeView.prototype.showVisibleBlocks = function(updateHeight, pos, startX, end
 };
 
 GenomeView.prototype.addTrack = function(track) {
-    console.log("adding track: " + track.name);
+    console.log("adding track to main view: " + track.name);
     var trackNum = this.tracks.length;
     var labelDiv = document.createElement("div");
     labelDiv.className = "track-label dojoDndHandle";
@@ -1459,11 +1459,9 @@ GenomeView.prototype.addTrack = function(track) {
     var heightUpdate = function(height) {
         view.trackHeightUpdate(track.name, height);
     };
-    console.log("Track.setViewInfo");
     track.setViewInfo(heightUpdate, this.stripeCount, trackDiv, labelDiv,
 		      this.stripePercent, this.stripeWidth,
                       this.pxPerBp, this.trackPadding);
-    console.log("finished Track.setViewInfo");
 
     labelDiv.style.position = "absolute";
     labelDiv.style.top = "0px";

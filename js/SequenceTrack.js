@@ -58,8 +58,6 @@ SequenceTrack.prototype.endZoom = function(destScale, destBlockBases) {
 SequenceTrack.prototype.setViewInfo = function(genomeView, numBlocks,
                                                trackDiv, labelDiv,
                                                widthPct, widthPx, scale) {
-    console.log("SequenceTrack.setViewInfo called, first param: ");
-    console.log(genomeView);
 		
     Track.prototype.setViewInfo.apply(this, [genomeView, numBlocks,
                                              trackDiv, labelDiv,
