@@ -143,9 +143,13 @@ DraggableFeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
     } );
 
 
-/*  track click diagnostic (and example of how to add additional track mouse listener?)
-     $div.bind("click", function(e) {
-	console.log("track click, base position: " + track.gview.getGenomeCoord(e));
+/* track click diagnostic (and example of how to add additional track mouse listener?) 
+    $div.bind("click", function(event) {
+        console.log("track click, base position: " + track.gview.getGenomeCoord(event));
+	var target = event.target;
+	if (target.feature || target.subfeature)  { 
+	    event.stopPropagation();
+	}
     } );
 */
 
@@ -630,9 +634,13 @@ DraggableFeatureTrack.prototype.onFeatureDoubleClick = function(event)  {
 
 /**
  *  feature click no-op (to override FeatureTrack.onFeatureClick, which conflicts with mouse-down selection
+ * 
+ *  was also calling event.stopPropagation() to avoid conflict with JBrowse 1.3.1 shift-click to center 
+ *      but commented out because trying instead to use control-click to center and control-drag to zoom to region
  */
 DraggableFeatureTrack.prototype.onFeatureClick = function(event) {
-    // event.stopPropagation();
+    // don't need stopPropagation call to override onFeatureClick, 
+    //    event.stopPropagation();
 };
 
 /** 
