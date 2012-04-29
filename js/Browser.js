@@ -505,7 +505,7 @@ Browser.prototype.createTrackList = function( /**Element*/ parent ) {
     var leftPane = document.createElement("div");
     leftPane.id = "trackPane";
     //     leftPane.style.cssText= params.show_tracklist == 0 ? "width: 0": "width: 10em";
-    leftPane.style.cssText= params.show_tracklist == 0 ? "width: 0": "width: 15em";
+    leftPane.style.cssText= this.config.show_tracklist == 0 ? "width: 0": "width: 15em";
     parent.appendChild(leftPane);
     //splitter on left side
     // GAH Turned off splitter, because after GMOD:JBrowse merge in March 2012, 
@@ -529,7 +529,7 @@ Browser.prototype.createTrackList = function( /**Element*/ parent ) {
 	dojo.connect(trackListDiv, "mousedown", function(e)  { console.log("trackListDiv mouseDown: "); console.log(e); } );
     }
 
-    // var brwsr = this;
+    var brwsr = this;
 
     var changeCallback = function() {
        brwsr.view.showVisibleBlocks(true);
@@ -575,7 +575,7 @@ Browser.prototype.createTrackList = function( /**Element*/ parent ) {
 
     var trackCreate = /**@inner*/ function( trackConfig, hint) {
 	console.log("called (Browser).trackCreate() for track: " + trackConfig.name);
-	console.log(track);
+	console.log(trackConfig);
         var node;
         if ("avatar" == hint) {
             return trackListCreate( trackConfig, hint);

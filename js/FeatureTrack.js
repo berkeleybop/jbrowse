@@ -58,7 +58,9 @@ function FeatureTrack( config, refSeq, browserParams ) {
     this.trackPadding = browserParams.trackPadding;
 
     this.config = config;
-    this.config = trackMeta.config;
+    console.log("config: " );
+    console.log(config);
+//    this.config = trackMeta.config;
     // if no configuration file, create a blank (will get filled in by initializeConfig later)
     if (! this.config)  {
 	this.config = {};
@@ -164,7 +166,7 @@ FeatureTrack.prototype.loadSuccess = function(trackInfo, url) {
 */
     // 1.3.1 MERGE for now keeping this.attrs var, until can update all code to use get/set accessors attached to feats/subfeats
     //  this.attrs = new ArrayRepr(trackInfo.intervals.classes);
-    this.attrs = featurestore.attrs;
+    this.attrs = this.featureStore.attrs;
 /*  1.3.1 MERGE now handled in SeqFeatureStore
      this.features.importExisting(trackInfo.intervals.nclist,
                                  this.attrs,
