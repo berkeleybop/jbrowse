@@ -2059,7 +2059,6 @@ AnnotTrack.prototype.showRange = function(first, last, startBase, bpPerBlock, sc
  */
 AnnotTrack.prototype.selectionAdded = function(feat, smanager)  {
     DraggableFeatureTrack.prototype.selectionAdded.call(this, feat, smanager);
-    // console.log("AnnotTrack.selectionAdded, count = " + AnnotTrack.annotSelectionManager.getSelection().length);
     var track = this;
     // want to get child of block, since want position relative to block
     // so get top-level feature div (assumes top level feature is always rendered...)
@@ -2072,15 +2071,13 @@ AnnotTrack.prototype.selectionAdded = function(feat, smanager)  {
 	//	    track.selectionYPosition = $(featdiv).position().top;
         var selectionYPosition = $(featdiv).position().top;
 	var scale = track.gview.bpToPx(1);
-	//	console.log("scale: " + scale + ", charWidth: " + track.browserParams.charWidth);
 	if (scale === track.browserParams.charWidth && track.useResiduesOverlay)  {
 	    var seqTrack = this.getSequenceTrack();
 	    for (var bindex = this.firstAttached; bindex <= this.lastAttached; bindex++)  {
 		var block = this.blocks[bindex];
-		seqTrack.getRange(block.startBase, block.endBase, 
+//		seqTrack.getRange(block.startBase, block.endBase, 
+		seqTrack.sequenceStore.getRange(this.refSeq, block.startBase, block.endBase, 
                     function(start, end, seq) {
-			// console.log("AnnotTrack.selectionAdded(), adding seq from %d to %d: %s", 
-			//				    start, end, seq);
 			// var ypos = $(topfeat).position().top; 
 			// +2 hardwired adjustment to center (should be calc'd based on feature div dims?	    
 			var ypos = selectionYPosition + 2;
