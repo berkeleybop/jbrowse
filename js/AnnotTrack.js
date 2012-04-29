@@ -115,8 +115,10 @@ AnnotTrack.prototype.loadSuccess = function(trackInfo) {
     
     var track = this;
     // for AnnotTrack, features currently MUST be an NCList
+//    var features = this.features;
+    this.features = this.featureStore.nclist;
     var features = this.features;
-
+    
     this.initContextMenu();
     this.initPopupDialog();
     
@@ -130,8 +132,8 @@ AnnotTrack.prototype.loadSuccess = function(trackInfo) {
 	    load: function(response, ioArgs) { //
 		var responseFeatures = response.features;
 		for (var i = 0; i < responseFeatures.length; i++) {
-		    // var jfeat = JSONUtils.createJBrowseFeature(responseFeatures[i], track.fields, track.subFields);
-		    var jfeat = JSONUtils.createJBrowseFeature(track.attrs, responseFeatures[i]);
+		    // var jfeat = JSONUtils.createJBrowseFeature(track.attrs, responseFeatures[i]);
+		    var jfeat = JSONUtils.createJBrowseFeature(features.attrs, responseFeatures[i]);
 		    features.add(jfeat, responseFeatures[i].uniquename);
 		    // console.log("responseFeatures[0].uniquename: " + responseFeatures[0].uniquename);
 		}
