@@ -680,7 +680,8 @@ div.transcript-hist {
     margin-top: -4px;
     width: 12px;
     height: 12px;
-    background-image: url('img/plus-transcript-head.png');
+   /* background-image: url('img/plus-transcript-head.png'); */
+    background-image: url('img/plus-arrowhead.png'); */
     background-repeat: no-repeat;
 }
 
@@ -696,7 +697,8 @@ div.transcript-hist {
     margin-top: -4px;
     width: 12px;
     height: 12px;
-    background-image: url('img/minus-transcript-head.png');
+   /* background-image: url('img/minus-transcript-head.png'); */
+    background-image: url('img/minus-arrowhead.png');
     background-repeat: no-repeat;
 }
 
