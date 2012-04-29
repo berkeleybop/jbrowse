@@ -225,17 +225,20 @@ GenomeView.prototype._behaviors = function() { return {
                 // when the mouse leaves the document, need to cancel
                 // any keyboard-modifier-holding-down state
                 dojo.connect( document.body,            'onmouseenter',       this, function(evt) {
-                    if( evt.shiftKey )
+                    if( evt.shiftKey ) {
                         this.behaviorManager.swapBehaviors( 'normalMouse', 'shiftMouse' );
+		    }
                 }),
 
                 dojo.connect( window, 'onkeyup', this, function(evt) {
-                    if( evt.keyCode == dojo.keys.SHIFT ) // shift
+		    if( evt.keyCode == dojo.keys.SHIFT )  { // shift
                         this.behaviorManager.swapBehaviors( 'shiftMouse', 'normalMouse' );
+		    }
                 }),
                 dojo.connect( window, 'onkeydown', this, function(evt) {
-                    if( evt.keyCode == dojo.keys.SHIFT ) // shift
+                    if( evt.keyCode == dojo.keys.SHIFT ) { // shift
                         this.behaviorManager.swapBehaviors( 'normalMouse', 'shiftMouse' );
+		    }
                 })
             );
             return handles;
@@ -253,6 +256,7 @@ GenomeView.prototype._behaviors = function() { return {
     },
 
     // mouse events connected when the shift button is being held down
+  //  shiftMouse: {
     shiftMouse: {
         apply: function() {
             dojo.removeClass(this.trackContainer,'draggable');
@@ -1326,6 +1330,7 @@ GenomeView.prototype.scrollUpdate = function() {
     this.rawSetX(newX);
     var firstVisible = (newX / this.stripeWidth) | 0;
 };
+
 
 GenomeView.prototype.trackHeightUpdate = function(trackName, height) {
     var y = this.getY();
