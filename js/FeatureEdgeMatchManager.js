@@ -60,11 +60,12 @@ FeatureEdgeMatchManager.prototype.selectionAdded = function(feat)  {
     var source_track = source_feat.track;
     // var source_fields = source_track.fields;
     // var source_subfields = source_track.subFields;
-    var source_attrs = source_track.attrs;
+//    var source_attrs = source_track.attrs;
+    var source_attrs = source_track.featureStore.attrs;
 
 
     var source_subfeats = source_attrs.get(source_feat, "Subfeatures");
-    if (! source_subfeats) {
+    if (! source_subfeats || source_subfeats.length === 0) {
 	source_subfeats = [ source_feat ];
     }
 /*
@@ -97,17 +98,19 @@ FeatureEdgeMatchManager.prototype.selectionAdded = function(feat)  {
     
     var ftracks = $("div.track").each( function(index, trackdiv)  {  
         var target_track = trackdiv.track;
-				   
 //	if (target_track && target_track.features)  {
 // TEMPORARY FIX for error when dragging track into main view --
 //     if something selected, edge matching attempted on new track, which throws an error:
 //             "target_subfields is undefined"
 //             at "var tmindex = target_subfields["start"];" line below
-//     error possibly due to track's trackData not yet being fully loaded, so check track load field
-         if (target_track && target_track.features && target_track.loaded)  {
-	     var target_attrs = target_track.attrs;				   
-	    if (verbose_edges)  { console.log("edge matching for: " + target_track.name); console.log(trackdiv); }
-	    var nclist = target_track.features;
+//     error possibly due to track's trackData not yet being fully loaded, so check track load fiel
+         if (target_track && target_track.featureStore && target_track.loaded)  {
+	    if (verbose_edges)  { 
+		console.log("edge matching for: " + target_track.name); 
+	    }
+
+	    var featureStore = target_track.featureStore;
+	     var target_attrs = featureStore.attrs;				   
 	     
 	    // var target_fields = target_track.fields;
 	    // var target_subfields = target_track.subFields;
@@ -116,8 +119,9 @@ FeatureEdgeMatchManager.prototype.selectionAdded = function(feat)  {
 
 	    // only look at features that overlap source_feat min/max
 	    // NCList.iterate only calls function for features that overlap qmin/qmax coords
-	    nclist.iterate(qmin, qmax, function(target_feat, path) {
-		if (verbose_edges)  {  console.log("checking feature: "); console.log(target_feat); }
+	    featureStore.iterate(qmin, qmax, function(target_feat, path) {
+				     
+		if (verbose_edges)  {  console.log("========="); console.log("checking feature: "); console.log(target_feat); }
 		var target_subfeats = target_attrs.get(target_feat, "Subfeatures");
                 if (! target_subfeats) {
 		    target_subfeats = [ target_feat ];
