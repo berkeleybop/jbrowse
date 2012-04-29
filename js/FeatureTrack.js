@@ -32,21 +32,19 @@ function FeatureTrack( config, refSeq, browserParams ) {
     // TODO: this featureStore object should eventuallly be
     // instantiated by Browser and passed into this constructor, not
     // constructed here.
-    var storeclass = config.backendVersion == 0 ? SeqFeatureStore.NCList_v0 : SeqFeatureStore.NCList;
-    // 1.3.1 MERGE: for BamFeatureTrack, possibly others, will need to pass in entire config (was trackMeta), so 
-    //     need to change signature of featurestore constructor
-    this.featureStore = new storeclass({
-        urlTemplate: config.urlTemplate,
-        baseUrl: config.baseUrl,
-        refSeq: refSeq,
-        track: this
-    });
 
+    this.config = config;
+    // if no configuration file, create a blank (will get filled in by initializeConfig later)
+    if (! this.config)  {
+	this.config = {};
+    }
+
+
+//    this.featureStore = setupFeatureStore();
     // connect the store and track loadSuccess and loadFailed events
     // to eachother
-    dojo.connect( this.featureStore, 'loadSuccess', this, 'loadSuccess' );
-    dojo.connect( this.featureStore, 'loadFail',    this, 'loadFail' );
-
+//    dojo.connect( this.featureStore, 'loadSuccess', this, 'loadSuccess' );
+//    dojo.connect( this.featureStore, 'loadFail',    this, 'loadFail' );
 
 
     //number of histogram bins per block
@@ -56,16 +54,6 @@ function FeatureTrack( config, refSeq, browserParams ) {
     this.glyphHeightPad = 2;
     this.levelHeightPad = 2;
     this.trackPadding = browserParams.trackPadding;
-
-    this.config = config;
-    console.log("config: " );
-    console.log(config);
-//    this.config = trackMeta.config;
-    // if no configuration file, create a blank (will get filled in by initializeConfig later)
-    if (! this.config)  {
-	this.config = {};
-    }
-
 
     var thisObj = this;
     // GAH newJSON merge notes
@@ -79,7 +67,8 @@ function FeatureTrack( config, refSeq, browserParams ) {
 // 1.3.1 MERGE -- call featurestore load (no FeatureTrack load anymore)
 //    this.load(this.url, trackMeta);
 
-    this.featureStore.load();
+//    this.featureStore.load();
+    this.featureStore = this.load();
 }
 
 FeatureTrack.prototype = new Track("");
@@ -88,6 +77,25 @@ FeatureTrack.prototype = new Track("");
  * Mixin: Track.YScaleMixin.
  */
 dojo.mixin( FeatureTrack.prototype, Track.YScaleMixin );
+
+
+FeatureTrack.prototype.load = function()  {
+    var storeclass = this.config.backendVersion == 0 ? SeqFeatureStore.NCList_v0 : SeqFeatureStore.NCList;
+    // 1.3.1 MERGE: for BamFeatureTrack, possibly others, will need to pass in entire config (was trackMeta), so 
+    //     need to change signature of featurestore constructor
+    this.featureStore = new storeclass({
+        urlTemplate: this.config.urlTemplate,
+        baseUrl: this.config.baseUrl,
+        refSeq: this.refSeq,
+        track: this
+    });
+    // connect the store and track loadSuccess and loadFailed events
+    // to eachother
+    dojo.connect( this.featureStore, 'loadSuccess', this, 'loadSuccess' );
+    dojo.connect( this.featureStore, 'loadFail',    this, 'loadFail' );
+    this.featureStore.load();
+    return this.featureStore;
+};
 
 
 // 1.3.1 MERGE -- call to FeatureTrack.loadSuccess() is triggered by call to featurestore.loadSuccess(), 
