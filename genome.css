@@ -2554,6 +2554,46 @@ div.generic_parent-hist {
     -ms-box-sizing: border-box;
 }
 
+.noncanonical-splice, 
+.plus-noncanonical-splice,  
+.minus-noncanonical-splice  { 
+    position: absolute;
+    height: 16px;
+    width: 16px;
+    z-index: 100;
+    background-image: url('img/warning_exclamation.png'); 
+}
+
+.noncanonical-splice2, 
+.plus-noncanonical-splice2,  
+.minus-noncanonical-splice2  { 
+    position: absolute;
+    height: 16px;
+    width: 16px;
+    z-index: 100;
+    background-image: url('img/warning_exclamation_small.png'); 
+}
+
+.noncanonical-splice3, 
+.plus-noncanonical-splice3,  
+.minus-noncanonical-splice3  { 
+    position: absolute;
+    height: 16px;
+    width: 16px;
+    z-index: 100;
+    background-image: url('img/marker_rounded_red.png'); 
+}
+
+.noncanonical-splice4, 
+.plus-noncanonical-splice4,  
+.minus-noncanonical-splice4  { 
+    position: absolute;
+    height: 16px;
+    width: 16px;
+    z-index: 100;
+    background-image: url('img/marker_squared_red.png'); 
+}
+
 /*
 .plus-annot-wholeCDS, 
 .minus-annot-wholeCDS {
@@ -2650,6 +2690,7 @@ div.generic_parent-hist {
     -webkit-box-sizing: border-box;
     -ms-box-sizing: border-box;
 }
+
 
 /* to make sure selection style overrides any other styles in this stylesheet, make sure to put selection style at end */
 .selected-feature {

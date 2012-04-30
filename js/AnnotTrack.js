@@ -293,6 +293,49 @@ AnnotTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
     return featDiv;
 };
 
+AnnotTrack.prototype.handleSubFeatures = function(feature, featDiv, 
+						    displayStart, displayEnd, block)  {
+    DraggableFeatureTrack.prototype.handleSubFeatures.call(this, feature, featDiv, displayStart, displayEnd, block);
+    var subfeats = feature.get("subfeatures");
+    // fake test of non-canonical splice warning
+    if (subfeats.length === 5) {
+	var subdiv = featDiv.children[3];
+	var testdiv, $testdiv;
+	if (subdiv) {
+	    testdiv = document.createElement("div");
+	    $testdiv = $(testdiv);
+	    $testdiv.addClass("noncanonical-splice");
+	    testdiv.style.cssText = "left: -8px; top: -8px;";
+	    subdiv.appendChild(testdiv);
+
+	    testdiv = document.createElement("div");
+	    $testdiv = $(testdiv);
+	    $testdiv.addClass("noncanonical-splice2");
+	    testdiv.style.cssText = "right: -8px; top: -8px;";
+	    subdiv.appendChild(testdiv);
+	}
+	subdiv = featDiv.children[2];
+	if (subdiv) {
+	    testdiv = document.createElement("div");
+	    $testdiv = $(testdiv);
+	    $testdiv.addClass("noncanonical-splice3");
+	    testdiv.style.cssText = "right: -8px; top: -8px;";
+	    subdiv.appendChild(testdiv);
+	}
+	subdiv = featDiv.children[4];
+	if (subdiv) {
+	    testdiv = document.createElement("div");
+	    $testdiv = $(testdiv);
+	    $testdiv.addClass("noncanonical-splice4");
+	    testdiv.style.cssText = "left: -8px; top: -8px;";
+	    subdiv.appendChild(testdiv);
+	}
+    }
+
+
+}
+
+
 AnnotTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
 						 displayStart, displayEnd, block) {
     var subdiv = DraggableFeatureTrack.prototype.renderSubfeature.call(this, feature, featDiv, subfeature, 
