@@ -61,6 +61,7 @@
     <script type="text/javascript" src="js/Store.js"></script>
   <script type="text/javascript" src="js/SeqFeatureStore.js"></script>
   <script type="text/javascript" src="js/SeqFeatureStore/NCList.js"></script>
+  <script type="text/javascript" src="js/SeqFeatureStore/BamPseudoListStore.js"></script>
   <script type="text/javascript" src="js/TiledImageStore/Fixed.js"></script>
   <script type="text/javascript" src="js/SequenceStore/StaticChunked.js"></script>
 
@@ -166,20 +167,21 @@
                                    // trackData: trackInfo,
                                   refSeqs: dataRoot + "/seq/refSeqs.json",
                                    include: [
-                                    // dataRoot + "/annotation_trackList.json", 
-                                     dataRoot + "/trackList.json"
-                                     //, dataRoot + "/bam_trackList.json"
-                                  ],
+                                      // dataRoot + "/debug_trackList.json"
+                                       dataRoot + "/trackList.json" 
+                                     // dataRoot + "/bam_trackList.json", 
+                                     // dataRoot + "/annotation_trackList.json"
+                                 ],
                                   // nameUrl: dataRoot + "/names/root.json",
-                                   defaultTracks: "DNA,RefSeq",
-                                   // defaultTracks: "DNA,Annotations",
+                                   defaultTracks: "DNA,Annotations,RefSeq",
+                                   // defaultTracks: "DNA", 
                                    queryParams: queryParams,
                                    location: queryParams.loc,
                                    // tracks: queryParams.tracks,
                                    // is bookmark superceded by show_nav, show_tracklist, show_overview
                                   //  after merge from GMOD/jbrowse:master ???
                                   // bookmark: bookmarkCallback,
-                                   forceTracks: queryParams.tracks,
+                                  // forceTracks: queryParams.tracks,
 				   show_nav: queryParams.nav,
 				   show_tracklist: queryParams.tracklist,
 				   show_overview: queryParams.overview
