@@ -10,12 +10,10 @@
     <link rel="stylesheet" type="text/css" href="jslib/dojo/resources/dojo.css"></link>
 
     <!-- load JQuery theme CSS remotely from Google CDN: -->
-    <!--
-    <link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/themes/base/jquery-ui.css"/>  
-     -->
+   <link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/themes/base/jquery-ui.css"/>  
 
     <!-- load JQuery theme CSS from WebApollo server -->
-    <link rel="stylesheet" type="text/css" href="jslib/jquery-ui.css"/> 
+    <!-- <link rel="stylesheet" type="text/css" href="jslib/jquery-ui.css"/>  -->
 
     <style type="text/css">
       html, body { height: 100%; width: 100%; padding: 0; border: 0; }
@@ -167,19 +165,15 @@
 				   // dataRoot: ""  // for dm3
                                    // refSeqs: refSeqs,
                                    // trackData: trackInfo,
-                                   // tracklists: [
- 				   //    {url: dataRoot + "/bam_trackList.json"}, 
-                                   //      {url: dataRoot + "/annotation_trackList.json"}, 
-                                   //      {url: dataRoot + "/trackList.json"} ], 
-                                   refSeqs: dataRoot + "/seq/refSeqs.json",
+                                  refSeqs: dataRoot + "/seq/refSeqs.json",
                                    include: [
-                                     // dataRoot + "/annotation_trackList.json", 
+                                    // dataRoot + "/annotation_trackList.json", 
                                      dataRoot + "/trackList.json"
                                      //, dataRoot + "/bam_trackList.json"
                                   ],
                                   // nameUrl: dataRoot + "/names/root.json",
-                                   // defaultTracks: "DNA,Annotations,RefSeq",
-                                   defaultTracks: "DNA,Annotations",
+                                   defaultTracks: "DNA,RefSeq",
+                                   // defaultTracks: "DNA,Annotations",
                                    queryParams: queryParams,
                                    location: queryParams.loc,
                                    // tracks: queryParams.tracks,

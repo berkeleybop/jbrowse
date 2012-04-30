@@ -87,6 +87,8 @@ Util.findNearest = function(numArray, num) {
  *                 e.g., 'htp://foo/someurl?arg=valueforbaz'
  */
 Util.fillTemplate = function(template, fillWith) {
+    console.log("called Util.fillTemplate(), template: " + template + ", fillWidth:");
+    console.log(fillWith);
     return template.replace(/\{([^}]+)\}/g,
                             function(match, group) {
                                 if (fillWith[group] !== undefined)
