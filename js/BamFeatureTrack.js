@@ -67,7 +67,10 @@ BamFeatureTrack.prototype = new DraggableFeatureTrack();
 BamFeatureTrack.prototype.load = function()  {
     // 1.3.1 MERGE: for BamFeatureTrack, possibly others, will need to pass in entire config (was trackMeta), so 
     //     need to change signature of featurestore constructor
-    this.featureStore = new SeqFeatureStore.BamPseudoListStore({
+//    var storeclass = BamPseudoListStore;
+//    this.featureStore = new SeqFeatureStore.BamPseudoListStore({
+//    this.featureStore = new storeclass( {
+    this.featureStore = new BamPseudoListStore( {
         urlTemplate: this.config.urlTemplate,
         baseUrl: this.config.baseUrl,
         refSeq: this.refSeq,
@@ -89,11 +92,11 @@ BamFeatureTrack.prototype.load = function()  {
  * 
  */
 BamFeatureTrack.prototype.loadSuccess = function(bamfile)  { 
+    console.log("BamFeatureTrack.loadSuccess called");
     this.bamfile = bamfile;   // bamfile is a BamFile from dalliance/js/bam.js, 
     // this.trackMeta is set in FeatureTrack.beforeLoad()
     // var trackInfo = this.trackMeta;
 
-    console.log("BamFile created, header and index set up");
     // now set up rest of fields normally populated in loadSuccess via load of trackData.js
 //    this.fields = BamUtils.fields;
 //    this.subFields = BamUtils.subFields;  
@@ -101,12 +104,8 @@ BamFeatureTrack.prototype.loadSuccess = function(bamfile)  {
     // possibly eventually do this by splitting feature based on skips in cigar string
     // this.subFields = BamUtils.subFields;
     // no url / basurl / importbaseurl needed, since BamFile already has url data for bam/bai access
-    
-    // now initialize BamPseudoNCList  
-//    this.features = new BamPseudoNCList();
-    this.features = new BamPseudoNCList(bamfile, this.refSeq, BamUtils.attrs);
-//    this.features.importExisting(bam, sublistIndex, lazyIndex)
-    this.attrs = BamUtils.attrs;
+
+    this.attrs = this.featureStore.attrs;
 
     this.initializeConfig();
 
@@ -167,7 +166,8 @@ BamFeatureTrack.prototype.getId = function(feature, path)  {
     var id = feature.uid;
     if (!id)  { 
 	// id = feature[BamUtils.ID] + "/" + feature[BamUtils.START] + "-" + feature[BamUtils.END];
-	id = this.features.getId(feature) + "/" + this.features.start(feature) + "-" + this.features.end(feature);
+//	id = this.features.getId(feature) + "/" + this.features.start(feature) + "-" + this.features.end(feature);
+	id = feature.get('id') + "/" + feature.get('start') + "-" + feature.get('end');
 	if (id) { feature.uid = id; }
     }
     return id;

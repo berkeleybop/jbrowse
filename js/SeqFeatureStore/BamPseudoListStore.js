@@ -1,4 +1,4 @@
-var SeqFeatureStore; if( !SeqFeatureStore) SeqFeatureStore = function() {};
+// var SeqFeatureStore; if( !SeqFeatureStore) SeqFeatureStore = function() {};
 
 /**
  * Implementation of SeqFeatureStore that accesses data from BAM file and BAI index, 
@@ -10,7 +10,7 @@ var SeqFeatureStore; if( !SeqFeatureStore) SeqFeatureStore = function() {};
  * @class
  * @extends SeqFeatureStore
  */
-SeqFeatureStore.BamPseudoListStore = function(args) {
+function BamPseudoListStore(args) {
     SeqFeatureStore.call( this, args );
     if( !args )
         return;
@@ -20,14 +20,9 @@ SeqFeatureStore.BamPseudoListStore = function(args) {
     this.config = args.config;
 };
 
-SeqFeatureStore.NCList.prototype = new SeqFeatureStore();
+BamPseudoListStore.prototype = new SeqFeatureStore();
 
-/**
- *  "url" arg is present to preserve load signature, but 
- *  index and datafile URLs are actually pulled from trackMeta
- *  currently "url" arg passed is undefined
- */
-SeqFeatureStore.BamPseudoListStore.prototype.load = function() {
+BamPseudoListStore.prototype.load = function() {
     console.log("called BamFeatureTrack.load()");  
     var trackMeta = this.config;
     var bamurl = Util.resolveUrl(trackMeta.sourceUrl, trackMeta.data_url);
@@ -46,23 +41,29 @@ SeqFeatureStore.BamPseudoListStore.prototype.load = function() {
     console.log("makeBam called");
 };
 
-/* NOT YET IMPLEMENTED */
-SeqFeatureStore.BamPseudoListStore.prototype.loadSuccess = function( bamfile) {
-
+BamPseudoListStore.prototype.loadSuccess = function( bamfile) {
+    console.log("BamPseudoListStore.loadSuccess called");
+    this.bamfile = bamfile;   // bamfile is a BamFile from dalliance/js/bam.js, 
+    // now initialize BamPseudoNCList  
+    this.nclist = new BamPseudoNCList(bamfile, this.refSeq, BamUtils.attrs);
+    this.attrs = BamUtils.attrs;
+// WARNING!  call to this.setLoaded is failing, attempts to call this.changed() but this is often not defined    
+//    this.setLoaded();
+    console.log("finished BamPseudoListStore.loadSuccess()");
 };
 
-SeqFeatureStore.BamPseudoListStore.prototype.loadFail = function(trackInfo,url) {
+BamPseudoListStore.prototype.loadFail = function(trackInfo,url) {
     this.empty = true;
     this.setLoaded();
 };
 
 // just forward histogram() and iterate() to our encapsulate nclist
-//SeqFeatureStore.BamPseudoListStore.prototype.histogram = function() {
+//BamPseudoListStore.prototype.histogram = function() {
 //    return this.nclist.histogram.apply( this.nclist, arguments );
 //};
 
 
-SeqFeatureStore.BamPseudoListStore.prototype.iterate = function( startBase, endBase, origFeatCallback, finishCallback ) {
+BamPseudoListStore.prototype.iterate = function( startBase, endBase, origFeatCallback, finishCallback ) {
     var that = this;
     var accessors = this.attrs.accessors(),
         /** @inner */
@@ -75,7 +76,7 @@ SeqFeatureStore.BamPseudoListStore.prototype.iterate = function( startBase, endB
 
 // helper method to recursively add a .get method to a feature and its
 // subfeatures
-SeqFeatureStore.BamPseudoListStore.prototype._add_getters = function(getter,feature) {
+BamPseudoListStore.prototype._add_getters = function(getter,feature) {
     var that = this;
     feature.get = getter;
     dojo.forEach( feature.get('subfeatures'), function(f) { that._add_getters( getter, f ); } );
