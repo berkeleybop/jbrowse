@@ -44,7 +44,8 @@ BamFeatureTrack.prototype = new DraggableFeatureTrack();
  *  index and datafile URLs are actually pulled from trackMeta
  *  currently "url" arg passed is undefined
  */
-BamFeatureTrack.prototype.load = function(url, trackMeta)  {
+/*
+ BamFeatureTrack.prototype.load = function(url, trackMeta)  {
     console.log("called BamFeatureTrack.load()");  
     var bamurl = Util.resolveUrl(trackMeta.sourceUrl, trackMeta.data_url);
     var baiurl = Util.resolveUrl(trackMeta.sourceUrl, trackMeta.index_url);
@@ -60,6 +61,27 @@ BamFeatureTrack.prototype.load = function(url, trackMeta)  {
     // equivalent??: makeBam(bamfetch, baifetch, curTrack.loadSuccess);
     console.log("makeBam called");
 }
+*/
+
+
+BamFeatureTrack.prototype.load = function()  {
+    // 1.3.1 MERGE: for BamFeatureTrack, possibly others, will need to pass in entire config (was trackMeta), so 
+    //     need to change signature of featurestore constructor
+    this.featureStore = new SeqFeatureStore.BamPseudoListStore({
+        urlTemplate: this.config.urlTemplate,
+        baseUrl: this.config.baseUrl,
+        refSeq: this.refSeq,
+        config: this.config, 
+        track: this
+    });
+    // connect the store and track loadSuccess and loadFailed events
+    // to eachother
+    dojo.connect( this.featureStore, 'loadSuccess', this, 'loadSuccess' );
+    dojo.connect( this.featureStore, 'loadFail',    this, 'loadFail' );
+    this.featureStore.load();
+    return this.featureStore;
+};
+
 
 /**
  *  missing but still needed?
@@ -88,7 +110,6 @@ BamFeatureTrack.prototype.loadSuccess = function(bamfile)  {
 
     this.initializeConfig();
 
-    // don't need subfeatureAray
     // don't ned histScale (not doing histograms yet)
     // need dummy labelScale, though no labels to show
     this.labelScale = 100; // in pixels/bp, so will never get scale > labelScale since max scale is CHAR_WIDTH pixels/bp
