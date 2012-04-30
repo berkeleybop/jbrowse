@@ -413,6 +413,24 @@ Browser.prototype.validateConfig = function() {
     }
     if( this.hasFatalErrors )
         throw "Errors in configuration, aborting.";
+
+    /* hack to support WebApollo pre-1.3.1-merge trackList format (slightly different than 1.3.1 format)
+     *    did have a config_data.config field, but it was eliminated and all subfields of it were pushed up to config_data, 
+     *    except in case where field already existed in config_data, in which case existing value takes priority
+     * Will either regenerate data soon and get rid of this hack, or refactor it out into a different ConfigAdaptor
+     */
+    for (var i=0; i<c.tracks.length; i++) {
+	var track = c.tracks[i];
+	if (track.config) {
+	    for (var field in track.config) {
+		if (track[field] === undefined)  {
+		    track[field] = track.config[field];
+		}
+	    }
+	    console.log("MODIFIED TRACK DATA:" + track.label);
+	    console.log(track);
+	}
+    }
 };
 
 /**
@@ -451,6 +469,8 @@ Browser.prototype.addDeferred = function(f) {
  * configuration.
  */
 Browser.prototype.addConfigData = function( /**Object*/ config_data ) {
+
+
     Util.deepUpdate( this.config, config_data );
 };
 
