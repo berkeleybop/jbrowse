@@ -122,16 +122,57 @@ JSONUtils.createJBrowseFeature = function(arep, afeature, classIndex)  {
 	var subarray = new Array();
 	arep.set(jfeature, "Subfeatures", subarray);
 	var clength = children.length;
+	var nonCanonicalSplicePositions = new Object();
 	for (var i = 0; i<clength; i++)  {
 	    var achild = children[i];
 //	    var jchild =  JSONUtils.createJBrowseFeature(achild, subfields, subfields);
 	    var jchild =  JSONUtils.createJBrowseFeature(arep, achild, 1);
 	    // jfeature[fields["subfeatures"]].push(jchild);
-	    subarray.push(jchild);
+	    
+	    // don't add non canonical splice sites as children - use for post processing of exon features
+//	    if (arep.get(jchild, "Type").match("non_canonical_(five|three)_prime_splice_site")) {
+//	    	nonCanonicalSplicePositions[arep.get(jchild, "Start")] = 1;
+//	    }
+//	    else {
+	    	subarray.push(jchild);
+//	    }
 	    if (jchild.manuallySetTranslationStart) {
 	    	jfeature.manuallySetTranslationStart = true;
 	    }
 	}
+	
+
+	/*
+	// process non canonical splice sites and update exons
+	for (var i = 0; i < subarray.length; ++i) {
+		var child = subarray[i];
+		if (arep.get(child, "Type") == "exon") {
+			var start = arep.get(child, "Start");
+			var end = arep.get(child, "End");
+
+			var nonCanonicalStart = nonCanonicalSplicePositions[start] != undefined;
+			var nonCanonicalEnd = nonCanonicalSplicePositions[end] != undefined;
+			
+//			if (nonCanonicalStart && nonCanonicalEnd) {
+//				arep.set(child, "Type", "exon_non_canonical_start_end");
+//			}
+//			else if (nonCanonicalStart) {
+//				arep.set(child, "Type", "exon_non_canonical_start");
+//			}
+//			else if (nonCanonicalEnd) {
+//				arep.set(child, "Type", "exon_non_canonical_end");
+//			}
+			
+//			if (nonCanonicalSplicePositions[start] != undefined) {
+//				child.nonCanonicalStartSpliceSite = true;
+//			}
+//			if (nonCanonicalSplicePositions[end] != undefined) {
+//				child.nonCanonicalEndSplieSite = true;
+//			}
+		}
+	}
+	*/
+	
     }
     // console.log("JSONUtils.createJBrowseFeature, output feature:");
     // console.log(jfeature);

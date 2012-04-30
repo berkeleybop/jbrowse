@@ -1314,7 +1314,26 @@ AnnotTrack.prototype.editComments = function()  {
 
 AnnotTrack.prototype.editCommentsForSelectedFeatures = function(annots) {
 	var track = this;
+	var annot = AnnotTrack.getTopLevelAnnotation(annots[0]);
+	// just checking to ensure that all features in selection are from this track
+	if (annot.track !== track)  {
+		return;
+	}
 	var content = dojo.create("div");
+	// if annotation has parent, get comments for parent
+	if (track.attrs.hasDefinedAttribute(annot, "parent_id")) {
+		var parentContent = this.createEditCommentsPanelForFeature(track.attrs.get(annot, "parent_id"), track.getUniqueTrackName());
+		dojo.attr(parentContent, "class", "parent_comments_div");
+		dojo.place(parentContent, content);
+	}
+	var annotContent = this.createEditCommentsPanelForFeature(annot.uid, track.getUniqueTrackName());
+	dojo.place(annotContent, content);
+	track.openDialog("Comments for " + track.attrs.get(annot, "Name"), content);
+};
+
+AnnotTrack.prototype.createEditCommentsPanelForFeature = function(uniqueName, trackName) {
+	var content = dojo.create("div");
+	var header = dojo.create("div", { class: "comment_header" }, content);
 	var table = dojo.create("table", { class: "comments" }, content);
 	var addButtonDiv = dojo.create("div", { class: "comment_add_button_div" }, content);
 	var addButton = dojo.create("button", { class: "comment_button", innerHTML: "Add comment" }, addButtonDiv);
@@ -1323,18 +1342,9 @@ AnnotTrack.prototype.editCommentsForSelectedFeatures = function(annots) {
 	var comments;
 	var commentTextFields;
 	var cannedComments;
-
-	var trackName = track.getUniqueTrackName();
-	var annot = AnnotTrack.getTopLevelAnnotation(annots[0]);
-	var uniqueName = annot.uid;
 	
-	var getComments = function(annot) {
-		var features = '"features": [ ';
-		// just checking to ensure that all features in selection are from this track
-		if (annot.track === track)  {
-		    features += ' { "uniquename": "' + uniqueName + '" } ';
-		}
-		features += ']';
+	var getComments = function() {
+		var features = '"features": [ { "uniquename": "' + uniqueName + '" } ]';
 		var operation = "get_comments";
     	var postData = '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }';
     	dojo.xhrPost( {
@@ -1346,6 +1356,7 @@ AnnotTrack.prototype.editCommentsForSelectedFeatures = function(annots) {
     	    load: function(response, ioArgs) {
     	    	var feature = response.features[0];
     	    	comments = feature.comments;
+    	    	header.innerHTML = "Comments for " + feature.type.name;
     	    },
     	    // The ERROR function will be called in an error case.
     	    error: function(response, ioArgs) { // 
@@ -1359,13 +1370,8 @@ AnnotTrack.prototype.editCommentsForSelectedFeatures = function(annots) {
 	};
 	
 	var addComment = function(comment) {
-		var features = '"features": [ ';
-		// just checking to ensure that all features in selection are from this track
-		if (annot.track === track)  {
-		    features += ' { "uniquename": "' + uniqueName + '", "comments": [ "' + comment + '" ] }';
-		}
-		features += ']';
-		var operation = "add_comments";
+        var features = '"features": [ { "uniquename": "' + uniqueName + '", "comments": [ "' + comment + '" ] } ]';
+        var operation = "add_comments";
     	var postData = '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }';
     	dojo.xhrPost( {
     	    postData: postData,
@@ -1385,13 +1391,8 @@ AnnotTrack.prototype.editCommentsForSelectedFeatures = function(annots) {
 	};
 	
 	var deleteComment = function(comment) {
-		var features = '"features": [ ';
-		// just checking to ensure that all features in selection are from this track
-		if (annot.track === track)  {
-		    features += ' { "uniquename": "' + uniqueName + '", "comments": [ "' + comment + '" ] }';
-		}
-		features += ']';
-		var operation = "delete_comments";
+        var features = '"features": [ { "uniquename": "' + uniqueName + '", "comments": [ "' + comment + '" ] } ]';
+        var operation = "delete_comments";
     	var postData = '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }';
     	dojo.xhrPost( {
     	    postData: postData,
@@ -1411,12 +1412,7 @@ AnnotTrack.prototype.editCommentsForSelectedFeatures = function(annots) {
 	};
 
 	var updateComment = function(oldComment, newComment) {
-		var features = '"features": [ ';
-		// just checking to ensure that all features in selection are from this track
-		if (annot.track === track)  {
-		    features += ' { "uniquename": "' + uniqueName + '", "old_comments": [ "' + oldComment + '" ], "new_comments": [ "' + newComment + '"] }';
-		}
-		features += ']';
+        var features = '"features": [ { "uniquename": "' + uniqueName + '", "old_comments": [ "' + oldComment + '" ], "new_comments": [ "' + newComment + '"] } ]';
 		var operation = "update_comments";
     	var postData = '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }';
     	dojo.xhrPost( {
@@ -1444,24 +1440,25 @@ AnnotTrack.prototype.editCommentsForSelectedFeatures = function(annots) {
 		for (var i = 0; i < comments.length; ++i) {
 			var row = dojo.create("tr", { }, table);
 			var col1 = dojo.create("td", { }, row);
-			var comment = dojo.create("textarea", { rows: 1, innerHTML: comments[i], row: i, readonly: true, class: "comment_area" }, col1);
+			var comment = dojo.create("textarea", { rows: 1, innerHTML: comments[i], readonly: true, class: "comment_area" }, col1);
 			commentTextFields.push(comment);
-			dojo.connect(comment, "onblur", comment, function() {
-				var index = dojo.attr(this, "row");
-				var newComment = dojo.attr(this, "value");
-				var oldComment = comments[index];
-				comments[index] = newComment;
-				dojo.attr(this, "readonly", true);
-				if (newComment && newComment.length > 0) {
-					if (oldComment.length == 0) {
-						addComment(newComment);
+			dojo.connect(comment, "onblur", comment, function(index) {
+				return function() {
+					var newComment = dojo.attr(this, "value");
+					var oldComment = comments[index];
+					comments[index] = newComment;
+					dojo.attr(this, "readonly", true);
+					if (newComment && newComment.length > 0) {
+						if (oldComment.length == 0) {
+							addComment(newComment);
+						}
+						else {
+							updateComment(oldComment, newComment);
+						}
+						dojo.style(cannedCommentsDiv, { display: "none" } );
 					}
-					else {
-						updateComment(oldComment, newComment);
-					}
-					dojo.style(cannedCommentsDiv, { display: "none" } );
 				}
-			});
+			}(i));
 			dojo.connect(comment, "onkeyup", comment, function() {
 				var newComment = dojo.attr(this, "value");
 				if (newComment && newComment.length > 0) {
@@ -1472,29 +1469,32 @@ AnnotTrack.prototype.editCommentsForSelectedFeatures = function(annots) {
 				}
 			});
 			var col2 = dojo.create("td", { }, row);
-			var delButton = dojo.create("button", { class: "comment_button", innerHTML: "Delete" /* "<img class='table_icon' src='img/trash.png' />" */, row: i }, col2);
-			dojo.connect(delButton, "onclick", delButton, function() {
-				var index = dojo.attr(this, "row");
-				var oldComment = comments[index];
-				comments.splice(index, 1);
-				updateTable();
-				deleteComment(oldComment);
-			});
+			var delButton = dojo.create("button", { class: "comment_button", innerHTML: "Delete" /* "<img class='table_icon' src='img/trash.png' />" */}, col2);
+			dojo.connect(delButton, "onclick", delButton, function(index) {
+				return function() {
+					var oldComment = comments[index];
+					comments.splice(index, 1);
+					updateTable();
+					deleteComment(oldComment);
+				}
+			}(i));
 			var col3 = dojo.create("td", { }, row);
-			var editButton = dojo.create("button", { class: "comment_button", innerHTML: "Edit" /*"<img class='table_icon' src='img/pencil.png' />*/, row: i }, col3);
-			dojo.connect(editButton, "onclick", editButton, function() {
-				var index = dojo.attr(this, "row");
-				dojo.attr(commentTextFields[index], "readonly", false);
-				commentTextFields[index].focus();
-			});
+			var editButton = dojo.create("button", { class: "comment_button", innerHTML: "Edit" /*"<img class='table_icon' src='img/pencil.png' />*/}, col3);
+			dojo.connect(editButton, "onclick", editButton, function(index) {
+				return function() {
+					dojo.attr(commentTextFields[index], "readonly", false);
+					commentTextFields[index].focus();
+				};
+			}(i));
 		}
 	};
 
 	var getCannedComments = function() {
 		dojo.style(cannedCommentsDiv, { display: "none"} );
 		
+		var features = '"features": [ { "uniquename": "' + uniqueName + '" } ]';
 		var operation = "get_canned_comments";
-    	var postData = '{ "track": "' + trackName + '", "operation": "' + operation + '" }';
+    	var postData = '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }';
     	dojo.xhrPost( {
     	    postData: postData,
     	    url: context_path + "/AnnotationEditorService",
@@ -1502,7 +1502,9 @@ AnnotTrack.prototype.editCommentsForSelectedFeatures = function(annots) {
     	    sync: true,
     	    timeout: 5000 * 1000, // Time in milliseconds
     	    load: function(response, ioArgs) {
-    	    	cannedComments = response.comments;
+    	    	var feature = response.features[0];
+    	    	cannedComments = feature.comments;
+    	    	cannedComments.unshift("Choose a comment");
     	    },
     	    // The ERROR function will be called in an error case.
     	    error: function(response, ioArgs) { // 
@@ -1517,9 +1519,11 @@ AnnotTrack.prototype.editCommentsForSelectedFeatures = function(annots) {
 		}
 		dojo.connect(cannedCommentsComboBox, "onchange", cannedCommentsComboBox, function() {
 			var commentTextField = commentTextFields[commentTextFields.length - 1];
-			dojo.attr(commentTextField, "value", dojo.attr(this, "value"));
-			commentTextField.focus();
-			dojo.style(cannedCommentsDiv, { display : "none" });
+			if (this.selectedIndex > 0) {
+				dojo.attr(commentTextField, "value", dojo.attr(this, "value"));
+				commentTextField.focus();
+				dojo.style(cannedCommentsDiv, { display : "none" });
+			}
 		});
 		
 
@@ -1534,10 +1538,10 @@ AnnotTrack.prototype.editCommentsForSelectedFeatures = function(annots) {
 		comment.focus();
 	});
 
-	getComments(annots[0]);
+	getComments();
 	getCannedComments();
 	updateTable();
-	track.openDialog("Comments for " + track.attrs.get(annot, "Name"), content);
+	return content;
 
 };
 
