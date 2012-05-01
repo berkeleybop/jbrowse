@@ -17,3 +17,6 @@ jslib/dojo-release-*-src/
 /extlib/
 autom4te.cache
 sample_data/raw/tomato
+jslib/dojo-1.5.0/*
+jslib/jquery-1.5/*
+jslib/jquery-ui-1.8.9.custom/*
