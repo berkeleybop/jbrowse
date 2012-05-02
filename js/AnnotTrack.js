@@ -310,8 +310,9 @@ AnnotTrack.prototype.renderSubfeature = function(feature, featDiv, subfeature,
 								       displayStart, displayEnd, block);
     /**
      *  setting up annotation resizing via pulling of left/right edges
+     *      but if subfeature is not selectable, do not bind mouse down
      */
-    if (subdiv && subdiv != null)  {
+    if (subdiv && subdiv != null && (! this.selectionManager.unselectableTypes[subfeature.get('type')]) )  {
 	$(subdiv).bind("mousedown", this.annotMouseDown);
     }
     return subdiv;

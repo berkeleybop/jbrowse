@@ -1,11 +1,12 @@
 
-function FeatureEdgeMatchManager(selectionManager) {
+function FeatureEdgeMatchManager() {
   // console.log("FeatureEdgeMatchManager constructor called");
   this.featSelectionManager = DraggableFeatureTrack.selectionManager;
   this.annotSelectionManager = AnnotTrack.annotSelectionManager;
   this.featSelectionManager.addListener(this);
   this.annotSelectionManager.addListener(this);
   this.verbose_edges = false;
+  this.unmatchableTypes = this.featSelectionManager.unselectableTypes;
 }
 
 FeatureEdgeMatchManager.singleton = new FeatureEdgeMatchManager();
@@ -13,7 +14,7 @@ FeatureEdgeMatchManager.SHOW_EDGE_MATCHES = true;
 
 /**
  *  since FeatureEdgeMatcher singleton is listening to both feature selection manager 
- *    and annot selectino manager, one of the manager clearing a selectino does not 
+ *    and annot selection manager, one of the manager clearing a selection does not 
  *    mean the other selection is cleared
  *  so in edge-matcher selectionCleared(), after removing edge-match styling, rechecking 
  *    selections and redoing styles for any remaining selections
@@ -95,6 +96,7 @@ FeatureEdgeMatchManager.prototype.selectionAdded = function(feat)  {
     // var smaxdex = source_subfields["end"]; 
 
     if (verbose_edges)  { console.log("qmin = " + qmin + ", qmax = " + qmax); }
+    var unmatchableTypes = this.unmatchableTypes;
     
     var ftracks = $("div.track").each( function(index, trackdiv)  {  
         var target_track = trackdiv.track;
@@ -139,10 +141,17 @@ FeatureEdgeMatchManager.prototype.selectionAdded = function(feat)  {
 			    // console.log(rsubdivs);
 			    for (var i in source_subfeats)  {
 				var ssfeat = source_subfeats[i];
+				if (unmatchableTypes[ssfeat.get('type')])  {  // don't do matching for source features of type registered as unmatchable
+				    continue;
+				}
+
 				var ssmin = source_attrs.get(ssfeat, "Start");
 				var ssmax = source_attrs.get(ssfeat, "End");
 				for (var j in target_subfeats)  {
 				    var tsfeat = target_subfeats[j];
+				    if (unmatchableTypes[tsfeat.get('type')])  {  // don't do matching for target features of type registered as unmatchable
+					continue;
+				    }
 				    var tsmin = target_attrs.get(tsfeat, "Start");
 				    var tsmax = target_attrs.get(tsfeat, "End");
 				    if (ssmin === tsmin || ssmax === tsmax)  {

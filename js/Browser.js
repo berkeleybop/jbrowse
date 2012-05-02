@@ -427,8 +427,8 @@ Browser.prototype.validateConfig = function() {
 		    track[field] = track.config[field];
 		}
 	    }
-	    console.log("MODIFIED TRACK DATA:" + track.label);
-	    console.log(track);
+	    // console.log("MODIFIED TRACK DATA:" + track.label);
+	    // console.log(track);
 	}
     }
 };

@@ -9,7 +9,10 @@ function FeatureSelectionManager()  {
     this.selected = [];
     this.listeners = [];
     this.clearOnAdd = null;
+    this.unselectableTypes = { "non_canonical_five_prime_splice_site" : true, 
+			       "non_canonical_three_prime_splice_site" : true };
 };
+
 
 /**
  *  sets an array of other FeatureSelectionManagers to call clearSelection() on 

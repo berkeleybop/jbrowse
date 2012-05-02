@@ -336,8 +336,9 @@ DraggableFeatureTrack.prototype.renderExonSegments = function(subfeature, subDiv
     if ((subEnd <= displayStart) || (subStart >= displayEnd)) return undefined;
 
     var segDiv;
-    // whole exon is untranslated
-    if (cdsMax <= subStart || cdsMin >= subEnd)  {
+    // whole exon is untranslated (falls outside wholeCDS range, or no CDS info found)
+    if ((cdsMin === undefined && cdsMax === undefined) ||    
+	(cdsMax <= subStart || cdsMin >= subEnd))  {
 	segDiv = document.createElement("div");
 	// not worrying about appending "plus-"/"minus-" based on strand yet
 	segDiv.className = UTRclass;
@@ -455,6 +456,11 @@ DraggableFeatureTrack.prototype.handleFeatureSelection = function(event)  {
     var featdiv = (event.currentTarget || event.srcElement);
     var feat = featdiv.feature;
     if (!feat)  { feat = featdiv.subfeature; }
+    
+    if (selman.unselectableTypes[feat.get('type')])  {
+	return;
+    }
+
     var already_selected = selman.isSelected(feat);
     var parent_selected = false;
     var parent = feat.parent;
@@ -609,6 +615,7 @@ DraggableFeatureTrack.prototype.handleFeatureDragSetup = function(event)  {
 
 DraggableFeatureTrack.prototype.onFeatureDoubleClick = function(event)  {
     var ftrack = this;
+    var selman = ftrack.selectionManager;
     // prevent event bubbling up to genome view and triggering zoom
     event.stopPropagation();
     var featdiv = (event.currentTarget || event.srcElement);
@@ -622,8 +629,8 @@ DraggableFeatureTrack.prototype.onFeatureDoubleClick = function(event)  {
     //  (but stop propagation for both features and subfeatures)
     // GAH TODO:  make this work for feature hierarchies > 2 levels deep
     var subfeat = featdiv.subfeature;
-    if (subfeat)  {
-	var selman = ftrack.selectionManager;
+   // if (subfeat && (! unselectableTypes[subfeat.get('type')]))  {  // only allow double-click parent selection for selectable features
+    if (subfeat && selman.isSelected(subfeat))  {  // only allow double-click of child for parent selection if child is already selected
 	var parent = subfeat.parent;
 	// select parent feature
 	// children (including subfeat double-clicked one) are auto-deselected in FeatureSelectionManager if parent is selected
@@ -643,34 +650,6 @@ DraggableFeatureTrack.prototype.onFeatureClick = function(event) {
     //    event.stopPropagation();
 };
 
-/** 
- * get highest level feature in feature hierarchy 
- * should be able to handle current two-level feature/subfeature hierarchy 
- *     (including non-feature descendants of feature div, such as arrowhead div)
- *   but also anticipating shift to multi-level feature hierarchy
- *   and/or feature/subfeature elements that have non-feature div descendants, possibly nested
- * elem should be a div for a feature or subfeature, or descendant div of feature or subfeature
- */
-/*DraggableFeatureTrack.prototype.getTopLevelFeatureDiv = function(elem)  {
-  while (!elem.feature)  {
-  elem = elem.parentNode;
-  if (elem === document)  {return null;} 
-  }
-  // found a feature, now crawl up hierarchy till top feature (feature with no parent feature)
-  while (elem.parentNode.feature)  {
-  elem = elem.parentNode;
-  }
-  return elem;
-  }
-*/
-
-/** returns parent feature div of subfeature div */
-/*
- *DraggableFeatureTrack.prototype.getParentFeatureDiv = function(elem)  {
- elem = elem.parentNode;
- return DraggableFeatureTrack.prototype.getLowestFeatureDiv(elem);
- }
-*/
 
 /** returns first feature or subfeature div (including itself) found when crawling towards root from branch in feature/subfeature/descendants div hierachy  */
 DraggableFeatureTrack.prototype.getLowestFeatureDiv = function(elem)  {
@@ -710,11 +689,7 @@ DraggableFeatureTrack.prototype.showRange = function(first, last, startBase, bpP
 DraggableFeatureTrack.prototype.endZoom = function(destScale, destBlockBases) {
     FeatureTrack.prototype.endZoom.call(this, destScale, destBlockBases);
     // this.scale = destScale;
-}
-
-
-
-
+};
 /*
   Copyright (c) 2010-2011 Berkeley Bioinformatics Open-source Projects & Lawrence Berkeley National Labs
 
