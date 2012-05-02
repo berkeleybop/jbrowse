@@ -295,7 +295,7 @@ div.tracklist-container {
    /* padding: 0px 0px 0px 0px; */
     /* font-size: 80%; */
     white-space: nowrap;
-    background-color: #eee;
+    /* background-color: #eee; */
     z-index: 10;
     cursor: pointer;
 }
@@ -312,7 +312,7 @@ div.tracklist-container {
     padding: 0px 0px 0px 0px;
     font-size: 80%;
     white-space: nowrap;
-    background-color: #ee0;
+    /* background-color: #ee0; */
     z-index: 10;
     cursor: pointer;
 }
@@ -2554,44 +2554,21 @@ div.generic_parent-hist {
     -ms-box-sizing: border-box;
 }
 
-.noncanonical-splice, 
-.plus-noncanonical-splice,  
-.minus-noncanonical-splice  { 
+.noncanonical-splice-site, 
+.plus-noncanonical-splice-site,  
+.minus-noncanonical-splice-site  { 
+    margin-left: -8px;
+    margin-top: -8px;  /* -12px */
+    padding-left: 8px;
+    padding-right: 8px;
     position: absolute;
     height: 16px;
-    width: 16px;
     z-index: 100;
-    background-image: url('img/warning_exclamation.png'); 
-}
-
-.noncanonical-splice2, 
-.plus-noncanonical-splice2,  
-.minus-noncanonical-splice2  { 
-    position: absolute;
-    height: 16px;
-    width: 16px;
-    z-index: 100;
-    background-image: url('img/warning_exclamation_small.png'); 
-}
-
-.noncanonical-splice3, 
-.plus-noncanonical-splice3,  
-.minus-noncanonical-splice3  { 
-    position: absolute;
-    height: 16px;
-    width: 16px;
-    z-index: 100;
-    background-image: url('img/marker_rounded_red.png'); 
-}
-
-.noncanonical-splice4, 
-.plus-noncanonical-splice4,  
-.minus-noncanonical-splice4  { 
-    position: absolute;
-    height: 16px;
-    width: 16px;
-    z-index: 100;
-    background-image: url('img/marker_squared_red.png'); 
+    background-image: url('img/exclamation_circle_orange.png'); */
+/*    background-image: url('img/warning_exclamation_small.png'); */
+/*    background-image: url('img/warning_exclamation.png');  */
+/*    background-image: url('img/marker_rounded_red.png'); */
+/*    background-image: url('img/marker_squared_red.png'); */
 }
 
 /*
