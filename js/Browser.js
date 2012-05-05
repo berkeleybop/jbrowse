@@ -773,6 +773,9 @@ Browser.prototype.navigateToLocation = function( location ) {
         this.onVisibleTracksChanged();
     }
 
+    // GAH temporary hack to fix loss of refseq cookie in JBrowse 1.3.1
+    dojo.cookie(this.container.id + "-refseq", this.refSeq.name, { expires: 60 });
+
     return;
     //this.view.centerAtBase( location.end );
 };
