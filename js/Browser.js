@@ -164,8 +164,7 @@ Browser.prototype.initSequence = function() {
 	seq = Util.matchRefSeqName(this.sortedRefNames[0], this.allRefs);
     }
     this.refSeq = seq;
-    console.log("finished initSequence(), refseq = " + this.refSeq);
-    console.log(this.refSeq);
+    console.log("finished initSequence(), refseq = " + this.refSeq.name);
 };
 
 Browser.prototype.initView = function() {
@@ -213,95 +212,6 @@ Browser.prototype.initView = function() {
     this.locationTrap.className = "locationTrap";
     topPane.appendChild(this.locationTrap);
     topPane.style.overflow="hidden";
-
-/* <<<<<<< HEAD:js/Browser.js
-    console.log("setting brwsr.origTracklist");
-    var cookieTracks = dojo.cookie(this.container.id + "-tracks");
-    if (this.config.tracks) {
-	console.log("setting to params.tracks");
-        this.origTracklist = this.config.tracks;
-    } else if (cookieTracks) {
-	console.log("setting to cookieTracks");
-        this.origTracklist = cookieTracks;
-    } else if (this.config.defaultTracks) {
-	console.log("setting to defaultTracks");
-        this.origTracklist = this.config.defaultTracks;
-    }
-    console.log("brwsr.origTracklist: " + brwsr.origTracklist);
-
-    Util.maybeLoad(this.config.refSeqs.url, this.config.refSeqs,
-                   function(o) {
-                       brwsr.addRefseqs(o);
-                   });
-    for (var i = 0; i < this.config.tracklists.length; i++) {
-        (function(tracklist) {
-             Util.maybeLoad(tracklist.url,
-                            tracklist,
-                            function(o) {
-                                brwsr.addDeferred(
-                                    function() {
-                                        brwsr.addTracklist(tracklist.url, o);
-                                    });
-                            });
-         })(this.config.tracklists[i]);
-    }
-};
-
-
- * Add a function to be executed once JBrowse is initialized
- * @param f function to be executed
-
-Browser.prototype.addDeferred = function(f) {
-    if (this.isInitialized)
-        f();
-    else {
-	console.log("pushed Browser.addDeferred to to deferred functions");
-        this.deferredFunctions.push(f);	
-    }
-
-};
-
-Browser.prototype.addTracklist = function(url, trackList) {
-    console.log("called Browser.addTrackList, url: " + url);
-    if (1 == trackList.formatVersion) {
-        for (var i = 0; i < trackList.tracks.length; i++)
-            trackList.tracks[i].sourceUrl = url;
-        this.trackListWidget.insertNodes(false, trackList.tracks);
-	console.log("this.origTracklist: " + this.origTracklist);
-        this.showTracks(this.origTracklist);
-    } else {
-        throw "track list format " + trackList.formatVersion + " not supported";
-    }
-};
-
-Browser.prototype.addRefseqs = function(refSeqs) {
-    //currently only meant to be called once
-    console.log("************ Browser.addRefSeqs called ***************");
-    this.allRefs = {};
-    for (var i = 0; i < refSeqs.length; i++)
-        this.allRefs[refSeqs[i].name] = refSeqs[i];
-
-    var refCookie = dojo.cookie(this.config.containerID + "-refseq");
-    this.refSeq = refSeqs[0];
-    console.log("initial refSeq: " + this.refSeq.name);
-    for (var i = 0; i < refSeqs.length; i++) {
-        this.chromList.options[i] = new Option(refSeqs[i].name,
-                                               refSeqs[i].name);
-        if (refSeqs[i].name.toUpperCase() == String(refCookie).toUpperCase()) {
-            this.refSeq = this.allRefs[refSeqs[i].name];
-	    console.log("new refSeq from cookie: " + this.refSeq.name);
-            this.chromList.selectedIndex = i;
-        }
-    }
-    console.log("chose refSeq: " + this.refSeq.name);
-
-    //hook up GenomeView
-    var gv = new GenomeView(this.viewElem, 250, this.refSeq, 1/200,
-                            this.config.browserRoot);
-    this.view = gv;
-    //gv.setY(0);
-    this.viewElem.view = gv;
-*/
 
     // figure out what initial track list we will use:
     //    from a param passed to our instance, or from a cookie, or
@@ -645,8 +555,6 @@ Browser.prototype.createTrackList = function( /**Element*/ parent ) {
     }
 
     var trackCreate = /**@inner*/ function( trackConfig, hint) {
-	console.log("called (Browser).trackCreate() for track: " + trackConfig.label);
-	console.log(trackConfig);
         var node;
         if ("avatar" == hint) {
             return trackListCreate( trackConfig, hint);
@@ -736,7 +644,6 @@ Browser.prototype.addTracks = function(trackList, replace) {
 Browser.prototype.navigateTo = function(loc) {
     var brwsr = this;
     if (!this.isInitialized) {
-	console.log("pushing Browser.navigateTo to deferred functions");
         this.deferredFunctions.push(function() { brwsr.navigateTo(loc); });
 	return;
     }
@@ -878,8 +785,6 @@ Browser.prototype.searchNames = function( loc ) {
  */
 
 Browser.prototype.showTracks = function(trackNameList) {
-    console.log("Browser.showTracks():");
-    console.log(trackNameList);
     if (!this.isInitialized) {
         var brwsr = this;
 	// console.log("pushed Browser.showTracks to deferred functions");
@@ -893,7 +798,6 @@ Browser.prototype.showTracks = function(trackNameList) {
     var removeFromList = [];
     var brwsr = this;
     for (var n = 0; n < trackNames.length; n++) {
-	console.log("trackName: " + trackNames[n]);
         this.trackListWidget.forInItems(function(obj, id, map) {
                 if (trackNames[n] == obj.data.label) {
                     brwsr.viewDndWidget.insertNodes(false, [obj.data]);
