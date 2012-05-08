@@ -123,6 +123,51 @@ Browser.prototype.loadNames = function() {
         this.names = new LazyTrie(this.config.nameUrl, "lazy-{Chunk}.json");
 };
 
+/**
+ *  sets this.refSeq 
+ *      should be called after list of available seqs is loaded, and before GenomeView constructor
+ *  determines what sequence to show on initialization, based on 
+ *      URL, passed in params, cookies, defaults, etc.
+ *      (initial visible range of sequence is determined elsewhere, in navigateTo() method) 
+ *
+ *  Priority of sequence specifiers:
+ *      #1) URL "loc" query param (and hence Browser.config.location)
+ *      #2) GenomeBrowser-refseq cookie
+ *      #3) defaultLocation Browser param (Browser.config.defaultLocation)
+ *      #4) first seq in refseqs list loaded in loadRefSeqs
+ */
+Browser.prototype.initSequence = function() {
+    var seq = null;
+    var loc;
+    var seqname;
+    // #1) URL "loc" query param
+    if (this.config.location) {
+	loc = Util.parseLocString(this.config.location);
+	if (loc) { seqname = loc.ref; }
+	else  { seqname = this.config.location; }
+	seq = Util.matchRefSeqName(seqname, this.allRefs);
+    }
+    // #2) GenomeBrowser-refseq cookie
+    if (!seq) {
+	seqname = dojo.cookie(this.config.containerID + "-refseq");
+	if (seqname)  { seq = Util.matchRefSeqName(seqname, this.allRefs); }
+    }
+    // #3) defaultLocation Browser param (Browser.config.defaultLocation)
+    if (!seq && this.config.defaultLocation) {
+	loc = Util.parseLocString(this.config.defaultLocation);
+	if (loc) { seqname = loc.ref; }
+	else  { seqname = this.config.defaultLocation; }
+	seq = Util.matchRefSeqName(seqname, this.allRefs);
+    }
+    // #4) first seq in refseqs list loaded in loadRefSeqs
+    if (!seq) {
+	seq = Util.matchRefSeqName(this.sortedRefNames[0], this.allRefs);
+    }
+    this.refSeq = seq;
+    console.log("finished initSequence(), refseq = " + this.refSeq);
+    console.log(this.refSeq);
+};
+
 Browser.prototype.initView = function() {
     //set up top nav/overview pane and main GenomeView pane
     dojo.addClass(document.body, "tundra");
@@ -138,6 +183,9 @@ Browser.prototype.initView = function() {
     // overview=0 hides the overview, but we still need it to exist
     if( this.config.show_overview == 0 ) overview.style.cssText = "display: none";
     topPane.appendChild(overview);
+
+    // setting this.refSeq
+    this.initSequence();
 
     this.navbox = this.createNavBox( topPane, 25 );
 
@@ -479,10 +527,13 @@ Browser.prototype.addConfigData = function( /**Object*/ config_data ) {
  */
 Browser.prototype.addRefseqs = function( refSeqs ) {
     this.allRefs = this.allRefs || {};
-    this.refSeq  = this.refSeq  || refSeqs[0];
+    this.sortedRefNames = this.sortedRefName || [];
+    // this.refSeq  = this.refSeq  || refSeqs[0];
     dojo.forEach( refSeqs, function(r) {
         this.allRefs[r.name] = r;
+        this.sortedRefNames.push(r.name);
     },this);
+    this.sortedRefNames = this.sortedRefNames.sort();
 };
 
 /**
@@ -1164,18 +1215,15 @@ Browser.prototype.createNavBox = function( parent, locLength ) {
     this.chromList = document.createElement("select");
     this.chromList.id="chrom";
 
-    var refCookie = dojo.cookie(this.config.containerID + "-refseq");
+
+
+    // refnames = refnames.sort();  // now replaced by this.sortedRefNames, populated in Browser.addRefSeqs
+    var curSeqName = this.refSeq.name.toUpperCase();
     var i = 0;
-    var refnames = [];
-    for ( var name in this.allRefs ) {
-        if( this.allRefs.hasOwnProperty(name) )
-            refnames.push( name );
-    }
-    refnames = refnames.sort();
-    dojo.forEach( refnames, function(name) {
+    dojo.forEach( this.sortedRefNames, function(name) {
         this.chromList.add( new Option( name, name) );
-        if ( name.toUpperCase() == String(refCookie).toUpperCase()) {
-            this.refSeq = this.allRefs[name];
+        if ( name.toUpperCase() == curSeqName ) {
+            // this.refSeq = this.allRefs[name];
             this.chromList.selectedIndex = i;
         }
         i++;
