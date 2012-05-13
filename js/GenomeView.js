@@ -763,7 +763,14 @@ GenomeView.prototype._locationBpToPix = function(gvbp)  {
 };
 
 /**
- *  for the input mouse event, returns genome coord (base pair position) under mouse
+ *  for the input mouse event, returns genome position under mouse IN 1-BASED INTERBASE COORDINATES
+ *  WARNING: returns base position relative to UI coordinate system 
+ *       (which is 1-based interbase)
+ *  But for most elements in genome view (features, graphs, etc.) the underlying data structures are 
+ *       in 0-base interbase coordinate system
+ *  So if you want data structure coordinates, you need to do (getUiGenomeCoord() - 1)
+ *       or use the convenience function getGenomeCoord()
+ *
  *  event can be on GenomeView.elem or any descendant DOM elements (track, block, feature divs, etc.)
  *  assumes:
  *      event is a mouse event (plain Javascript event or JQuery event)
@@ -773,11 +780,11 @@ GenomeView.prototype._locationBpToPix = function(gvbp)  {
  *      if in IE<9, either page is not scrollable (in the HTML page sense) OR event is JQuery event
  *         (currently JBrowse index.html page is not scrollable (JBrowse internal scrolling is NOT same as HTML page scrolling))
  */
-GenomeView.prototype.getGenomeCoord = function(event)  {
+GenomeView.prototype.getUiGenomeCoord = function(event)  {
     var relXY = Util.relativeXY(event, this.zoomContainer);
     var relX = relXY.x - this.x; // adjust for diff between zoomContainer and GenomeView 
-    return Math.round(this._locationPixToBp(relX));
-    // equivalent:
+    return Math.floor(this._locationPixToBp(relX));
+    // equivalent to Math.floor() of:
     //    this.minVisible() + this.pxToBp(relX);
     //    this.pxToBp(this.x + this.offset) + this.pxToBp(relXY.x - this.x);
     //    (this.x + this.offset)/this.pxPerBp + (relXY.x - this.x)/this.pxPerBp;
@@ -785,8 +792,31 @@ GenomeView.prototype.getGenomeCoord = function(event)  {
     //    this.pxToBp(this.offset + relXY.x)
     // 
     // so could be rewritten as:
-    // return Math.round(this.pxToBp(this.offset + relXY.x));
+    // return Math.floor(this.pxToBp(this.offset + relXY.x));
 };
+
+
+/**
+ *  for the input mouse event, returns genome position under mouse IN 0-BASED INTERBASE COORDINATES
+ *  WARNING:
+ *  returns genome coord in 0-based interbase (which is how internal data structure represent coords), 
+ *       instead of 1-based interbase (which is how UI displays coordinates)
+ *  if need display coordinates, use getUiGenomeCoord() directly instead
+ *  
+ *  otherwise same capability and assumptions as getUiGenomeCoord(): 
+ *  event can be on GenomeView.elem or any descendant DOM elements (track, block, feature divs, etc.)
+ *  assumes:
+ *      event is a mouse event (plain Javascript event or JQuery event)
+ *      elem is a DOM element OR JQuery wrapped set (in which case result is based on first elem in result set)
+ *      elem is displayed  (see JQuery.offset() docs)
+ *      no border/margin/padding set on the doc <body> element  (see JQuery.offset() docs)
+ *      if in IE<9, either page is not scrollable (in the HTML page sense) OR event is JQuery event
+ *         (currently JBrowse index.html page is not scrollable (JBrowse internal scrolling is NOT same as HTML page scrolling))
+ * 
+ */
+GenomeView.prototype.getGenomeCoord = function(event)  {
+    return this.getUiGenomeCoord(event) - 1;
+}
 
 GenomeView.prototype.showFine = function() {
     this.onFineMove(this.minVisible(), this.maxVisible());
