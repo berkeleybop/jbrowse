@@ -177,6 +177,7 @@ div.blank-block {
 div.sequence {
     position: absolute;
     left: 0px;
+    top: 15px;
     /* Courier New is preferred by JBrowse, but it looks too light in Firefox, and jagged in Chrome */
     /* font-family: Courier New,monospace; */
     font-family: monospace;
@@ -184,7 +185,28 @@ div.sequence {
     letter-spacing: 2px;
     padding-left: 2px;
     z-index: 15;
+    cursor: pointer; 
 }
+
+div.sequence .dna-residues.forward-strand {
+    color: black;
+}
+
+div.sequence .dna-residues.reverse-strand {
+    color: gray;
+}
+
+
+/* don't think this is currently (April 2012) being used */
+div.sequence .highlighted {
+    background: #ff0;
+}
+
+/*  not used anymore (using dna-residues, forward-strand, reverse-strand 
+div.sequence .revcom {
+    color: red;
+}
+*/
 
 div.annot-sequence  {
     position: absolute;
@@ -2257,7 +2279,7 @@ div.generic_parent-hist {
 .plus-bam, 
 .minus-bam {
     position: absolute;
-    height: 2px; 
+    height: 3px; 
     margin-top: 0px;
     background-color: #AACDDC;
     z-index: 8;
@@ -2558,7 +2580,7 @@ div.generic_parent-hist {
 .plus-noncanonical-splice-site,  
 .minus-noncanonical-splice-site  { 
     margin-left: -8px;
-    margin-top: -8px;  /* -12px */
+    margin-top: -11px;  
     padding-left: 8px;
     padding-right: 8px;
     position: absolute;
@@ -2579,6 +2601,39 @@ div.generic_parent-hist {
     height: 7px;
 }
 */
+
+.deletion, 
+.plus-deletion,
+.minus-deletion {
+    position: absolute;
+    border-style: solid;
+    border-color: blue;
+    border-width: 1px;
+    height: 100%;
+    background-color: rgba(150,0,0,0.5);
+}
+
+.insertion, 
+.plus-insertion,
+.minus-insertion {
+    position: absolute;
+    border-style: solid;
+    border-color: green;
+    border-width: 1px;
+    height: 100%;
+    background-color: rgba(0,150,0,0.5);
+}
+
+.substitution, 
+.plus-substitution,
+.minus-substitution {
+    position: absolute;
+    border-style: solid;
+    border-color: blue;
+    border-width: 1px;
+    height: 100%;
+    background-color: rgba(250,250,0,0.5);
+}
 
 .plus-trellis-arrowhead, 
 .plus-annot-arrowhead {
@@ -2691,6 +2746,8 @@ div.generic_parent-hist {
     outline-color: red;
     outline-width: 3px;
 }
+
+
 
 /**
 *  diagnostics for tiling images (in ImageTracks)

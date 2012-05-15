@@ -8,7 +8,7 @@
 function FeatureSelectionManager()  {
     this.selected = [];
     this.listeners = [];
-    this.clearOnAdd = null;
+    this.clearOnAdd = [];
     this.unselectableTypes = { "non_canonical_five_prime_splice_site" : true, 
 			       "non_canonical_three_prime_splice_site" : true };
 };
@@ -20,9 +20,12 @@ function FeatureSelectionManager()  {
  *     effectively ensures that selection is mutually exclusive between this manager 
  *        and the set of other managers passed in as setClearOnAdd args
  */
-FeatureSelectionManager.prototype.setClearOnAdd = function(other_smanagers)  {
-    this.clearOnAdd = other_smanagers;
-};
+//FeatureSelectionManager.prototype.setClearOnAdd = function(other_smanagers)  {
+//    this.clearOnAdd = other_smanagers;
+//};
+FeatureSelectionManager.prototype.addMutualExclusion = function(other_smanager)  {
+    this.clearOnAdd.push(other_smanager);
+}
 
 // adding a parent should remove all children
 // adding a child should remove all parents

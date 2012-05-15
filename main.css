@@ -196,9 +196,12 @@ div.sequence {
 div.sequence .highlighted {
     background: #ff0;
 }
+
+/*  not used anymore (using dna-residues, forward-strand, reverse-strand 
 div.sequence .revcom {
     color: red;
 }
+*/
 
 /*
 div.minus-feature:before {

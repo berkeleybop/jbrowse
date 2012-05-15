@@ -64,7 +64,7 @@ function AnnotTrack(trackMeta, refSeq, browserParams) {
     this.verbose_render = false;
 }
 
-AnnotTrack.listeners = new Array();
+AnnotTrack.listeners = [];
 
 // Inherit from DraggableFeatureTrack 
 AnnotTrack.prototype = new DraggableFeatureTrack();
@@ -74,8 +74,11 @@ AnnotTrack.annotSelectionManager = new FeatureSelectionManager();
 // setting up selection exclusiveOr -- 
 //    if selection is made in annot track, any selection in other tracks is deselected, and vice versa, 
 //    regardless of multi-select mode etc.
-AnnotTrack.annotSelectionManager.setClearOnAdd(new Array(DraggableFeatureTrack.selectionManager));
-DraggableFeatureTrack.selectionManager.setClearOnAdd(new Array(AnnotTrack.annotSelectionManager));
+//AnnotTrack.annotSelectionManager.setClearOnAdd( [DraggableFeatureTrack.selectionManager, SequenceTrack.selectionManager] );
+//DraggableFeatureTrack.selectionManager.setClearOnAdd( [AnnotTrack.annotSelectionManager, SequenceTrack.selectionManager] );
+AnnotTrack.annotSelectionManager.addMutualExclusion(DraggableFeatureTrack.selectionManager);
+// AnnotTrack.annotSelectionManager.addMutualExclusion(SequenceTrack.seqSelectionManager);
+DraggableFeatureTrack.selectionManager.addMutualExclusion(AnnotTrack.annotSelectionManager);
 
 /**
  *  only set USE_COMET true if server supports Servlet 3.0 comet-style long-polling, and web app is propertly set up for async
@@ -443,7 +446,7 @@ AnnotTrack.prototype.onFeatureMouseDown = function(event) {
     //     this keeps selection from getting confused, 
     //     and keeps trigger(event) in draggable setup from causing infinite recursion 
     //     in event handling calls to featMouseDown
-    if (ftrack.drag_create)  { 
+/*    if (ftrack.drag_create)  { 
 	if (ftrack.verbose_selection || ftrack.verbose_drag)  {
 	    console.log("DFT.featMouseDown re-triggered event for drag initiation, drag_create: " + ftrack.drag_create);
 	    console.log(ftrack);
@@ -454,6 +457,8 @@ AnnotTrack.prototype.onFeatureMouseDown = function(event) {
 	this.handleFeatureSelection(event);
 	// this.handleFeatureDragSetup(event);
     }
+*/
+    this.handleFeatureSelection(event);
 };
 
 /** 
@@ -480,10 +485,15 @@ AnnotTrack.prototype.onAnnotMouseDown = function(event)  {
 		console.log("making annotation resizable");
 		console.log(featdiv);
 	    }
+	    var scale = track.gview.bpToPx(1);
+	    // if zoomed int to showing sequence residues, then make edge-dragging snap to interbase pixels
+	    if (scale === track.browserParams.charWidth) { var gridvals = [track.browserParams.charWidth, 1]; }
+	    else  { var gridvals = false; }
 	    $(featdiv).resizable( {
 		handles: "e, w",
 		helper: "ui-resizable-helper",
 		autohide: false, 
+                grid: gridvals, 
 
 		stop: function(event, ui)  {
 		    if (verbose_resize) { 
