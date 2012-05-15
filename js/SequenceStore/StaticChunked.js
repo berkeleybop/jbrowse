@@ -21,6 +21,76 @@ SequenceStore.StaticChunked = function(args) {
 SequenceStore.StaticChunked.prototype = new Store('');
 
 /**
+ *  WARNING
+ *  WebApollo version, modified from JBrowse trunk
+ *  in JBrowse, callback is passed original start and end genome coord parameters
+ *  in WebApollo, callback is passed start and end genome coords of residues being retrieved from 
+ *          the currently processed chunk
+ */
+/*  getRange moved to SequenceStore / StaticChunked in JBrowse 1.3.1
+SequenceTrack.prototype.getRange = function(start, end, callback) {
+    //start: start coord, in interbase
+    //end: end coord, in interbase
+    //    interbase, so residues retrieved from chunk are start to end-1
+    //callback: function called for every chunk that overlaps range, 
+    //            takes (chunkstart, chunkend, chunkseq)
+    var firstChunk = Math.floor( Math.max(0,start) / this.chunkSize);
+    var lastChunk = Math.floor((end - 1) / this.chunkSize);
+    // var callbackInfo = {start: start, end: end, callback: callback};
+    var chunkSize = this.chunkSize;
+    var chunk;
+
+    for (var i = firstChunk; i <= lastChunk; i++) {
+        //console.log("working on chunk %d for %d .. %d", i, start, end);
+        chunk = this.chunks[i];
+	var chunkStart = i * chunkSize; // start of chunk in base coords (relative to start of seq
+	var chunkEnd = (i+1) * chunkSize;   // end """""""
+	var resStart = Math.max(chunkStart, start);  // start of requested residues for this chunk
+	var resEnd = Math.min(chunkEnd, end);   // end of requested residues for this chunk
+        if (chunk) {
+            if (chunk.loaded) {
+//		callback(start - (i * chunkSize), end - (*)
+//                callback(start, end,
+                callback(resStart, resEnd, 
+                         chunk.sequence.substring(resStart - (i * chunkSize),
+                                                  resEnd - (i * chunkSize)));
+            } else {
+                //console.log("added callback for %d .. %d", start, end);
+		var callbackInfo = {start: resStart, end: resEnd, callback: callback};		   
+                chunk.callbacks.push(callbackInfo);
+            }
+        } else {
+	    var callbackInfo = {start: resStart, end: resEnd, callback: callback};		   
+            chunk = {
+                loaded: false,
+                num: i,
+                callbacks: [callbackInfo]
+            };
+            this.chunks[i] = chunk;
+            dojo.xhrGet({
+                            url: this.url + i + ".txt",
+                            load: function (response) {
+                                var ci;
+                                chunk.sequence = response;
+				// console.log(response);
+                                for (var c = 0; c < chunk.callbacks.length; c++) {
+                                    ci = chunk.callbacks[c];
+                                    ci.callback(ci.start,
+                                                ci.end,
+                                                response.substring(ci.start - (chunk.num * chunkSize),
+                                                                   ci.end - (chunk.num * chunkSize)));
+                                }
+                                chunk.callbacks = undefined;
+                                chunk.loaded = true;
+                            }
+                        });
+        }
+    }
+};
+*/
+
+
+/**
  * @param {Object} seq object describing the sequence to operate on
  * @param {Number} start start coord, in interbase
  * @param {Number} end end coord, in interbase
