@@ -88,10 +88,11 @@ DraggableFeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
 	    //    and no shift modifier, 
 	    //    then deselect all
 	    if (this.verbose_selection)  { console.log("mouse up on track whitespace"); }
+	    var eventModifier = event.shiftKey || event.altKey || event.metaKey || event.ctrlKey;
 	    if (track.last_whitespace_mousedown_loc && 
 		xup === track.last_whitespace_mousedown_loc[0] && 
 		yup === track.last_whitespace_mousedown_loc[1] && 
-		(! event.shiftKey) )  {
+		(! eventModifier ))  {
 		var timestamp = new Date();
 		var prev_timestamp = track.last_whitespace_mouseup_time;
 		track.last_whitespace_mouseup_time = timestamp;
@@ -493,6 +494,12 @@ DraggableFeatureTrack.prototype.handleFeatureSelection = function(event)  {
 	    // children are auto-deselected by selection manager when parent is selected
 	    selman.addToSelection(feat);
 	}
+    }
+    else if (event.altKey) {
+    }
+    else if (event.ctrlKey) {
+    }
+    else if (event.metaKey) {
     }
     else  {  // no shift modifier
 	if (already_selected)  {  // if this selected, do nothing (this remains selected)

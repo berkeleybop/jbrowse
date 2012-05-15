@@ -188,18 +188,34 @@ AnnotTrack.prototype.createAnnotationChangeListener = function() {
 		if (changeData.operation == "ADD") {
 		    console.log("ADD command from server: ");
 		    console.log(changeData);
-		    track.addFeatures(changeData.features);
+		    if (changeData.sequenceAltererationEvent) {
+		    	track.getSequenceTrack().addSequenceAlterations(changeData.features);
+		    }
+		    else {
+		    	track.addFeatures(changeData.features);
+		    }
 		}
 		else if (changeData.operation == "DELETE") {
 		    console.log("DELETE command from server: ");
 		    console.log(changeData);
-		    track.deleteFeatures(changeData.features);
+		    if (changeData.sequenceAltererationEvent) {
+		    	track.getSequenceTrack().removeSequenceAlterations(changeData.features);
+		    }
+		    else {
+		    	track.deleteFeatures(changeData.features);
+		    }
 		}
 		else if (changeData.operation == "UPDATE") {
 		    console.log("UPDATE command from server: ");
 		    console.log(changeData);
-		    track.deleteFeatures(changeData.features);
-		    track.addFeatures(changeData.features);
+		    if (changeData.sequenceAltererationEvent) {
+		    	track.getSequenceTrack().removeSequenceAlterations(changeData.features);
+		    	track.getSequenceTrack().addSequenceAlterations(changeData.features);
+		    }
+		    else {
+		    	track.deleteFeatures(changeData.features);
+		    	track.addFeatures(changeData.features);
+		    }
 		}
 		else  {
 		    console.log("UNKNOWN command from server: ");
