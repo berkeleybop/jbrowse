@@ -606,19 +606,20 @@ FeatureTrack.prototype.transfer = function(sourceBlock, destBlock, scale,
                 delete sourceBlock.featureNodes[overlaps[i].id];
 
                 var featDiv =
-                    this.renderFeature(sourceSlot.feature, overlaps[i].id,
-                                   destBlock, scale,
-                                   containerStart, containerEnd);
-                destBlock.appendChild(featDiv);
+                    this.addFeatureToBlock(sourceSlot.feature, overlaps[i].id,
+					   destBlock, scale,
+					   containerStart, containerEnd);
             }
         }
     }
 };
 
+
 FeatureTrack.prototype.fillFeatures = function(blockIndex, block,
                                                leftBlock, rightBlock,
                                                leftBase, rightBase, scale,
                                                containerStart, containerEnd) {
+    // console.log("FeatureTrack.fillFeatures() called");
     //arguments:
     //block: div to be filled with info
     //leftBlock: div to the left of the block to be filled
@@ -667,15 +668,24 @@ FeatureTrack.prototype.fillFeatures = function(blockIndex, block,
 	    uniqueId = curTrack.getId(feature, path);
 	    // feature.uniqueId = uniqueId;  // should be set in getId(), but just making sure
 	} 
+
+	if (uniqueId == "HWUSI-EAS594-R_0059:2:36:10569:14568#ACAGTG/294595-294695") {
+	    console.log("FOUND BAM TEST FEATURE");
+	}
         //console.log("ID " + uniqueId + (layouter.hasSeen(uniqueId) ? " (seen)" : " (new)"));
         if (layouter.hasSeen(uniqueId)) {
             //console.log("this layouter has seen " + uniqueId);
             return;
         }
-        var featDiv =
+/*
+          var featDiv =
             curTrack.renderFeature(feature, uniqueId, block, scale,
                                    containerStart, containerEnd);
         block.appendChild(featDiv);
+*/
+          var featDiv =
+            curTrack.addFeatureToBlock(feature, uniqueId, block, scale,
+                                       containerStart, containerEnd);
     };
 
     var startBase = goLeft ? rightBase : leftBase;
@@ -783,6 +793,17 @@ FeatureTrack.prototype.measureStyles = function() {
     }
 };
 
+/** 
+ *  GAH refactored combo of creating div and adding to block, to 
+ *     allow subclass override where block may have substructure.
+ */
+FeatureTrack.prototype.addFeatureToBlock = function(feature, uniqueId, block, scale,
+                                                containerStart, containerEnd) {
+    var featDiv =
+        this.renderFeature(feature, uniqueId, block, scale, containerStart, containerEnd);
+    block.appendChild(featDiv);
+};
+
 FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
                                                 containerStart, containerEnd) {
     if (!feature.uid)  {  // should have been set before in getId(), but just making sure
@@ -851,20 +872,32 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
     featDiv.layoutEnd = featureEnd;
 
     block.featureNodes[uniqueId] = featDiv;
+    
+    // WebApollo: if no className given in trackList entry, indicates should determine class 
+    //    based on feature type 
+    //    this is temporary fix for tracks that have multiple types of top-level features, with different rendering 
+    //       for each.  Should really merge className and subfeatureClasses with some default for non-types toplevels?
+    var cname = this.config.style.className;
+    if (cname == "{type}") {
+	var ftype = feature.get('type');
+	// console.log("determining style based on type: " + ftype);
+	if (ftype) { cname = ftype; }
+	else  { cname = "unknown"; }
+    }
 
     var strand = feature.get('strand');
     switch (strand) {
     case 1:
     case '+':
-        featDiv.className = "plus-" + this.config.style.className; break;
+        featDiv.className = "plus-" + cname; break;
     case 0:
     case '.':
     case null:
     case undefined:
-        featDiv.className = this.config.style.className; break;
+        featDiv.className = cname; break;
     case -1:
     case '-':
-        featDiv.className = "minus-" + this.config.style.className; break;
+        featDiv.className = "minus-" + cname; break;
     }
 
     var phase = feature.get('phase');
