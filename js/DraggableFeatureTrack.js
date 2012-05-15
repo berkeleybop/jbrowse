@@ -1,7 +1,7 @@
 
 /*  Subclass of FeatureTrack that allows features to be dragged and dropped into the annotation track to create annotations. */
-function DraggableFeatureTrack(trackMeta, refSeq, browserParams) {
-    FeatureTrack.call(this, trackMeta, refSeq, browserParams);
+function DraggableFeatureTrack(config, refSeq, browserParams) {
+    FeatureTrack.call(this, config, refSeq, browserParams);
     //  console.log("DragableFeatureTrack constructor called");
 
     var thisObj = this;
@@ -143,15 +143,14 @@ DraggableFeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
     } );
 
 
-/* track click diagnostic (and example of how to add additional track mouse listener?) 
+/* track click diagnostic (and example of how to add additional track mouse listener?)  */
     $div.bind("click", function(event) {
-        console.log("track click, base position: " + track.gview.getGenomeCoord(event));
+        // console.log("track click, base position: " + track.gview.getGenomeCoord(event));
 	var target = event.target;
 	if (target.feature || target.subfeature)  { 
 	    event.stopPropagation();
 	}
     } );
-*/
 
 };
 
@@ -537,7 +536,6 @@ DraggableFeatureTrack.prototype.handleFeatureDragSetup = function(event)  {
 	    }
 	    $featdiv.draggable(   // draggable() adds "ui-draggable" class to div
 		{
-		    //  helper: 'clone', 
 		    // custom helper for pseudo-multi-drag ("pseudo" because multidrag is visual only -- 
 		    //      handling of draggable when dropped is already done through selection)
 		    //    strategy for custom helper is to make a "holder" div with same dimensionsas featdiv 
@@ -547,7 +545,9 @@ DraggableFeatureTrack.prototype.handleFeatureDragSetup = function(event)  {
 		    //        to holder, with dimensions of each clone recalculated as pixels and set relative to 
 		    //        featdiv that the drag is actually initiated on (and thus relative to the holder's 
 		    //        dimensions)
-		    helper: function() { 
+
+		    //  helper: 'clone', 
+		     helper: function() { 
 			var $featdiv_copy = $featdiv.clone();
 			var $holder = $featdiv.clone();
 			$holder.removeClass();
@@ -587,12 +587,10 @@ DraggableFeatureTrack.prototype.handleFeatureDragSetup = function(event)  {
 				    console.log(sfeatdiv);
 				    console.log("delta_left: " + delta_left + ", delta_top: " + delta_top);
 				}
-				/*  setting left and top by pixel, based on delta relative to moused-on feature 
-				    tried using $divclone.position( { ...., "offset": delta_left + " " + delta_top } );, 
-				    but position() not working for negative deltas? (ends up using absolute value)
-				    so doing more directly with "left and "top" css calls
-				    
-				*/
+				//  setting left and top by pixel, based on delta relative to moused-on feature 
+				//    tried using $divclone.position( { ...., "offset": delta_left + " " + delta_top } );, 
+				//    but position() not working for negative deltas? (ends up using absolute value)
+				//    so doing more directly with "left and "top" css calls
 				$divclone.css("left", delta_left);
 				$divclone.css("top", delta_top);
 				var divclone = $divclone[0];
@@ -602,12 +600,25 @@ DraggableFeatureTrack.prototype.handleFeatureDragSetup = function(event)  {
 			if (this.verbose_drag)  { console.log(holder); }
 			return holder;
 		    }, 
-
 		    opacity: 0.5, 
 		    axis: 'y', 
-		    create: function(event, ui)  {ftrack.drag_create = true;}
-		} ).trigger(event);
-
+		    create: function(event, ui)  {
+			// ftrack.drag_create = true;
+		    }
+	//	} ).trigger(event);
+	    // see http://bugs.jqueryui.com/ticket/3876 regarding switch from previous hacky approach using JQuery 1.5
+	    //       trigger(event) and ftrack.drag_create 
+	    // to new hacky approach using JQuery 1.7:
+	    //       data("draggable")._mouseDown(event);
+	    // 
+            // see also http://stackoverflow.com/questions/9634639/why-does-this-break-in-jquery-1-7-x
+            //     for more explanation of event handling changes in JQuery 1.7
+//		} ).data("draggable")._mouseDown(event);
+		} );
+//		if (this.verbose_drag)  { console.log($featdiv); }
+	//	$featdiv.trigger(event);
+	    $featdiv.data("draggable")._mouseDown(event);
+	   //  $featdiv.draggable().data("draggable")._mouseDown(event);
 	}
     }
 };
