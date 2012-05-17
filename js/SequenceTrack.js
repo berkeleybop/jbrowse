@@ -110,11 +110,8 @@ SequenceTrack.prototype = new DraggableFeatureTrack();
 /** Dojo context menu stuff */
 dojo.require("dijit.Menu");
 dojo.require("dijit.MenuItem");
-dojo.require("dijit.Dialog");
 
 dojo.addOnLoad( function()  {  /* add dijit menu stuff here? */ } );
-dojo.require("dojox.grid.DataGrid");
-dojo.require("dojo.data.ItemFileWriteStore");
 
 SequenceTrack.prototype.loadSuccess = function(trackInfo)  {
     DraggableFeatureTrack.prototype.loadSuccess.call(this, trackInfo);
@@ -123,12 +120,36 @@ SequenceTrack.prototype.loadSuccess = function(trackInfo)  {
     //    var features = this.features;
     this.features = this.featureStore.nclist;
 
-    this.initContextMenu();
+//    this.initContextMenu();
+}
 
+SequenceTrack.prototype.loadSequenceAlterations = function() {
+	var track = this;
+	var features = this.featureStore.nclist;
     /**
      *    now do XHR to WebApollo AnnotationEditorService for "get_sequence_alterations"
      */
-}
+    dojo.xhrPost( {
+    	postData: '{ "track": "' + track.annotTrack.getUniqueTrackName() + '", "operation": "get_sequence_alterations" }',
+    	url: context_path + "/AnnotationEditorService",
+    	handleAs: "json",
+    	timeout: 5 * 1000, // Time in milliseconds
+    	// The LOAD function will be called on a successful response.
+    	load: function(response, ioArgs) { //
+    		var responseFeatures = response.features;
+    		for (var i = 0; i < responseFeatures.length; i++) {
+    			var jfeat = JSONUtils.createJBrowseSequenceAlteration(features.attrs, responseFeatures[i]);
+    			features.add(jfeat, responseFeatures[i].uniquename);
+    		}
+    		track.hideAll();
+    		track.changed();
+    	},
+    	// The ERROR function will be called in an error case.
+    	error: function(response, ioArgs) { //
+    		return response; //
+    	}
+    });
+};
 
 SequenceTrack.prototype.startZoom = function(destScale, destStart, destEnd) {
     this.hide();
@@ -372,28 +393,34 @@ SequenceTrack.prototype.initContextMenu = function() {
 */
 
     var index = 0;
+    if (this.annotTrack.permission & Permission.WRITE) {
+    	thisObj.annot_context_menu.addChild(new dijit.MenuItem( {
+    		label: "Delete",
+    		onClick: function() {
+    			thisObj.deleteSelectedFeatures();
+    		}
+    	} ));
+    	thisObj.contextMenuItems["delete"] = index++;
+    }
     thisObj.annot_context_menu.addChild(new dijit.MenuItem( {
-	label: "Delete",
-	onClick: function() {
-	    thisObj.deleteSelectedFeatures();
-	}
-    } ));
-    thisObj.contextMenuItems["delete"] = index++;
-    thisObj.annot_context_menu.addChild(new dijit.MenuItem( {
-	label: "Information",
-	onClick: function(event) {
-	    thisObj.getInformation();
-	}
+    	label: "Information",
+    	onClick: function(event) {
+    		thisObj.getInformation();
+    	}
     } ));
     thisObj.contextMenuItems["information"] = index++;
 
     thisObj.annot_context_menu.onOpen = function(event) {
-	// keeping track of mousedown event that triggered annot_context_menu popup, 
-	//   because need mouse position of that event for some actions
-	thisObj.annot_context_mousedown = thisObj.last_mousedown_event;
-	// if (thisObj.permission & Permission.WRITE) { thisObj.updateMenu(); }
+    	// keeping track of mousedown event that triggered annot_context_menu popup, 
+    	//   because need mouse position of that event for some actions
+    	thisObj.annot_context_mousedown = thisObj.last_mousedown_event;
+    	// if (thisObj.permission & Permission.WRITE) { thisObj.updateMenu(); }
+		dojo.forEach(this.getChildren(), function(item, idx, arr) {
+			item._setSelected(false);
+			item._onUnhover();
+		});
     };
-	
+
 
 /**
 *   context menu for right click on sequence residues
@@ -401,36 +428,45 @@ SequenceTrack.prototype.initContextMenu = function() {
     thisObj.residuesMenuItems = new Array();
     thisObj.residues_context_menu = new dijit.Menu({});
     index = 0;
-    thisObj.residues_context_menu.addChild(new dijit.MenuItem( {
-	label: "Create Genomic Insertion",
-	onClick: function() {
-	    thisObj.createGenomicInsertion();
-	}
-    } ));
-    thisObj.residuesMenuItems["create_insertion"] = index++;
-    thisObj.residues_context_menu.addChild(new dijit.MenuItem( {
-	label: "Create Genomic Deletion",
-	onClick: function(event) {
-	    thisObj.createGenomicDeletion();
-	}
-    } ));
-    thisObj.residuesMenuItems["create_deletion"] = index++;
+    if (this.annotTrack.permission & Permission.WRITE) {
+    	thisObj.residues_context_menu.addChild(new dijit.MenuItem( {
+    		label: "Create Genomic Insertion",
+    		onClick: function() {
+    			thisObj.createGenomicInsertion();
+    		}
+    	} ));
+    	thisObj.residuesMenuItems["create_insertion"] = index++;
+    	thisObj.residues_context_menu.addChild(new dijit.MenuItem( {
+    		label: "Create Genomic Deletion",
+    		onClick: function(event) {
+    			thisObj.createGenomicDeletion();
+    		}
+    	} ));
+    	thisObj.residuesMenuItems["create_deletion"] = index++;
 
-    thisObj.residues_context_menu.addChild(new dijit.MenuItem( {
-	label: "Create Genomic Substitution",
-	onClick: function(event) {
-	    thisObj.createGenomicSubstitution();
-	}
-    } ));
-    thisObj.residuesMenuItems["create_substitution"] = index++;
+    	thisObj.residues_context_menu.addChild(new dijit.MenuItem( {
+    		label: "Create Genomic Substitution",
+    		onClick: function(event) {
+    			thisObj.createGenomicSubstitution();
+    		}
+    	} ));
+    	thisObj.residuesMenuItems["create_substitution"] = index++;
+    }
+	thisObj.residues_context_menu.addChild(new dijit.MenuItem( {
+		label: "..."
+	} ));
 
     
-    thisObj.residues_context_menu.onOpen = function(event) {
-	// keeping track of mousedown event that triggered residues_context_menu popup, 
-	//   because need mouse position of that event for some actions
-	thisObj.residues_context_mousedown = thisObj.last_mousedown_event;
-	// if (thisObj.permission & Permission.WRITE) { thisObj.updateMenu() }
-    };
+	thisObj.residues_context_menu.onOpen = function(event) {
+		// keeping track of mousedown event that triggered residues_context_menu popup, 
+		//   because need mouse position of that event for some actions
+		thisObj.residues_context_mousedown = thisObj.last_mousedown_event;
+		// if (thisObj.permission & Permission.WRITE) { thisObj.updateMenu() }
+		dojo.forEach(this.getChildren(), function(item, idx, arr) {
+			item._setSelected(false);
+			item._onUnhover();
+		});
+	};
 
     thisObj.annot_context_menu.startup();
     thisObj.residues_context_menu.startup();
@@ -443,16 +479,44 @@ SequenceTrack.prototype.getUniqueTrackName = function() {
 SequenceTrack.prototype.createGenomicInsertion = function()  {
     var gcoord = this.gview.getGenomeCoord(this.residues_context_mousedown);
     console.log("SequenceTrack.createGenomicInsertion() called at genome position: " + gcoord);
+    
+    var content = this.createAddSequenceAlterationPanel("insertion", gcoord);
+    this.annotTrack.openDialog("Add Insertion", content);
+
+    /*
+    var track = this;
+    var features = '[ { "uniquename": "insertion-' + gcoord + '","location": { "fmin": ' + gcoord + ', "fmax": ' + gcoord + ', "strand": 1 }, "residues": "A", "type": {"name": "insertion", "cv": { "name":"SO" } } } ]';
+	dojo.xhrPost( {
+		postData: '{ "track": "' + track.annotTrack.getUniqueTrackName() + '", "features": ' + features + ', "operation": "add_sequence_alteration" }',
+		url: context_path + "/AnnotationEditorService",
+		handleAs: "json",
+		timeout: 5000, // Time in milliseconds
+		// The LOAD function will be called on a successful response.
+		load: function(response, ioArgs) {
+		},
+		// The ERROR function will be called in an error case.
+		error: function(response, ioArgs) { //
+			return response;
+		}
+	});
+	*/
+
 };
 
 SequenceTrack.prototype.createGenomicDeletion = function()  {
     var gcoord = this.gview.getGenomeCoord(this.residues_context_mousedown);
     console.log("SequenceTrack.createGenomicDeletion() called at genome position: " + gcoord);
+    
+    var content = this.createAddSequenceAlterationPanel("deletion", gcoord);
+    this.annotTrack.openDialog("Add Deletion", content);
+
 };
 
 SequenceTrack.prototype.createGenomicSubstitution = function()  {
     var gcoord = this.gview.getGenomeCoord(this.residues_context_mousedown);
     console.log("SequenceTrack.createGenomicSubstitution() called at genome position: " + gcoord);
+    var content = this.createAddSequenceAlterationPanel("substitution", gcoord);
+    this.annotTrack.openDialog("Add Substitution", content);
 };
 
 SequenceTrack.prototype.deleteSelectedFeatures = function()  {
@@ -465,6 +529,29 @@ SequenceTrack.prototype.deleteSelectedFeatures = function()  {
 SequenceTrack.prototype.requestDeletion = function(annots)  {
     console.log("SequenceTrack.requestDeletion called");
     console.log(annots);
+    var track = this;
+    var features = "[ ";
+    for (var i = 0; i < annots.length; ++i) {
+    	var annot = annots[i];
+    	if (i > 0) {
+    		features += ", ";
+    	}
+    	features += '{ "uniquename": "' + annot.uid + '" }';
+    }
+    features += "]";
+	dojo.xhrPost( {
+		postData: '{ "track": "' + track.annotTrack.getUniqueTrackName() + '", "features": ' + features + ', "operation": "delete_sequence_alteration" }',
+		url: context_path + "/AnnotationEditorService",
+		handleAs: "json",
+		timeout: 5000, // Time in milliseconds
+		// The LOAD function will be called on a successful response.
+		load: function(response, ioArgs) {
+		},
+		// The ERROR function will be called in an error case.
+		error: function(response, ioArgs) { //
+			return response;
+		}
+	});
 }
 
 SequenceTrack.prototype.getInformation = function()  {
@@ -480,8 +567,8 @@ SequenceTrack.prototype.addSequenceAlterations = function(annots)  {
     var track = this;
     // add to SeqFeatureStore
     for (var i = 0; i < annots.length; ++i) {
-	var featureArray = JSONUtils.createJBrowseSequenceAlteration(this.attrs, responseFeatures[i]);
-	var id = responseFeatures[i].uniquename;
+	var featureArray = JSONUtils.createJBrowseSequenceAlteration(this.attrs, annots[i]);
+	var id = annots[i].uniquename;
 	if (! this.features.contains(id))  {
 	    this.features.add(featureArray, id);
 	}
@@ -506,9 +593,103 @@ SequenceTrack.prototype.removeSequenceAlterations = function(annots)  {
     track.changed();
 }
 
+SequenceTrack.prototype.createAddSequenceAlterationPanel = function(type, gcoord) {
+	var track = this;
+	var content = dojo.create("div");
+	var inputDiv = dojo.create("div", { }, content);
+	var inputLabel = dojo.create("label", { innerHTML: type == "deletion" ? "Length" : "Sequence", class: "sequence_alteration_input_label" }, inputDiv);
+	var inputField = dojo.create("input", { type: "text", size: 10, class: "sequence_alteration_input_field" }, inputDiv);
+	var buttonDiv = dojo.create("div", { class: "sequence_alteration_button_div" }, content);
+	var addButton = dojo.create("button", { innerHTML: "Add", class: "sequence_alteration_button" }, buttonDiv);
+	
+	var addSequenceAlteration = function() {
+	    var ok = true;
+	    if (inputField.value.length == 0) {
+	    	alert("Input cannot be empty for " + type);
+	    	ok = false;
+	    }
+	    if (ok) {
+	    	var input = inputField.value.toUpperCase();
+	    	if (type == "deletion") {
+	    		if (input.match(/\D/)) {
+	    			alert("The length must be a number");
+	    			ok = false;
+	    		}
+	    		else {
+	    			input = parseInt(input);
+	    			if (input <= 0) {
+	    				alert("The length must be a positive number");
+	    				ok = false;
+	    			}
+	    		}
+	    	}
+	    	else {
+	    		if (input.match(/[^ACGT]/)) {
+	    			alert("The sequence should only containg A, C, G, T");
+	    			ok = false;
+	    		}
+	    	}
+	    }
+	    if (ok) {
+	    	var fmin = gcoord;
+	    	var fmax;
+	    	if (type == "insertion") {
+	    		fmax = gcoord;
+	    	}
+	    	else if (type == "deletion") {
+	    		fmax = gcoord + parseInt(input);
+	    	}
+	    	else if (type == "substitution") {
+	    		fmax = gcoord + input.length;;
+	    	}
+	    	var feature = '"location": { "fmin": ' + fmin + ', "fmax": ' + fmax + ', "strand": 1 }, "type": {"name": "' + type + '", "cv": { "name":"SO" } }';
+	    	if (type != "deletion") {
+	    		feature += ', "residues": "' + input + '"';
+	    	}
+	    	var features = '[ { ' + feature + ' } ]';
+	    	dojo.xhrPost( {
+	    		postData: '{ "track": "' + track.annotTrack.getUniqueTrackName() + '", "features": ' + features + ', "operation": "add_sequence_alteration" }',
+	    		url: context_path + "/AnnotationEditorService",
+	    		handleAs: "json",
+	    		timeout: 5000, // Time in milliseconds
+	    		// The LOAD function will be called on a successful response.
+	    		load: function(response, ioArgs) {
+	    		},
+	    		// The ERROR function will be called in an error case.
+	    		error: function(response, ioArgs) { //
+	    			track.handleError(response);
+	    			return response;
+	    		}
+	    	});
+	    	track.annotTrack.popupDialog.hide();
+	    }
+	}
 
+	dojo.connect(inputField, "keypress", null, function(e) {
+		var unicode = e.keyCode ? e.keyCode : e.charCode;
+		if (unicode == 13) {
+			addSequenceAlteration();
+		}
+	});
+	
+	dojo.connect(addButton, "onclick", null, function() {
+		addSequenceAlteration();
+	});
+	
+	return content;
+};
 
+SequenceTrack.prototype.handleError = function(response) {
+	console.log("ERROR: ");
+	console.log(response);  // in Firebug, allows retrieval of stack trace, jump to code, etc.
+	var error = eval('(' + response.responseText + ')');
+	if (error && error.error) {
+		alert(error.error);
+		return false;
+	}
+};
 
-
-
-
+SequenceTrack.prototype.setAnnotTrack = function(annotTrack) {
+	this.annotTrack = annotTrack;
+	this.initContextMenu();
+}
