@@ -50,7 +50,10 @@ function FeatureTrack( config, refSeq, browserParams ) {
     //number of histogram bins per block
     this.numBins = 25;
     this.histLabel = false;
-    this.padding = 5;
+
+    this.defaultPadding = 5;
+    this.padding = this.defaultPadding;
+
     this.glyphHeightPad = 2;
     this.levelHeightPad = 2;
     this.trackPadding = browserParams.trackPadding;
@@ -403,7 +406,8 @@ FeatureTrack.prototype.fillHist = function(blockIndex, block,
             if (!(typeof hist[bin] == 'number' && isFinite(hist[bin])))
                 continue;
             binDiv = document.createElement("div");
-	    binDiv.className = track.config.style.className + "-hist";;
+	    var cname = this.getClassName();
+	    binDiv.className = cname + "-hist";;
             binDiv.style.cssText =
                 "left: " + ((bin / track.numBins) * 100) + "%; "
                 + "height: "
@@ -602,9 +606,12 @@ FeatureTrack.prototype.transfer = function(sourceBlock, destBlock, scale,
 	    if ( sourceSlot.layoutEnd > destLeft
 		 && sourceSlot.feature.get('start') < destRight ) {
 
-                sourceBlock.removeChild(sourceSlot);
+                // sourceBlock.removeChild(sourceSlot);
+		// using featdiv.parentNode.removeChild(featdiv) pattern because in 
+		//      WebApollo it's possible for the featdiv to not be directly attached to the block, 
+		//      but rather have a parent in between
+		sourceSlot.parentNode.removeChild(sourceSlot);
                 delete sourceBlock.featureNodes[overlaps[i].id];
-
                 var featDiv =
                     this.addFeatureToBlock(sourceSlot.feature, overlaps[i].id,
 					   destBlock, scale,
@@ -763,10 +770,11 @@ FeatureTrack.prototype.measureStyles = function() {
     var glyphBox;
     heightTest = document.createElement("div");
     //cover all the bases: stranded or not, phase or not
+    var cname = this.getClassName();
     heightTest.className =
-        this.config.style.className
-        + " plus-" + this.config.style.className
-        + " plus-" + this.config.style.className + "1";
+	cname 
+        + " plus-" + cname
+        + " plus-" + cname + "1";
     if (this.config.style.featureCss)
         heightTest.style.cssText = this.config.style.featureCss;
     heightTest.style.visibility = "hidden";
@@ -775,7 +783,8 @@ FeatureTrack.prototype.measureStyles = function() {
     glyphBox = dojo.marginBox(heightTest);
     this.glyphHeight = Math.round(glyphBox.h + this.glyphHeightPad);
     // console.log("heightcalc: " + this.className + ", h = " + glyphBox.h + ", glyphHeight = " + this.glyphHeight);
-    this.padding += glyphBox.w;
+//    this.padding += glyphBox.w;
+    this.padding = this.defaultPadding + glyphBox.w;
     document.body.removeChild(heightTest);
 
     //determine the width of the arrowhead, if any
@@ -803,6 +812,29 @@ FeatureTrack.prototype.addFeatureToBlock = function(feature, uniqueId, block, sc
         this.renderFeature(feature, uniqueId, block, scale, containerStart, containerEnd);
     block.appendChild(featDiv);
 };
+
+
+// Currently only for top-level features, not subfeatures
+// WebApollo: if no className given in trackList entry, indicates should determine class 
+//    based on feature type 
+//    this is temporary fix for tracks that have multiple types of top-level features, with different rendering 
+//       for each.  Should really merge className and subfeatureClasses with some default for non-types toplevels?
+FeatureTrack.prototype.getClassName = function(feature)  {
+
+    var cname = this.config.style.className;
+    if (cname == "{type}") {
+	if (feature) {
+	    var ftype = feature.get('type');
+	    // console.log("determining style based on type: " + ftype);
+	    if (ftype) { cname = ftype; }
+	    else  { cname = "unknown"; }
+	}
+	else  {
+	     cname = "unknown";
+	}
+    }
+    return cname;
+}
 
 FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
                                                 containerStart, containerEnd) {
@@ -873,17 +905,8 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
 
     block.featureNodes[uniqueId] = featDiv;
     
-    // WebApollo: if no className given in trackList entry, indicates should determine class 
-    //    based on feature type 
-    //    this is temporary fix for tracks that have multiple types of top-level features, with different rendering 
-    //       for each.  Should really merge className and subfeatureClasses with some default for non-types toplevels?
-    var cname = this.config.style.className;
-    if (cname == "{type}") {
-	var ftype = feature.get('type');
-	// console.log("determining style based on type: " + ftype);
-	if (ftype) { cname = ftype; }
-	else  { cname = "unknown"; }
-    }
+
+    var cname = this.getClassName(feature);
 
     var strand = feature.get('strand');
     switch (strand) {
@@ -912,7 +935,8 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
     // boundaries) in the transfer method.
     var displayStart = Math.max( feature.get('start'), containerStart );
     var displayEnd = Math.min( feature.get('end'), containerEnd );
-    var minFeatWidth = 1;
+    // var minFeatWidth = 1;
+    var minFeatWidth = 0.1;
     var blockWidth = block.endBase - block.startBase;
     var featwidth = Math.max(minFeatWidth, (100 * ((displayEnd - displayStart) / blockWidth)));
     featDiv.style.cssText =
