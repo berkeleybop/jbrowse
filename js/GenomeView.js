@@ -204,42 +204,48 @@ GenomeView.prototype._behaviors = function() { return {
                 ));
             });
             handles.push(
-                dojo.connect( this.scrollContainer,     "mousewheel",     this, 'wheelScroll', false ),
-                dojo.connect( this.scrollContainer,     "DOMMouseScroll", this, 'wheelScroll', false ),
+            		dojo.connect( this.scrollContainer,     "mousewheel",     this, 'wheelScroll', false ),
+            		dojo.connect( this.scrollContainer,     "DOMMouseScroll", this, 'wheelScroll', false ),
 
-                dojo.connect( this.scaleTrackDiv,       "mousedown",      dojo.hitch( this, 'startRubberZoom', this.absXtoBp, this.scrollContainer )),
+            		dojo.connect( this.scaleTrackDiv,       "mousedown",      dojo.hitch( this, 'startRubberZoom', this.absXtoBp, this.scrollContainer )),
 
-                dojo.connect( this.outerTrackContainer, "dblclick",       this, 'doubleClickZoom'    ),
+            		dojo.connect( this.outerTrackContainer, "dblclick",       this, 'doubleClickZoom'    ),
 
-                dojo.connect( this.locationThumbMover,  "onMoveStop",     this, 'thumbMoved'         ),
+            		dojo.connect( this.locationThumbMover,  "onMoveStop",     this, 'thumbMoved'         ),
 
-                dojo.connect( this.overview,            "onclick",        this, 'overviewClicked'    ),
-                dojo.connect( this.scaleTrackDiv,       "onclick",        this, 'scaleClicked'       ),
+            		dojo.connect( this.overview,            "onclick",        this, 'overviewClicked'    ),
+            		dojo.connect( this.scaleTrackDiv,       "onclick",        this, 'scaleClicked'       ),
 
-                // when the mouse leaves the document, need to cancel
-                // any keyboard-modifier-holding-down state
-                dojo.connect( document.body,            'onmouseleave',       this, function() {
-                    this.behaviorManager.swapBehaviors('shiftMouse','normalMouse');
-                }),
+            		// when the mouse leaves the document, need to cancel
+            		// any keyboard-modifier-holding-down state
+            		dojo.connect( document.body,            'onmouseleave',       this, function() {
+            			this.behaviorManager.swapBehaviors('shiftMouse','normalMouse');
+            		}),
 
-                // when the mouse leaves the document, need to cancel
-                // any keyboard-modifier-holding-down state
-                dojo.connect( document.body,            'onmouseenter',       this, function(evt) {
-                    if( evt.shiftKey ) {
-                        this.behaviorManager.swapBehaviors( 'normalMouse', 'shiftMouse' );
-		    }
-                }),
+            		// when the mouse leaves the document, need to cancel
+            		// any keyboard-modifier-holding-down state
+            		dojo.connect( document.body,            'onmouseenter',       this, function(evt) {
+            			if( evt.shiftKey ) {
+            				this.behaviorManager.swapBehaviors( 'normalMouse', 'shiftMouse' );
+            			}
+            		}),
 
-                dojo.connect( window, 'onkeyup', this, function(evt) {
-		    if( evt.keyCode == dojo.keys.SHIFT )  { // shift
-                        this.behaviorManager.swapBehaviors( 'shiftMouse', 'normalMouse' );
-		    }
-                }),
-                dojo.connect( window, 'onkeydown', this, function(evt) {
-                    if( evt.keyCode == dojo.keys.SHIFT ) { // shift
-                        this.behaviorManager.swapBehaviors( 'normalMouse', 'shiftMouse' );
-		    }
-                })
+            		dojo.connect( window, 'onkeyup', this, function(evt) {
+            			if( evt.keyCode == dojo.keys.SHIFT )  { // shift
+            				this.behaviorManager.swapBehaviors( 'shiftMouse', 'normalMouse' );
+            			}
+            			else if (evt.keyCode == dojo.keys.ALT) { // alt
+            				this.behaviorManager.swapBehaviors('altMouse', 'normalMouse');
+            			}
+            		}),
+            		dojo.connect( window, 'onkeydown', this, function(evt) {
+            			if( evt.keyCode == dojo.keys.SHIFT ) { // shift
+            				this.behaviorManager.swapBehaviors( 'normalMouse', 'shiftMouse' );
+            			}
+            			else if (evt.keyCode == dojo.keys.ALT) { // alt
+            				this.behaviorManager.swapBehaviors('normalMouse', 'altMouse');
+            			}
+            		})
             );
             return handles;
         }
@@ -263,7 +269,7 @@ GenomeView.prototype._behaviors = function() { return {
             dojo.addClass(this.trackContainer,'rubberBandAvailable');
             return [
                 dojo.connect( this.outerTrackContainer, "mousedown", dojo.hitch( this, 'startRubberZoom', this.absXtoBp, this.scrollContainer )),
-                dojo.connect( this.outerTrackContainer, "onclick",   this, 'scaleClicked'    )
+//                dojo.connect( this.outerTrackContainer, "onclick",   this, 'scaleClicked'    )
             ];
         },
         remove: function( mgr, handles ) {
@@ -273,6 +279,21 @@ GenomeView.prototype._behaviors = function() { return {
         }
     },
 
+    altMouse: {
+        apply: function() {
+            dojo.removeClass(this.trackContainer,'draggable');
+            dojo.addClass(this.trackContainer,'rubberBandAvailable');
+            return [
+//                dojo.connect( this.outerTrackContainer, "mousedown", dojo.hitch( this, 'startRubberZoom', this.absXtoBp, this.scrollContainer )),
+                dojo.connect( this.outerTrackContainer, "onclick",   this, 'scaleClicked'    )
+            ];
+        },
+        remove: function( mgr, handles ) {
+            dojo.forEach( handles, dojo.disconnect, dojo );
+            dojo.addClass(this.trackContainer,'draggable');
+        }
+    },
+    
     // mouse events that are connected when we are in the middle of a
     // drag-scrolling operation
     mouseDragScrolling: {

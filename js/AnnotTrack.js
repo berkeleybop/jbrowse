@@ -164,6 +164,9 @@ AnnotTrack.prototype.loadSuccess = function(trackInfo) {
 	this.createAnnotationChangeListener();
     }
     this.makeTrackDroppable();
+    
+    this.getSequenceTrack().loadSequenceAlterations();
+    
 };
 
 AnnotTrack.prototype.createAnnotationChangeListener = function() {
@@ -191,18 +194,34 @@ AnnotTrack.prototype.createAnnotationChangeListener = function() {
 		if (changeData.operation == "ADD") {
 		    console.log("ADD command from server: ");
 		    console.log(changeData);
-		    track.addFeatures(changeData.features);
+		    if (changeData.sequenceAlterationEvent) {
+		    	track.getSequenceTrack().addSequenceAlterations(changeData.features);
+		    }
+		    else {
+		    	track.addFeatures(changeData.features);
+		    }
 		}
 		else if (changeData.operation == "DELETE") {
 		    console.log("DELETE command from server: ");
 		    console.log(changeData);
-		    track.deleteFeatures(changeData.features);
+		    if (changeData.sequenceAlterationEvent) {
+		    	track.getSequenceTrack().removeSequenceAlterations(changeData.features);
+		    }
+		    else {
+		    	track.deleteFeatures(changeData.features);
+		    }
 		}
 		else if (changeData.operation == "UPDATE") {
 		    console.log("UPDATE command from server: ");
 		    console.log(changeData);
-		    track.deleteFeatures(changeData.features);
-		    track.addFeatures(changeData.features);
+		    if (changeData.sequenceAlterationEvent) {
+		    	track.getSequenceTrack().removeSequenceAlterations(changeData.features);
+		    	track.getSequenceTrack().addSequenceAlterations(changeData.features);
+		    }
+		    else {
+		    	track.deleteFeatures(changeData.features);
+		    	track.addFeatures(changeData.features);
+		    }
 		}
 		else  {
 		    console.log("UNKNOWN command from server: ");
@@ -336,6 +355,7 @@ AnnotTrack.prototype.getSequenceTrack = function()  {
 	for (var i = 0; i < tracks.length; i++)  {
 	    if (tracks[i] instanceof SequenceTrack)  {
 		this.seqTrack = tracks[i];
+		tracks[i].setAnnotTrack(this);
 		break;
 	    }
 	}
@@ -567,7 +587,7 @@ AnnotTrack.prototype.onFeatureClick = function(event) {
 
 AnnotTrack.prototype.addToAnnotation = function(annot, feats_to_add)  {
 	var target_track = this;
-        var tatts = target_track.attrs;
+	var tatts = target_track.attrs;
 	var nclist = target_track.features;
 
 	if (AnnotTrack.USE_LOCAL_EDITS) {
@@ -729,6 +749,12 @@ AnnotTrack.prototype.addToAnnotation = function(annot, feats_to_add)  {
 				if (!AnnotTrack.USE_COMET || !target_track.comet_working)  {
 					//TODO
 				}
+			},
+			error: function(response, ioArgs) {
+				target_track.handleError(response);
+				console.log("Annotation server error--maybe you forgot to login to the server?");
+				console.error("HTTP status code: ", ioArgs.xhr.status); 
+				return response;
 			}
 		});
 	}
@@ -1921,7 +1947,7 @@ AnnotTrack.prototype.handleError = function(response) {
 	console.log("ERROR: ");
 	console.log(response);  // in Firebug, allows retrieval of stack trace, jump to code, etc.
 	var error = eval('(' + response.responseText + ')');
-	if (error.error) {
+	if (error && error.error) {
 		alert(error.error);
 		return false;
 	}
@@ -2067,6 +2093,10 @@ AnnotTrack.prototype.initContextMenu = function() {
 		if (thisObj.permission & Permission.WRITE) {
 			thisObj.updateMenu();
 		}
+		dojo.forEach(this.getChildren(), function(item, idx, arr) {
+			item._setSelected(false);
+			item._onUnhover();
+		});
 	};
 	
     annot_context_menu.startup();
