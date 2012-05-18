@@ -2426,42 +2426,23 @@ AnnotTrack.prototype.selectionRemoved = function(feat, smanager)  {
 };
 
 AnnotTrack.prototype.startZoom = function(destScale, destStart, destEnd) {
+    // would prefer to only try and hide dna residues on zoom if previous scale was at base pair resolution
+    //   (otherwise there are no residues to hide), but by time startZoom is called, pxPerBp is already set to destScale, 
+    //    so would require keeping prevScale var around, or passing in prevScale as additional parameter to startZoom()
+    // so for now just always trying to hide residues on a zoom, whether they're present or not
+
     DraggableFeatureTrack.prototype.startZoom.call(this, destScale, destStart, destEnd);
     // console.log("AnnotTrack.startZoom() called");
-/*
-     var track = this;
     var selected = this.selectionManager.getSelection();
-    for (var i=0; i<selected.length; i++) {
-	var feat = selected[i];
-	var featdiv = track.getFeatDiv(feat);
-	if (featdiv)  {
-	    $("div.annot-sequence", featdiv).hide();
-	}
+    if (selected.length > 0) {
+	// if selected annotations, then hide residues overlay 
+	//     (in case zoomed in to base pair resolution and the residues overlay is being displayed)
+	$(".annot-sequence", this.div).css('display', 'none');
     }
-*/
 };
 
 AnnotTrack.prototype.endZoom = function(destScale, destBlockBases) {
     DraggableFeatureTrack.prototype.endZoom.call(this, destScale, destBlockBases);
-    // console.log("AnnotTrack.endZoom called");
-/*    var track = this;
-    // this.scale = destScale;   moved this.scale assignment to superclass DraggableFeatureTrack.endZoom() method
-
-//    console.log(destScale);
-//    console.log(track.browserParams.charWidth);
-    // only show sequence residues for selected if zoomed all the way in to base pair visibility
-    if (destScale === track.browserParams.charWidth)  {
-	var selected = this.selectionManager.getSelection();
-	for (var i=0; i<selected.length; i++) {
-	    var feat = selected[i];
-	    var featdiv = track.getFeatDiv(feat);
-	    if (featdiv)  {
-		$("div.annot-sequence", featdiv).show();
-	    }
-	}
-    }
-*/
-
 };
 
 AnnotTrack.getTopLevelAnnotation = function(annotation) {
