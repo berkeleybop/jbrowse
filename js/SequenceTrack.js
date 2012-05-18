@@ -22,13 +22,15 @@
  */
 function SequenceTrack(config, refSeq, browserParams) {
     //    var cback = browserParams ? browserParams.changeCallbck : null;
-
     if (arguments.length == 0)  { return; }
     if (browserParams === undefined) { return; }
-
-    DraggableFeatureTrack.call( this, config, refSeq, browserParams);
-
     var track = this;
+
+    DraggableFeatureTrack.call( track, config, refSeq, browserParams);
+
+    track.residues_context_menu = new dijit.Menu({});  // placeholder till setAnnotTrack() triggers real menu init
+    track.annot_context_menu = new dijit.Menu({});     // placeholder till setAnnotTrack() triggers real menu init
+
     this.residuesMouseDown = function(event) { track.onResiduesMouseDown(event); };
 
     // this.selectionManager = this.setSelectionManager(SequenceTrack.seqSelectionManager);
@@ -116,12 +118,12 @@ dojo.require("dijit.MenuItem");
 dojo.addOnLoad( function()  {  /* add dijit menu stuff here? */ } );
 
 SequenceTrack.prototype.loadSuccess = function(trackInfo)  {
+    console.log("SequenceTrack.loadSuccess called");
     DraggableFeatureTrack.prototype.loadSuccess.call(this, trackInfo);
     var track = this;
     // for AnnotTrack, features currently MUST be an NCList
     //    var features = this.features;
     this.features = this.featureStore.nclist;
-    track.featureCount = track.storedFeatureCount();
 		     
     track.featureCount = track.storedFeatureCount();
     console.log("storedFeatureCount = " + track.featureCount);
@@ -131,12 +133,12 @@ SequenceTrack.prototype.loadSuccess = function(trackInfo)  {
 /** called by AnnotTrack to initiate sequence alterations load, 
  */
 SequenceTrack.prototype.loadSequenceAlterations = function() {
-	var track = this;
-	var features = this.featureStore.nclist;
+    var track = this;
+    var features = this.featureStore.nclist;
     /**
      *    now do XHR to WebApollo AnnotationEditorService for "get_sequence_alterations"
      */
-    dojo.xhrPost( {
+     dojo.xhrPost( {
     	postData: '{ "track": "' + track.annotTrack.getUniqueTrackName() + '", "operation": "get_sequence_alterations" }',
     	url: context_path + "/AnnotationEditorService",
     	handleAs: "json",
@@ -162,12 +164,11 @@ SequenceTrack.prototype.loadSequenceAlterations = function() {
 SequenceTrack.prototype.startZoom = function(destScale, destStart, destEnd) {
 //    this.hide();
 //    this.heightUpdate(0);
-   // var currentScale = this.gview.bpToPx(1);
-      if ((this.prevScale && (this.prevScale == this.charWidth))) {
-	  console.log("SequenceTrack.startZoom, was max zoomed");
+//      if ((this.prevScale && (this.prevScale == this.charWidth))) {
+//	  console.log("SequenceTrack.startZoom, was max zoomed");
 	  $(".dna-residues", this.div).css('display', 'none');
 	  $(".block_seq_container", this.div).css('height', '20px');
-      }
+//      }
 };
 
 
@@ -177,7 +178,7 @@ SequenceTrack.prototype.endZoom = function(destScale, destBlockBases) {
 	this.show();
     }
     DraggableFeatureTrack.prototype.clear.apply(this);
-    this.prevScale = destScale;
+//    this.prevScale = destScale;
 };
 
 /*

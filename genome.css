@@ -177,15 +177,29 @@ div.blank-block {
 div.sequence {
     position: absolute;
     left: 0px;
-    top: 15px;
     /* Courier New is preferred by JBrowse, but it looks too light in Firefox, and jagged in Chrome */
     /* font-family: Courier New,monospace; */
     font-family: monospace;
     font-size: 10px;
     letter-spacing: 2px;
     padding-left: 2px;
-    z-index: 15;
+    top: 15px;
+    /* height: 15px; */
     cursor: pointer; 
+    z-index: 15;
+
+}
+
+/* 
+   block_seq_container are SequenceTrack divs that are child of .block and parent of .dna-residues
+   need to break this out from div.sequence because .sequence is also used for determining 
+        font character width and height in GenomeView.calculateSequenceCharacterSize(), 
+	and for that don't want a specified width
+*/
+div.block_seq_container {
+    width: 100%;
+ /*   outline: 1px dashed green; */
+/*    background: pink; */
 }
 
 div.sequence .dna-residues.forward-strand {
