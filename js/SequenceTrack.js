@@ -162,13 +162,15 @@ SequenceTrack.prototype.loadSequenceAlterations = function() {
 
 
 SequenceTrack.prototype.startZoom = function(destScale, destStart, destEnd) {
-//    this.hide();
-//    this.heightUpdate(0);
-//      if ((this.prevScale && (this.prevScale == this.charWidth))) {
-//	  console.log("SequenceTrack.startZoom, was max zoomed");
-	  $(".dna-residues", this.div).css('display', 'none');
-	  $(".block_seq_container", this.div).css('height', '20px');
-//      }
+    // would prefer to only try and hide dna residues on zoom if previous scale was at base pair resolution
+    //   (otherwise there are no residues to hide), but by time startZoom is called, pxPerBp is already set to destScale, 
+    //    so would require keeping prevScale var around, or passing in prevScale as additional parameter to startZoom()
+    // so for now just always trying to hide residues on a zoom, whether they're present or not
+    
+    // if (prevScale == this.charWidth) {
+    $(".dna-residues", this.div).css('display', 'none');
+    $(".block_seq_container", this.div).css('height', '20px');
+    // }
 };
 
 
@@ -176,6 +178,9 @@ SequenceTrack.prototype.endZoom = function(destScale, destBlockBases) {
     if ((destScale == this.charWidth) ||
 	(this.SHOW_IF_FEATURES && this.featureCount > 0) ) {
 	this.show();
+    }
+    else  {
+	this.hide();
     }
     DraggableFeatureTrack.prototype.clear.apply(this);
 //    this.prevScale = destScale;
@@ -231,14 +236,13 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
     }
 
     if (this.shown) {
-
         // make a div to contain the sequences
         var seqNode = document.createElement("div");
         seqNode.className = "sequence";
 	// seq_block_container style sets width = 100%, so seqNode fills the block width 
 	//    regardless of whether holding residue divs or not
 	$(seqNode).addClass("block_seq_container");  
-        block.appendChild(seqNode);
+	block.appendChild(seqNode);
 
 	if (scale == this.charWidth) {
 	    this.sequenceStore.getRange( this.refSeq, leftBase, rightBase,
@@ -282,13 +286,11 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 
 SequenceTrack.prototype.addFeatureToBlock = function(feature, uniqueId, block, scale,
                                                      containerStart, containerEnd) {
-    // console.log("SequenceTrack.addFeatureToBlock() called");
-    // console.log(block);
     var featDiv =
         this.renderFeature(feature, uniqueId, block, scale, containerStart, containerEnd);
     $(featDiv).addClass("sequence-alteration");
+
     var seqNode = $("div.sequence", block).get(0);
-    // console.log(seqNode);
     featDiv.style.top = "0px";
     var ftype = feature.get("type");
     if (ftype) {
@@ -329,6 +331,7 @@ SequenceTrack.prototype.addFeatureToBlock = function(feature, uniqueId, block, s
 	}
     }
     seqNode.appendChild(featDiv);
+    
 };
 
 

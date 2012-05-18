@@ -174,6 +174,10 @@ div.blank-block {
     z-index: 19;
 }
 
+/* 
+   To support WebApollo with sequence alteration features shown on SequenceTrack, 
+   sequence style MUST NOT have a z-index specified 
+*/
 div.sequence {
     position: absolute;
     left: 0px;
@@ -184,10 +188,8 @@ div.sequence {
     letter-spacing: 2px;
     padding-left: 2px;
     top: 15px;
-    /* height: 15px; */
     cursor: pointer; 
-    z-index: 15;
-
+   /* z-index: 15; */
 }
 
 /* 
@@ -199,15 +201,16 @@ div.sequence {
 div.block_seq_container {
     width: 100%;
  /*   outline: 1px dashed green; */
-/*    background: pink; */
 }
 
 div.sequence .dna-residues.forward-strand {
     color: black;
+    z-index: 5;
 }
 
 div.sequence .dna-residues.reverse-strand {
     color: gray;
+    z-index: 5;
 }
 
 
@@ -2616,6 +2619,12 @@ div.generic_parent-hist {
 }
 */
 
+/* 
+   for styles of features that are on SequenceTrack, 
+   z-index MUST be > z-index of 
+       (div.sequence .dna-residues.forward-strand) and 
+       (div.sequence .dna-residues.reverse-strand) styles
+*/
 .deletion, 
 .plus-deletion,
 .minus-deletion {
@@ -2625,6 +2634,18 @@ div.generic_parent-hist {
     border-width: 1px;
     height: 100%;
     background-color: rgba(150,0,0,0.5);
+    z-index: 20;  
+    cursor: pointer; 
+    /*
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+    */
+    /*  margin-top: 2px; */
+    /*  margin-bottom: 2px; */
+    /*  min-width: 1px;  */
+
 }
 
 .insertion, 
@@ -2636,6 +2657,8 @@ div.generic_parent-hist {
     border-width: 1px;
     height: 100%;
     background-color: rgba(0,150,0,0.5);
+    z-index: 20;  
+    cursor: pointer; 
 }
 
 .substitution, 
@@ -2647,6 +2670,8 @@ div.generic_parent-hist {
     border-width: 1px;
     height: 100%;
     background-color: rgba(250,250,0,0.5);
+    z-index: 20;  
+    cursor: pointer; 
 }
 
 .plus-trellis-arrowhead, 
