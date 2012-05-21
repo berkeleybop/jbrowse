@@ -103,6 +103,7 @@ AnnotTrack.creation_count = 0;
 
 dojo.require("dijit.Menu");
 dojo.require("dijit.MenuItem");
+dojo.require("dijit.MenuSeparator");
 dojo.require("dijit.Dialog");
 var annot_context_menu;
 var contextMenuItems;
@@ -370,67 +371,6 @@ AnnotTrack.prototype.fillBlock = function(blockIndex, block, leftBlock, rightBlo
 						   blockIndex, block, leftBlock, rightBlock, 
 						   leftBase, rightBase, scale, stripeWidth, 
 						   containerStart, containerEnd);
-/*
-    var middle = (containerStart + containerEnd) / 2;
-    var report = ((leftBase <= middle) && (rightBase > middle));
-    if (report)  {
-      console.log("AnnotTrack.fillBlock() called,  blockIndex: %f, leftBase: %f, rightBase: %f, scale: %f, "
-		+ "stripeWidth: %f, containerStart: %f, containerEnd: %f, middle: %f", 
-		blockIndex, leftBase, rightBase, scale, stripeWidth, containerStart, containerEnd, middle);
-    }
-
-    // what about removing any previous seqNodes from block, or check for existence and avoid creating 
-    //   new SeqNodes if already exist???
-    // looks like this is probably not necessary -- if fillBlock is called, block is either newly created 
-    //     or previous children have been removed?
-    var track = this;
-    if (scale === track.browserParams.charWidth && track.useResiduesOverlay)  {
-	var selected = track.selectionManager.getSelection();
-	if (selected.length > 0)  {
- 	    // get toplevel parent of selected feat
-	    var topfeat = selected[0];
-//	    if (report) {
-//		console.log("feat: "); console.log(topfeat);
-//		console.log("featdiv: "); console.log(track.getFeatDiv(topfeat));
-//	    }
-	    while (topfeat.parent)  {  
-		topfeat = topfeat.parent;
-	    }
-	    if (report)  { console.log("topfeat: "); console.log(topfeat); }
-	    var featdiv = track.getFeatDiv(topfeat);
-	    if (report)  { console.log("topfeat featdiv: "); console.log(featdiv); }	    
-
-//	    if (featdiv) { 
-	    if (track.selectionYPosition)  {
-		// need to float sequence residues over selected row(s)
-		var seqTrack = this.getSequenceTrack();
-		seqTrack.getRange(leftBase, rightBase, 
-	           // see 
-	           // callback, gets called for every chunk that overlaps with leftBase->rightBase range
-	           //   start = genome coord of first bp of chunk
-	           //   end = genome coord of last bp of chunk
-	             function(start, end, seq) {
-			 if (report) {
-			     console.log("AnnotTrack blockIndex: %d, adding seq from %d to %d: %s", 
-					 blockIndex, start, end, seq);
-			 }
-			 var seqNode = document.createElement("div");
-			 seqNode.className = "annot-sequence";
-			 seqNode.appendChild(document.createTextNode(seq));
-			 // var ypos = $(topfeat).position().top; 
-			 var ypos = track.selectionYPosition;
-			 ypos += 2;  // hardwired adjustment to center (should be calc'd based on feature div dims?	    
-			 // console.log("ypos: " + ypos);
-			 seqNode.style.cssText = "top: " + ypos + "px;";
-			 block.appendChild(seqNode);
-			 $(seqNode).hide();
-			 $(seqNode).fadeIn(1500);
-		     }
-                );
-	    }
-	}
-    } 
-    */
 };
 
 
@@ -443,7 +383,6 @@ AnnotTrack.prototype.onFeatureMouseDown = function(event) {
     if (ftrack.verbose_selection || ftrack.verbose_drag)  { 
 	console.log("AnnotTrack.onFeatureMouseDown called"); 
     }
-
 
     // checking for whether this is part of drag setup retrigger of mousedown -- 
     //     if so then don't do selection or re-setup draggability)
