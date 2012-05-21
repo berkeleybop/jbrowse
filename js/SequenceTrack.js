@@ -795,6 +795,7 @@ SequenceTrack.prototype.requestDeletion = function(annots)  {
 		},
 		// The ERROR function will be called in an error case.
 		error: function(response, ioArgs) { //
+			track.handleError(response);
 			return response;
 		}
 	});
@@ -819,9 +820,15 @@ SequenceTrack.prototype.addSequenceAlterations = function(annots)  {
 	    this.features.add(featureArray, id);
 	}
     }
+    track.featureCount = track.storedFeatureCount();
+    if (this.SHOW_IF_FEATURES && this.featureCount > 0) {
+    	this.show();
+    }
+    else {
+    	this.hide();
+    }
     track.hideAll();
     track.changed();
-    track.featureCount = track.storedFeatureCount();
 };
 
 /**
@@ -836,9 +843,15 @@ SequenceTrack.prototype.removeSequenceAlterations = function(annots)  {
 	var id_to_delete = annots[i].uniquename;
 	this.features.deleteEntry(id_to_delete);
     }
+    track.featureCount = track.storedFeatureCount();
+    if (this.SHOW_IF_FEATURES && this.featureCount > 0) {
+    	this.show();
+    }
+    else {
+    	this.hide();
+    }
     track.hideAll();
     track.changed();
-    track.featureCount = track.storedFeatureCount();
 };
 
 SequenceTrack.prototype.storedFeatureCount = function()  {
