@@ -173,6 +173,13 @@ SequenceTrack.prototype.loadSequenceAlterations = function() {
     			var jfeat = JSONUtils.createJBrowseSequenceAlteration(features.attrs, responseFeatures[i]);
     			features.add(jfeat, responseFeatures[i].uniquename);
     		}
+    	    track.featureCount = track.storedFeatureCount();
+    	    if (track.SHOW_IF_FEATURES && track.featureCount > 0) {
+    	    	track.show();
+    	    }
+    	    else {
+    	    	track.hide();
+    	    }
     		track.hideAll();
     		track.changed();
     	},
