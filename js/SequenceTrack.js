@@ -308,6 +308,9 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 		       var blockStart = start + 2;
 		       var blockEnd = end - 2;
 		       var blockResidues = seq.substring(2, seq.length-2);
+
+		       var extendedStart = start;
+		       var extendedEnd = end;
 		       
 		       var extendedStartResidues = seq.substring(0, seq.length-2);
 		       var extendedEndResidues = seq.substring(2);
@@ -315,41 +318,32 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 		       if (verbose)  { 
 			   console.log("seq: " + seq + ", length: " + seq.length);
 			   console.log("blockResidues: " + blockResidues + ", length: " + blockResidues.length);
+			   console.log("extendedStartResidues: " + extendedStartResidues + ", length: " + extendedStartResidues.length);
+			   console.log("extendedEndResidues: " + extendedEndResidues + ", length: " + extendedEndResidues.length);
 		       }
 
 		       if (track.show_protein_translation) {
-
 			   var framedivs = [];
 			   for (var i=0; i<3; i++) {
-		//	       var tstart = start + i;
+			       // var tstart = start + i;
 			       var tstart = blockStart + i;
-			       var tend = end + (3 - ((end - tstart) % 3));
- 			       if (verbose) {
-				   console.log("translating: " + tstart + " -- " + tend + 
-					       ", seqlength = " + (tend-tstart) + ", seq = " + seq);
-			       }
-			      //  var transProtein = track.renderTranslation( tstart, tend, seq, i);
-			       var transProtein = track.renderTranslation( tstart, tend, extendedEndResidues, i);
 			       var frame = tstart % 3;
+ 			       if (verbose) { console.log("  forward translating: offset = " + i + ", frame = " + frame); }
+			       var transProtein = track.renderTranslation( extendedEndResidues, i);
 			       $(transProtein).addClass("frame" + frame);
 			       framedivs[frame] = transProtein;
 			   }
-
 			   for (var i=2; i>=0; i--) {
-			       if (verbose) { console.log("frame: " + i); }
 			       var transProtein = framedivs[i];
-			       // console.log(framedivs); console.log(transProtein);
+			       // if (verbose) { console.log("frame: " + i); console.log(framedivs); console.log(transProtein); }
 			       seqNode.appendChild(transProtein);
 			       $(transProtein).bind("mousedown", track.residuesMouseDown);
 			       blockHeight += track.proteinHeight;
 			   }
 		       }
 
-		       // truncate residues to block?
-		       
 		       // add a div for the forward strand
-//		       var forwardDNA = track.renderResidues( start, end, seq );
-		       var forwardDNA = track.renderResidues( blockStart, blockEnd, blockResidues );
+		       var forwardDNA = track.renderResidues( blockResidues );
 		       $(forwardDNA).addClass("forward-strand");
 		       seqNode.appendChild( forwardDNA );
 		       track.residues_context_menu.bindDomNode(forwardDNA);
@@ -358,7 +352,8 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 
 		       if (track.show_reverse_strand) {
 			   // and one for the reverse strand
-			   var reverseDNA = track.renderResidues( start, end, track.complement(seq) );
+			   // var reverseDNA = track.renderResidues( start, end, track.complement(seq) );
+			   var reverseDNA = track.renderResidues( track.complement(blockResidues) );
 			   $(reverseDNA).addClass("reverse-strand");
 			   seqNode.appendChild( reverseDNA );
 			   track.residues_context_menu.bindDomNode(reverseDNA);
@@ -368,7 +363,7 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 
 		       if (track.show_protein_translation && track.show_reverse_strand) {
 			   for (var i=0; i<3; i++) {
-			       var transProtein = track.renderTranslation( start, end, seq, i);
+			       var transProtein = track.renderTranslation( extendedEndResidues, i);
 			       seqNode.appendChild(transProtein);
 			       $(transProtein).bind("mousedown", track.residuesMouseDown);
 			       blockHeight += track.proteinHeight;
@@ -484,34 +479,32 @@ SequenceTrack.prototype.complement = (function() {
 
 //given the start and end coordinates, and the sequence bases, makes a
 //div containing the sequence
-SequenceTrack.prototype.renderResidues = function ( start, end, seq ) {
+// SequenceTrack.prototype.renderResidues = function ( start, end, seq ) {
+SequenceTrack.prototype.renderResidues = function ( seq ) {
     var container  = document.createElement("div");
     $(container).addClass("dna-residues");
     container.appendChild( document.createTextNode( seq ) );
     return container;
 };
 
-SequenceTrack.prototype.renderTranslation = function ( start, end, seq, offset) {
+/** end is ignored, assume all of seq is translated (except nay extra bases at end) */
+SequenceTrack.prototype.renderTranslation = function ( seq, offset) {
+    var verbose = (seq === "GTATATTTTGTACGTTAAAAATAAAAA");
     var container  = document.createElement("div");
     $(container).addClass("dna-residues");
     $(container).addClass("aa-residues");
-//    var frame = start % 3;
-//    $(container).addClass("frame" + frame);
     var prefix = "";
     var suffix = "";
     for (var i=0; i<offset; i++) { prefix += SequenceTrack.nbsp; }
     for (var i=0; i<(2-offset); i++) { suffix += SequenceTrack.nbsp; }
-//    console.log("padding aa residues, prefix: " + prefix.length + ", suffix: " + suffix.length);
-    var extra_bases = (end - (start+offset)) % 3;
+    var extra_bases = (seq.length - offset) % 3;
     var dnaRes = seq.substring(offset, seq.length - extra_bases);
-    
-//    var aaResidues = seq.replace(/(...)/gi,  function(codon) { 
+    if (verbose)  { console.log("to translate: " + dnaRes + ", length = " + dnaRes.length); }
     var aaResidues = dnaRes.replace(/(...)/gi,  function(codon) { 
 				     var aa = CodonTable[codon];
 				     return prefix + aa + suffix;
 				     // return aa;
 				 } );
-//    console.log("translation: " + aaResidues);
     container.appendChild( document.createTextNode( aaResidues ) );
     return container;
 };
