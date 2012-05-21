@@ -25,8 +25,23 @@ function SequenceTrack(config, refSeq, browserParams) {
     if (arguments.length == 0)  { return; }
     if (browserParams === undefined) { return; }
     var track = this;
+    track.show_reverse_strand = false;
+    track.show_protein_translation = true;
 
     DraggableFeatureTrack.call( track, config, refSeq, browserParams);
+
+ /*   
+    track.watch("height", function(id, oldval, newval)  {
+		    if (newval == 0)  {
+			console.log("   setting height to 0");
+		    }
+		    if (newval == 25 || oldval == 25) {
+			console.log("SequenceTrack height changed to or from default/label height: " + oldval + " ==> " + newval);
+		    }
+		    return newval;
+	} );
+*/
+
 
     track.residues_context_menu = new dijit.Menu({});  // placeholder till setAnnotTrack() triggers real menu init
     track.annot_context_menu = new dijit.Menu({});     // placeholder till setAnnotTrack() triggers real menu init
@@ -39,6 +54,10 @@ function SequenceTrack(config, refSeq, browserParams) {
 
     this.charWidth = browserParams.charWidth;
     this.seqHeight = browserParams.seqHeight;
+    // splitting seqHeight into residuesHeight and translationHeight, so future iteration may be possible 
+    //    for DNA residues and protein translation to be different styles
+    this.dnaHeight = this.seqHeight;
+    this.proteinHeight = this.seqHeight;  
 
     this.refSeq = refSeq;
 
@@ -114,10 +133,12 @@ SequenceTrack.prototype = new DraggableFeatureTrack();
 /** Dojo context menu stuff */
 dojo.require("dijit.Menu");
 dojo.require("dijit.MenuItem");
+dojo.require("dijit.MenuSeparator");
 
 dojo.addOnLoad( function()  {  /* add dijit menu stuff here? */ } );
 
 SequenceTrack.prototype.loadSuccess = function(trackInfo)  {
+
     console.log("SequenceTrack.loadSuccess called");
     DraggableFeatureTrack.prototype.loadSuccess.call(this, trackInfo);
     var track = this;
@@ -128,6 +149,8 @@ SequenceTrack.prototype.loadSuccess = function(trackInfo)  {
     track.featureCount = track.storedFeatureCount();
     console.log("storedFeatureCount = " + track.featureCount);
     //    this.initContextMenu();
+    console.log("Codon Table");
+    console.log(CodonTable);
 }
 
 /** called by AnnotTrack to initiate sequence alterations load, 
@@ -171,6 +194,8 @@ SequenceTrack.prototype.startZoom = function(destScale, destStart, destEnd) {
     $(".dna-residues", this.div).css('display', 'none');
     $(".block_seq_container", this.div).css('height', '20px');
     // }
+    this.heightUpdate(20);
+    this.gview.trackHeightUpdate(this.name, Math.max(this.labelHeight, 20));
 };
 
 
@@ -226,6 +251,7 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
                                              scale, stripeWidth,
                                              containerStart, containerEnd) {
     var fillArgs = arguments;
+    if (leftBase === 245524) { this.diagnostic_block_index = blockIndex; }
     var track = this;
     if ((scale == this.charWidth) ||
 	(this.SHOW_IF_FEATURES && this.featureCount > 0) ) {
@@ -234,6 +260,7 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
         this.hide();
         this.heightUpdate(0);
     }
+    var blockHeight = 0;
 
     if (this.shown) {
         // make a div to contain the sequences
@@ -244,8 +271,31 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 	$(seqNode).addClass("block_seq_container");  
 	block.appendChild(seqNode);
 
+	var verbose = (leftBase === 245524);
+	var slength = rightBase - leftBase;
+/*
+ 	var endBase = rightBase;
+	if ((slength % 3) !== 0)  {
+	    endBase = rightBase + (3 - (slength % 3));
+	}
+*/
+	// just always add two base pairs to front and end, 
+	//    to make sure can do three-frame translation across for every base position in (leftBase..rightBase), 
+	//    both forward (need tw pairs on end) and reverse (need 2 extra bases at start)
+	var leftExtended = leftBase - 2;
+	var rightExtended = rightBase + 2;
+
+/*
+ * 	if (verbose) {
+	    console.log("ajusted seq, min: " + leftBase + ", rightBase: " + rightBase + ", endBase: " + endBase + 
+			", remainder: " + ((endBase - leftBase) % 3));
+	}
+*/
+	
 	if (scale == this.charWidth) {
-	    this.sequenceStore.getRange( this.refSeq, leftBase, rightBase,
+	    // this.sequenceStore.getRange( this.refSeq, leftBase, rightBase,
+	   //  this.sequenceStore.getRange( this.refSeq, leftBase, endBase,
+	    this.sequenceStore.getRange( this.refSeq, leftExtended, rightExtended, 
 		   function( start, end, seq ) {
 
 		       // fill with leading blanks if the
@@ -255,32 +305,99 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 			   seq = SequenceTrack.nbsp + seq; //nbsp is an "&nbsp;" entity
 		       }
 
+		       var blockStart = start + 2;
+		       var blockEnd = end - 2;
+		       var blockResidues = seq.substring(2, seq.length-2);
+		       
+		       var extendedStartResidues = seq.substring(0, seq.length-2);
+		       var extendedEndResidues = seq.substring(2);
+
+		       if (verbose)  { 
+			   console.log("seq: " + seq + ", length: " + seq.length);
+			   console.log("blockResidues: " + blockResidues + ", length: " + blockResidues.length);
+		       }
+
+		       if (track.show_protein_translation) {
+
+			   var framedivs = [];
+			   for (var i=0; i<3; i++) {
+		//	       var tstart = start + i;
+			       var tstart = blockStart + i;
+			       var tend = end + (3 - ((end - tstart) % 3));
+ 			       if (verbose) {
+				   console.log("translating: " + tstart + " -- " + tend + 
+					       ", seqlength = " + (tend-tstart) + ", seq = " + seq);
+			       }
+			      //  var transProtein = track.renderTranslation( tstart, tend, seq, i);
+			       var transProtein = track.renderTranslation( tstart, tend, extendedEndResidues, i);
+			       var frame = tstart % 3;
+			       $(transProtein).addClass("frame" + frame);
+			       framedivs[frame] = transProtein;
+			   }
+
+			   for (var i=2; i>=0; i--) {
+			       if (verbose) { console.log("frame: " + i); }
+			       var transProtein = framedivs[i];
+			       // console.log(framedivs); console.log(transProtein);
+			       seqNode.appendChild(transProtein);
+			       $(transProtein).bind("mousedown", track.residuesMouseDown);
+			       blockHeight += track.proteinHeight;
+			   }
+		       }
+
+		       // truncate residues to block?
+		       
 		       // add a div for the forward strand
-		       var forwardDNA = track.renderResidues( start, end, seq );
+//		       var forwardDNA = track.renderResidues( start, end, seq );
+		       var forwardDNA = track.renderResidues( blockStart, blockEnd, blockResidues );
 		       $(forwardDNA).addClass("forward-strand");
 		       seqNode.appendChild( forwardDNA );
 		       track.residues_context_menu.bindDomNode(forwardDNA);
 		       $(forwardDNA).bind("mousedown", track.residuesMouseDown);
-		       
-		       // and one for the reverse strand
-		       var reverseDNA = track.renderResidues( start, end, track.complement(seq) );
-		       $(reverseDNA).addClass("reverse-strand");
-		       seqNode.appendChild( reverseDNA );
-		       track.residues_context_menu.bindDomNode(reverseDNA);
-		       $(reverseDNA).bind("mousedown", track.residuesMouseDown);
-		       
+		       blockHeight += track.dnaHeight;
+
+		       if (track.show_reverse_strand) {
+			   // and one for the reverse strand
+			   var reverseDNA = track.renderResidues( start, end, track.complement(seq) );
+			   $(reverseDNA).addClass("reverse-strand");
+			   seqNode.appendChild( reverseDNA );
+			   track.residues_context_menu.bindDomNode(reverseDNA);
+			   $(reverseDNA).bind("mousedown", track.residuesMouseDown);
+			   blockHeight += track.dnaHeight;
+		       }
+
+		       if (track.show_protein_translation && track.show_reverse_strand) {
+			   for (var i=0; i<3; i++) {
+			       var transProtein = track.renderTranslation( start, end, seq, i);
+			       seqNode.appendChild(transProtein);
+			       $(transProtein).bind("mousedown", track.residuesMouseDown);
+			       blockHeight += track.proteinHeight;
+			   }
+		       }
+	               DraggableFeatureTrack.prototype.fillBlock.apply(track, fillArgs);
+	               // this.blockHeights[blockIndex] = blockHeight;  // shouldn't be necessary, done in track.heightUpdate();
+		       track.heightUpdate(blockHeight, blockIndex);
 		   }
 	     );
 	}
 	else  {
+	    blockHeight = 20;  // default dna track height if not zoomed to base level
 	    seqNode.style.height = "20px";
+	    DraggableFeatureTrack.prototype.fillBlock.apply(track, arguments);
+	    // this.blockHeights[blockIndex] = blockHeight;  // shouldn't be necessary, done in track.heightUpdate();
+	    track.heightUpdate(blockHeight, blockIndex);
 	}
-        this.heightUpdate(this.seqHeight, blockIndex);
-	DraggableFeatureTrack.prototype.fillBlock.apply(this, arguments);
-
     } else {
         this.heightUpdate(0, blockIndex);
     }
+};
+
+SequenceTrack.prototype.heightUpdate = function(height, blockIndex)  {    
+    // console.log("SequenceTrack.heightUpdate: height = " + height + ", bindex = " + blockIndex);
+    if (blockIndex === this.diagnosticBlockIndex) {
+	 console.log("SequenceTrack.heightUpdate: height = " + height);
+    }
+    DraggableFeatureTrack.prototype.heightUpdate.call(this, height, blockIndex);
 };
 
 
@@ -374,6 +491,31 @@ SequenceTrack.prototype.renderResidues = function ( start, end, seq ) {
     return container;
 };
 
+SequenceTrack.prototype.renderTranslation = function ( start, end, seq, offset) {
+    var container  = document.createElement("div");
+    $(container).addClass("dna-residues");
+    $(container).addClass("aa-residues");
+//    var frame = start % 3;
+//    $(container).addClass("frame" + frame);
+    var prefix = "";
+    var suffix = "";
+    for (var i=0; i<offset; i++) { prefix += SequenceTrack.nbsp; }
+    for (var i=0; i<(2-offset); i++) { suffix += SequenceTrack.nbsp; }
+//    console.log("padding aa residues, prefix: " + prefix.length + ", suffix: " + suffix.length);
+    var extra_bases = (end - (start+offset)) % 3;
+    var dnaRes = seq.substring(offset, seq.length - extra_bases);
+    
+//    var aaResidues = seq.replace(/(...)/gi,  function(codon) { 
+    var aaResidues = dnaRes.replace(/(...)/gi,  function(codon) { 
+				     var aa = CodonTable[codon];
+				     return prefix + aa + suffix;
+				     // return aa;
+				 } );
+//    console.log("translation: " + aaResidues);
+    container.appendChild( document.createTextNode( aaResidues ) );
+    return container;
+};
+
 SequenceTrack.prototype.onResiduesMouseDown = function(event)  {
     this.last_mousedown_event = event;
 }    
@@ -459,8 +601,8 @@ SequenceTrack.prototype.initContextMenu = function() {
     	thisObj.annot_context_mousedown = thisObj.last_mousedown_event;
     	// if (thisObj.permission & Permission.WRITE) { thisObj.updateMenu(); }
 		dojo.forEach(this.getChildren(), function(item, idx, arr) {
-			item._setSelected(false);
-			item._onUnhover();
+			if (item._setSelected)  { item._setSelected(false); }  // test for function existence first
+			if (item._onUnhover)  { item._onUnhover(); }  // test for function existence first
 		});
     };
 
@@ -470,7 +612,33 @@ SequenceTrack.prototype.initContextMenu = function() {
     thisObj.residuesMenuItems = new Array();
     thisObj.residues_context_menu = new dijit.Menu({});
     index = 0;
+
+    thisObj.residuesMenuItems["toggle_reverse_strand"] = index++;
+    thisObj.residues_context_menu.addChild(new dijit.MenuItem( {
+    		label: "Toggle Reverse Strand",
+    		onClick: function(event) {
+		    thisObj.show_reverse_strand = ! thisObj.show_reverse_strand;
+		    thisObj.hideAll();
+		    thisObj.changed();
+    		    // thisObj.toggleReverseStrand();
+    		}
+    	} ));
+
+    thisObj.residuesMenuItems["toggle_protein_translation"] = index++;
+    thisObj.residues_context_menu.addChild(new dijit.MenuItem( {
+    		label: "Toggle Protein Translation",
+    		onClick: function(event) {
+		    thisObj.show_protein_translation = ! thisObj.show_protein_translation;
+		    thisObj.hideAll();
+		    thisObj.changed();
+    		    // thisObj.toggleProteinTranslation();
+    		}
+    	} ));
+
+
     if (this.annotTrack.permission & Permission.WRITE) {
+
+	thisObj.residues_context_menu.addChild(new dijit.MenuSeparator());
     	thisObj.residues_context_menu.addChild(new dijit.MenuItem( {
     		label: "Create Genomic Insertion",
     		onClick: function() {
@@ -504,8 +672,8 @@ SequenceTrack.prototype.initContextMenu = function() {
 		thisObj.residues_context_mousedown = thisObj.last_mousedown_event;
 		// if (thisObj.permission & Permission.WRITE) { thisObj.updateMenu() }
 		dojo.forEach(this.getChildren(), function(item, idx, arr) {
-			item._setSelected(false);
-			item._onUnhover();
+		     if (item._setSelected) { item._setSelected(false); }
+	             if (item._onUnhover) { item._onUnhover(); }
 		});
 	};
 
