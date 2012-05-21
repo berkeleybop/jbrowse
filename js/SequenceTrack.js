@@ -192,7 +192,7 @@ SequenceTrack.prototype.startZoom = function(destScale, destStart, destEnd) {
     
     // if (prevScale == this.charWidth) {
     $(".dna-residues", this.div).css('display', 'none');
-    $(".block_seq_container", this.div).css('height', '20px');
+    $(".block-seq-container", this.div).css('height', '20px');
     // }
     this.heightUpdate(20);
     this.gview.trackHeightUpdate(this.name, Math.max(this.labelHeight, 20));
@@ -271,7 +271,7 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
         seqNode.className = "sequence";
 	// seq_block_container style sets width = 100%, so seqNode fills the block width 
 	//    regardless of whether holding residue divs or not
-	$(seqNode).addClass("block_seq_container");  
+	$(seqNode).addClass("block-seq-container");  
 	block.appendChild(seqNode);
 
 	var slength = rightBase - leftBase;
@@ -331,10 +331,17 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 			   }
 		       }
 
+		       /*
+  		       var dnaContainer = document.createElement("div");
+		       $(dnaContainer).addClass("dna-container");  
+		       seqNode.appendChild(dnaContainer);
+		       */
+
 		       // add a div for the forward strand
 		       var forwardDNA = track.renderResidues( blockResidues );
 		       $(forwardDNA).addClass("forward-strand");
 		       seqNode.appendChild( forwardDNA );
+		       // dnaContainer.appendChild(forwardDNA);
 		       track.residues_context_menu.bindDomNode(forwardDNA);
 		       $(forwardDNA).bind("mousedown", track.residuesMouseDown);
 		       blockHeight += track.dnaHeight;
@@ -345,6 +352,7 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 			   var reverseDNA = track.renderResidues( track.complement(blockResidues) );
 			   $(reverseDNA).addClass("reverse-strand");
 			   seqNode.appendChild( reverseDNA );
+			   // dnaContainer.appendChild(reverseDNA);
 			   track.residues_context_menu.bindDomNode(reverseDNA);
 			   $(reverseDNA).bind("mousedown", track.residuesMouseDown);
 			   blockHeight += track.dnaHeight;
@@ -371,6 +379,7 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 			   }
 		       }
 	               DraggableFeatureTrack.prototype.fillBlock.apply(track, fillArgs);
+		       blockHeight += 5;  // a little extra padding below (track.trackPadding used for top padding)
 	               // this.blockHeights[blockIndex] = blockHeight;  // shouldn't be necessary, done in track.heightUpdate();
 		       track.heightUpdate(blockHeight, blockIndex);
 		   }
@@ -401,6 +410,7 @@ SequenceTrack.prototype.addFeatureToBlock = function(feature, uniqueId, block, s
     $(featDiv).addClass("sequence-alteration");
 
     var seqNode = $("div.sequence", block).get(0);
+    // var seqNode = $("div.dna-container", block).get(0);
     featDiv.style.top = "0px";
     var ftype = feature.get("type");
     if (ftype) {
@@ -414,7 +424,7 @@ SequenceTrack.prototype.addFeatureToBlock = function(feature, uniqueId, block, s
 		$(container).addClass("dna-residues");
 		container.appendChild( document.createTextNode( residues ) );
 		container.style.position = "absolute";
-		container.style.bottom = "22px";
+		container.style.top = "-16px";
 		container.style.border = "2px solid #00CC00";
 		container.style.backgroundColor = "#AAFFAA";
 		featDiv.appendChild(container);
@@ -430,7 +440,7 @@ SequenceTrack.prototype.addFeatureToBlock = function(feature, uniqueId, block, s
 		$(container).addClass("dna-residues");
 		container.appendChild( document.createTextNode( residues ) );
 		container.style.position = "absolute";
-		container.style.bottom = "22px";
+		container.style.top = "-16px";
 		container.style.border = "1px solid black";
 		container.style.backgroundColor = "#FFF506";
 		featDiv.appendChild(container);
@@ -494,7 +504,9 @@ SequenceTrack.prototype.renderResidues = function ( seq ) {
 
 /** end is ignored, assume all of seq is translated (except nay extra bases at end) */
 SequenceTrack.prototype.renderTranslation = function ( input_seq, offset, blockLength, reverse) {
-    var verbose = (input_seq === "GTATATTTTGTACGTTAAAAATAAAAA" || input_seq === "GCGTATATTTTGTACGTTAAAAATAAA" );
+    var verbose = false;
+    // sequence of diagnostic block
+    //    var verbose = (input_seq === "GTATATTTTGTACGTTAAAAATAAAAA" || input_seq === "GCGTATATTTTGTACGTTAAAAATAAA" );
     var seq;
     if (reverse) {
 	seq = this.reverseComplement(input_seq);
@@ -511,12 +523,7 @@ SequenceTrack.prototype.renderTranslation = function ( input_seq, offset, blockL
     var suffix = "";
     for (var i=0; i<offset; i++) { prefix += SequenceTrack.nbsp; }
     for (var i=0; i<(2-offset); i++) { suffix += SequenceTrack.nbsp; }
-/*    if (reverse) {
-	var temp = prefix;
-	prefix = suffix;
-	suffix = temp;
-    }
-*/
+
     var extra_bases = (seq.length - offset) % 3;
     var dnaRes = seq.substring(offset, seq.length - extra_bases);
     if (verbose)  { console.log("to translate: " + dnaRes + ", length = " + dnaRes.length); }
