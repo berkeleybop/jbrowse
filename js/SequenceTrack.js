@@ -25,7 +25,7 @@ function SequenceTrack(config, refSeq, browserParams) {
     if (arguments.length == 0)  { return; }
     if (browserParams === undefined) { return; }
     var track = this;
-    track.show_reverse_strand = false;
+    track.show_reverse_strand = true;
     track.show_protein_translation = true;
 
     DraggableFeatureTrack.call( track, config, refSeq, browserParams);
@@ -57,7 +57,7 @@ function SequenceTrack(config, refSeq, browserParams) {
     // splitting seqHeight into residuesHeight and translationHeight, so future iteration may be possible 
     //    for DNA residues and protein translation to be different styles
     this.dnaHeight = this.seqHeight;
-    this.proteinHeight = this.seqHeight;  
+    this.proteinHeight = this.seqHeight;
 
     this.refSeq = refSeq;
 
@@ -249,9 +249,12 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
                                              leftBlock, rightBlock,
                                              leftBase, rightBase,
                                              scale, stripeWidth,
-                                             containerStart, containerEnd) {
+                                      containerStart, containerEnd) {
+    var verbose = false;
+    // test block for diagnostics
+    // var verbose = (leftBase === 245524);
+
     var fillArgs = arguments;
-    if (leftBase === 245524) { this.diagnostic_block_index = blockIndex; }
     var track = this;
     if ((scale == this.charWidth) ||
 	(this.SHOW_IF_FEATURES && this.featureCount > 0) ) {
@@ -271,27 +274,14 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 	$(seqNode).addClass("block_seq_container");  
 	block.appendChild(seqNode);
 
-	var verbose = (leftBase === 245524);
 	var slength = rightBase - leftBase;
-/*
- 	var endBase = rightBase;
-	if ((slength % 3) !== 0)  {
-	    endBase = rightBase + (3 - (slength % 3));
-	}
-*/
+
 	// just always add two base pairs to front and end, 
 	//    to make sure can do three-frame translation across for every base position in (leftBase..rightBase), 
 	//    both forward (need tw pairs on end) and reverse (need 2 extra bases at start)
 	var leftExtended = leftBase - 2;
 	var rightExtended = rightBase + 2;
 
-/*
- * 	if (verbose) {
-	    console.log("ajusted seq, min: " + leftBase + ", rightBase: " + rightBase + ", endBase: " + endBase + 
-			", remainder: " + ((endBase - leftBase) % 3));
-	}
-*/
-	
 	if (scale == this.charWidth) {
 	    // this.sequenceStore.getRange( this.refSeq, leftBase, rightBase,
 	   //  this.sequenceStore.getRange( this.refSeq, leftBase, endBase,
@@ -308,10 +298,9 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 		       var blockStart = start + 2;
 		       var blockEnd = end - 2;
 		       var blockResidues = seq.substring(2, seq.length-2);
-
+		       var blockLength = blockResidues.length;
 		       var extendedStart = start;
 		       var extendedEnd = end;
-		       
 		       var extendedStartResidues = seq.substring(0, seq.length-2);
 		       var extendedEndResidues = seq.substring(2);
 
@@ -329,7 +318,7 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 			       var tstart = blockStart + i;
 			       var frame = tstart % 3;
  			       if (verbose) { console.log("  forward translating: offset = " + i + ", frame = " + frame); }
-			       var transProtein = track.renderTranslation( extendedEndResidues, i);
+			       var transProtein = track.renderTranslation( extendedEndResidues, i, blockLength);
 			       $(transProtein).addClass("frame" + frame);
 			       framedivs[frame] = transProtein;
 			   }
@@ -362,8 +351,20 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 		       }
 
 		       if (track.show_protein_translation && track.show_reverse_strand) {
+			   var extendedReverseComp = track.reverseComplement(extendedStartResidues);
+			   if (verbose)  { console.log("extendedReverseComp: " + extendedReverseComp); }
+			   var framedivs = [];
 			   for (var i=0; i<3; i++) {
-			       var transProtein = track.renderTranslation( extendedEndResidues, i);
+			       var tstart = blockStart + i;
+			       // var frame = tstart % 3;
+			       var frame = (track.refSeq.length - blockEnd + i) % 3;
+			       var transProtein = track.renderTranslation( extendedStartResidues, i, blockLength, true);
+			       $(transProtein).addClass("frame" + frame);
+			       framedivs[frame] = transProtein;
+			   }
+			   // for (var i=2; i>=0; i--) {
+			   for (var i=0; i<3; i++) {
+			       var transProtein = framedivs[i];
 			       seqNode.appendChild(transProtein);
 			       $(transProtein).bind("mousedown", track.residuesMouseDown);
 			       blockHeight += track.proteinHeight;
@@ -389,9 +390,6 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 
 SequenceTrack.prototype.heightUpdate = function(height, blockIndex)  {    
     // console.log("SequenceTrack.heightUpdate: height = " + height + ", bindex = " + blockIndex);
-    if (blockIndex === this.diagnosticBlockIndex) {
-	 console.log("SequenceTrack.heightUpdate: height = " + height);
-    }
     DraggableFeatureTrack.prototype.heightUpdate.call(this, height, blockIndex);
 };
 
@@ -462,6 +460,13 @@ SequenceTrack.prototype.renderFeature = function(feature, uniqueId, block, scale
     return featDiv;
 }
 
+SequenceTrack.prototype.reverseComplement = function(seq) {
+   return this.reverse(this.complement(seq));
+}
+
+SequenceTrack.prototype.reverse = function(seq) {
+   return seq.split("").reverse().join("");
+}
 
 SequenceTrack.prototype.complement = (function() {
 					  var compl_rx   = /[ACGT]/gi;
@@ -488,23 +493,55 @@ SequenceTrack.prototype.renderResidues = function ( seq ) {
 };
 
 /** end is ignored, assume all of seq is translated (except nay extra bases at end) */
-SequenceTrack.prototype.renderTranslation = function ( seq, offset) {
-    var verbose = (seq === "GTATATTTTGTACGTTAAAAATAAAAA");
+SequenceTrack.prototype.renderTranslation = function ( input_seq, offset, blockLength, reverse) {
+    var verbose = (input_seq === "GTATATTTTGTACGTTAAAAATAAAAA" || input_seq === "GCGTATATTTTGTACGTTAAAAATAAA" );
+    var seq;
+    if (reverse) {
+	seq = this.reverseComplement(input_seq);
+	if (verbose) { console.log("revcomped, input: " + input_seq + ", output: " + seq); }
+    }
+    else  {
+	seq = input_seq;	
+    }
     var container  = document.createElement("div");
     $(container).addClass("dna-residues");
     $(container).addClass("aa-residues");
+    $(container).addClass("offset" + offset);
     var prefix = "";
     var suffix = "";
     for (var i=0; i<offset; i++) { prefix += SequenceTrack.nbsp; }
     for (var i=0; i<(2-offset); i++) { suffix += SequenceTrack.nbsp; }
+/*    if (reverse) {
+	var temp = prefix;
+	prefix = suffix;
+	suffix = temp;
+    }
+*/
     var extra_bases = (seq.length - offset) % 3;
     var dnaRes = seq.substring(offset, seq.length - extra_bases);
     if (verbose)  { console.log("to translate: " + dnaRes + ", length = " + dnaRes.length); }
     var aaResidues = dnaRes.replace(/(...)/gi,  function(codon) { 
 				     var aa = CodonTable[codon];
+			             // if no mapping and blank in codon, return blank
+				     // if no mapping and no blank in codon,  return "?"
+				     if (!aa) { 
+					 if (codon.indexOf(SequenceTrack.nbsp) >= 0) { aa = SequenceTrack.nbsp; }
+					 else  { aa = "?"; }
+				     }
 				     return prefix + aa + suffix;
 				     // return aa;
 				 } );
+    var trimmedAaResidues = aaResidues.substring(0, blockLength);
+    if (verbose)  { console.log("AaLength: " + aaResidues.length + ", trimmedAaLength = " + trimmedAaResidues.length); }
+    aaResidues = trimmedAaResidues;
+    if (reverse) {
+	var revAaResidues = this.reverse(aaResidues);
+	if (verbose) { console.log("reversing aa string, input: \"" + aaResidues + "\", output: \"" + revAaResidues + "\""); }
+	aaResidues = revAaResidues;
+	while (aaResidues.length < blockLength)  {
+	    aaResidues = SequenceTrack.nbsp + aaResidues;
+	}
+    }
     container.appendChild( document.createTextNode( aaResidues ) );
     return container;
 };
