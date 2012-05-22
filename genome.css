@@ -191,12 +191,10 @@ div.sequence {
     /* top: 15px; */
     cursor: pointer; 
    /* z-index: 15; */
-/*
   -moz-user-select: none;
   -khtml-user-select: none;
   -webkit-user-select: none;
   user-select: none;
-*/
 }
 
 /* 
@@ -298,13 +296,12 @@ div.annot-sequence  {
 	and onto the block or feature div underneath
     */ 
     pointer-events: none;
-/*
+
     -webkit-user-select: none;
     -khtml-user-select: none;
     -moz-user-select: none;
     -o-user-select: none;
     user-select: none;
-*/
 }
 
 /*
@@ -2559,21 +2556,14 @@ div.generic_parent-hist {
     min-width: 1px;
     cursor: pointer;
    /* outline: 2px solid black */
+
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+
 }
 
-/*
-.plus-annot,
-.minus-annot {
-    position: absolute;
-    height: 4px;
-    margin-top: 6px;
-    margin-bottom: 6px;
-    background-color: #99F;
-    z-index: 6;
-    min-width: 1px;
-    cursor: pointer;
-}
-*/
 .annot-render {
     position: absolute;
 /*    height: 4px;
@@ -2591,6 +2581,12 @@ div.generic_parent-hist {
     min-width: 1px;
     cursor: pointer;
     width: 100%;
+/*  not needed?  residues overlay is on .annot, so that's where text selection needs to be disabled
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+*/
 }
 
 .annot-exon, 
@@ -2606,6 +2602,12 @@ div.generic_parent-hist {
     -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;
     -ms-box-sizing: border-box;
+/* not needed?  residues overlay is on .annot, so that's where text selection needs to be disabled
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+*/
 }
 
  
@@ -2626,6 +2628,13 @@ div.generic_parent-hist {
     -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;
     -ms-box-sizing: border-box;
+
+/* not needed?  residues overlay is on .annot, so that's where text selection needs to be disabled
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+*/
 }
 
 
@@ -2651,6 +2660,13 @@ div.generic_parent-hist {
     -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;
     -ms-box-sizing: border-box;
+
+/* not needed?  residues overlay is on .annot, so that's where text selection needs to be disabled
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+*/
 }
 
 .noncanonical-splice-site, 
