@@ -861,11 +861,17 @@ SequenceTrack.prototype.removeSequenceAlterations = function(annots)  {
     track.changed();
 };
 
-SequenceTrack.prototype.storedFeatureCount = function()  {
+SequenceTrack.prototype.storedFeatureCount = function(start, end)  {
     // get accurate count of features loaded (should do this within the XHR.load() function
     var track = this;
+    if (start == undefined) {
+    	start = 0;
+    }
+    if (end == undefined) {
+    	end = track.refSeq.length;
+    }
     var count = 0;
-    this.features.iterate(0, track.refSeq.length, function() { count++; });
+    this.features.iterate(start, end, function() { count++; });
     return count;
 }
 
@@ -918,26 +924,31 @@ SequenceTrack.prototype.createAddSequenceAlterationPanel = function(type, gcoord
 	    	else if (type == "substitution") {
 	    		fmax = gcoord + input.length;;
 	    	}
-	    	var feature = '"location": { "fmin": ' + fmin + ', "fmax": ' + fmax + ', "strand": 1 }, "type": {"name": "' + type + '", "cv": { "name":"SO" } }';
-	    	if (type != "deletion") {
-	    		feature += ', "residues": "' + input + '"';
+	    	if (track.storedFeatureCount(fmin, fmax == fmin ? fmin + 1 : fmax) > 0) {
+	    		alert("Cannot create overlapping sequence alterations");
 	    	}
-	    	var features = '[ { ' + feature + ' } ]';
-	    	dojo.xhrPost( {
-	    		postData: '{ "track": "' + track.annotTrack.getUniqueTrackName() + '", "features": ' + features + ', "operation": "add_sequence_alteration" }',
-	    		url: context_path + "/AnnotationEditorService",
-	    		handleAs: "json",
-	    		timeout: 5000, // Time in milliseconds
-	    		// The LOAD function will be called on a successful response.
-	    		load: function(response, ioArgs) {
-	    		},
-	    		// The ERROR function will be called in an error case.
-	    		error: function(response, ioArgs) { //
-	    			track.handleError(response);
-	    			return response;
+	    	else {
+	    		var feature = '"location": { "fmin": ' + fmin + ', "fmax": ' + fmax + ', "strand": 1 }, "type": {"name": "' + type + '", "cv": { "name":"SO" } }';
+	    		if (type != "deletion") {
+	    			feature += ', "residues": "' + input + '"';
 	    		}
-	    	});
-	    	track.annotTrack.popupDialog.hide();
+	    		var features = '[ { ' + feature + ' } ]';
+	    		dojo.xhrPost( {
+	    			postData: '{ "track": "' + track.annotTrack.getUniqueTrackName() + '", "features": ' + features + ', "operation": "add_sequence_alteration" }',
+	    			url: context_path + "/AnnotationEditorService",
+	    			handleAs: "json",
+	    			timeout: 5000, // Time in milliseconds
+	    			// The LOAD function will be called on a successful response.
+	    			load: function(response, ioArgs) {
+	    			},
+	    			// The ERROR function will be called in an error case.
+	    			error: function(response, ioArgs) { //
+	    				track.handleError(response);
+	    				return response;
+	    			}
+	    		});
+	    		track.annotTrack.popupDialog.hide();
+	    	}
 	    }
 	}
 
