@@ -1,4 +1,3 @@
-
 /*  Subclass of FeatureTrack that allows features to be selected, 
     and dragged and dropped into the annotation track to create annotations. 
 
@@ -40,15 +39,32 @@ function DraggableFeatureTrack(config, refSeq, browserParams) {
     this.verbose_selection_notification = false;
     this.verbose_drag = false;
     this.browserParams = browserParams;
-}
 
-// Inherit from FeatureTrack
+    this.feature_context_menu = null;
+};
+
 DraggableFeatureTrack.prototype = new FeatureTrack();
 
 // selectionManager is class variable (shared across all DraggableFeatureTrack objects)
 DraggableFeatureTrack.selectionManager = new FeatureSelectionManager();
 
 DraggableFeatureTrack.dragging = false;
+
+dojo.require("dijit.Menu");
+dojo.require("dijit.MenuItem");
+dojo.require("dijit.MenuSeparator");
+dojo.require("dijit.Dialog");
+dojo.require("dojox.grid.DataGrid");
+dojo.require("dojo.data.ItemFileWriteStore");
+
+DraggableFeatureTrack.prototype.loadSuccess = function(trackInfo) {
+    /* if subclass indicates it has custom context menu, do not initialize default feature context menu */
+    if (! this.has_custom_context_menu) {
+	this.initFeatureContextMenu();
+	this.initFeatureDialog();
+    }
+    FeatureTrack.prototype.loadSuccess.call(this, trackInfo);
+}
 
 DraggableFeatureTrack.prototype.setSelectionManager = function(selman)  {
     if (this.selectionManager)  {
@@ -240,6 +256,10 @@ DraggableFeatureTrack.prototype.renderFeature = function(feature, uniqueId, bloc
 	// using JQuery bind() will normalize events to W3C spec (don't have to worry about IE inconsistencies, etc.)
 	$featdiv.bind("mousedown", this.featMouseDown);
 	$featdiv.bind("dblclick", this.featDoubleClick);
+
+	if (this.feature_context_menu  && (! this.has_custom_context_menu)) {
+	    this.feature_context_menu.bindDomNode(featdiv);
+	}
 
 	// if renderClassName field exists in trackData.json for this track, then add a child 
 	//    div to the featdiv with class for CSS styling set to renderClassName value
@@ -720,6 +740,67 @@ DraggableFeatureTrack.prototype.endZoom = function(destScale, destBlockBases) {
     FeatureTrack.prototype.endZoom.call(this, destScale, destBlockBases);
     // this.scale = destScale;
 };
+
+
+DraggableFeatureTrack.prototype.initFeatureContextMenu = function() {
+    var thisObj = this;
+    this.feature_context_menu = new dijit.Menu({});
+    this.feature_context_menu.addChild(new dijit.MenuItem( {
+	label: "Information",
+	onClick: function(event) {
+	    thisObj.showFeatureInformation(thisObj.selectionManager.getSelection());
+	}
+    } ));
+    this.feature_context_menu.addChild(new dijit.MenuItem( {
+							label: "..."
+						    } ));
+    this.feature_context_menu.onOpen = function(event) {
+	dojo.forEach(this.getChildren(), function(item, idx, arr) {
+			 item._setSelected(false);
+			 item._onUnhover();
+		     });
+    };
+    this.feature_context_menu.startup();
+};
+
+DraggableFeatureTrack.prototype.showFeatureInformation = function(feats) {
+    var info = "";
+    for (var i=0; i<feats.length; i++) {
+	var feat = feats[i];
+	var attrs = this.featureStore.attrs;
+	var props = attrs.getAttributeNames(feat);
+    	if (i > 0) {
+    	    info += "<hr/> \n";
+    	}
+	for (var k=0; k<props.length; k++) {
+	    var prop = props[k];
+	    var val = attrs.get(feat, prop);
+	    if ($.isArray(val))  {
+		val = val.length;
+	    }
+	    var tagval = prop + ": " +  val + " <br/> \n";
+	    info += tagval;
+	}
+    }
+    this.openFeatureDialog("Feature information", info);
+}
+
+DraggableFeatureTrack.prototype.initFeatureDialog = function() {
+    this.featureDialog = new dijit.Dialog({});
+    this.featureDialog.startup();
+};
+
+DraggableFeatureTrack.prototype.openFeatureDialog = function(title, data) {
+    this.featureDialog.set("title", title);
+    this.featureDialog.set("content", data);
+    this.featureDialog.show();
+    this.featureDialog.placeAt("GenomeBrowser", "first");
+};
+
+
+
+
+
 /*
   Copyright (c) 2010-2011 Berkeley Bioinformatics Open-source Projects & Lawrence Berkeley National Labs
 

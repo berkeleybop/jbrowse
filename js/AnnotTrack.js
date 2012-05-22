@@ -12,6 +12,7 @@ function AnnotTrack(trackMeta, refSeq, browserParams) {
     //                changeCallback: function to call once JSON is loaded
     //                trackPadding: distance in px between tracks
     //                baseUrl: base URL for the URL in trackMeta
+    this.has_custom_context_menu = true;
 
 
     DraggableFeatureTrack.call(this, trackMeta, refSeq, browserParams);
@@ -126,7 +127,7 @@ AnnotTrack.prototype.loadSuccess = function(trackInfo) {
     this.features = this.featureStore.nclist;
     var features = this.features;
     
-    this.initContextMenu();
+    this.initAnnotContextMenu();
     this.initPopupDialog();
     
     if (! AnnotTrack.USE_LOCAL_EDITS)  {
@@ -1654,12 +1655,12 @@ AnnotTrack.prototype.redoSelectedFeatures = function(annots) {
     }
 };
 
-AnnotTrack.prototype.getInformation = function()  {
+AnnotTrack.prototype.getAnnotationInformation = function()  {
     var selected = this.selectionManager.getSelection();
-    this.getInformationForSelectedFeatures(selected);
+    this.getInformationForSelectedAnnotations(selected);
 };
 
-AnnotTrack.prototype.getInformationForSelectedFeatures = function(annots) {
+AnnotTrack.prototype.getInformationForSelectedAnnotations = function(annots) {
     var track = this;
     var features = '"features": [';
     for (var i in annots)  {
@@ -1702,7 +1703,7 @@ AnnotTrack.prototype.getInformationForSelectedFeatures = function(annots) {
     	    		information += "Owner: " + feature.owner + "<br/>";
     	    		information += "Parent ids: " + feature.parent_ids + "<br/>";
     	    	}
-    	    	track.openDialog("Feature information", information);
+    	    	track.openDialog("Annotation information", information);
     	    },
     	    // The ERROR function will be called in an error case.
     	    error: function(response, ioArgs) { // 
@@ -1896,8 +1897,7 @@ AnnotTrack.prototype.handleConfirm = function(response) {
 	return confirm(response);
 };
 
-AnnotTrack.prototype.initContextMenu = function() {
-
+AnnotTrack.prototype.initAnnotContextMenu = function() {
     var thisObj = this;
     
     contextMenuItems = new Array();
@@ -1992,7 +1992,7 @@ AnnotTrack.prototype.initContextMenu = function() {
 			annot_context_menu.addChild(new dijit.MenuItem( {
 				label: "Information",
 				onClick: function(event) {
-					thisObj.getInformation();
+					thisObj.getAnnotationInformation();
 				}
 			} ));
 			contextMenuItems["information"] = index++;
@@ -2065,12 +2065,14 @@ AnnotTrack.prototype.getUniqueTrackName = function() {
 	return this.name + "-" + this.refSeq.name;
 };
 
+
 AnnotTrack.prototype.openDialog = function(title, data) {
 	this.popupDialog.set("title", title);
 	this.popupDialog.set("content", data);
     this.popupDialog.show();
     this.popupDialog.placeAt("GenomeBrowser", "first");
 };
+
 
 AnnotTrack.prototype.updateMenu = function() {
 	this.updateSetTranslationStartMenuItem();

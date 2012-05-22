@@ -21,6 +21,10 @@
  *  seqHeight: height, in pixels, of sequence elements
  */
 function SequenceTrack(config, refSeq, browserParams) {
+    /* DraggableFeatureTrack now has its own context menu for divs, 
+     *     and adding this flag provides a quick way to short-circuit it's initialization */
+    this.has_custom_context_menu = true;
+
     //    var cback = browserParams ? browserParams.changeCallbck : null;
     if (arguments.length == 0)  { return; }
     if (browserParams === undefined) { return; }
@@ -138,8 +142,8 @@ dojo.require("dijit.MenuSeparator");
 dojo.addOnLoad( function()  {  /* add dijit menu stuff here? */ } );
 
 SequenceTrack.prototype.loadSuccess = function(trackInfo)  {
+    this.use_standard_context_menu = false;
 
-    console.log("SequenceTrack.loadSuccess called");
     DraggableFeatureTrack.prototype.loadSuccess.call(this, trackInfo);
     var track = this;
     // for AnnotTrack, features currently MUST be an NCList
@@ -147,10 +151,8 @@ SequenceTrack.prototype.loadSuccess = function(trackInfo)  {
     this.features = this.featureStore.nclist;
 		     
     track.featureCount = track.storedFeatureCount();
-    console.log("storedFeatureCount = " + track.featureCount);
+//    console.log("storedFeatureCount = " + track.featureCount);
     //    this.initContextMenu();
-    console.log("Codon Table");
-    console.log(CodonTable);
 }
 
 /** called by AnnotTrack to initiate sequence alterations load, 
@@ -624,6 +626,7 @@ SequenceTrack.prototype.initContextMenu = function() {
     this.context_path = "..";
     thisObj.contextMenuItems = new Array();
     thisObj.annot_context_menu = new dijit.Menu({});
+
     /*	dojo.xhrPost( {
      sync: true,
      postData: '{ "track": "' + thisObj.getUniqueTrackName() + '", "operation": "get_user_permission" }',

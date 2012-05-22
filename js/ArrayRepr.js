@@ -128,6 +128,10 @@ ArrayRepr.prototype.attrIndices = function(attr) {
 ArrayRepr.prototype.hasDefinedAttribute = function(obj, attr) {
     return (this.fields[obj[0]][attr] !== undefined);
 //    return (!!this.fields[obj[0]][attr]);
+};
+
+ArrayRepr.prototype.getAttributeNames = function(obj) {
+    return this.classes[obj[0]].attributes;
 }
 
 ArrayRepr.prototype.get = function(obj, attr) {

@@ -127,6 +127,12 @@ BamFeatureTrack.prototype.loadSuccess = function(bamfile)  {
     //   same for histStats, histBinBases
     
     this.setLoaded();
+
+    /* if subclass indicates it has custom context menu, do not initialize default feature context menu */
+    if (! this.has_custom_context_menu) {
+	this.initFeatureContextMenu();
+	this.initFeatureDialog();
+    }
     console.log("finished BamFeatureTrack.loadSuccess()");
 }
 
