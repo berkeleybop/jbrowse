@@ -348,6 +348,16 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 		       var forwardDNA = track.renderResidues( blockResidues );
 		       $(forwardDNA).addClass("forward-strand");
 		       seqNode.appendChild( forwardDNA );
+
+
+/*                     could force highlighting on mouseenter in additona to mousemove, 
+                               but mousemove seems to always be fired anyway when there's a mouseenter
+  		       $(forwardDNA).bind("mouseenter", function(event) {
+				track.removeTextHighlight(element);
+	               } );
+*/
+
+
 		       // dnaContainer.appendChild(forwardDNA);
 		       track.residues_context_menu.bindDomNode(forwardDNA);
 		       $(forwardDNA).bind("mousedown", track.residuesMouseDown);
@@ -363,6 +373,38 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 			   track.residues_context_menu.bindDomNode(reverseDNA);
 			   $(reverseDNA).bind("mousedown", track.residuesMouseDown);
 			   blockHeight += track.dnaHeight;
+		       }
+
+		       // set up highlighting of base pair underneath mouse
+		       $(forwardDNA).bind("mouseleave", function(event) {
+				track.removeTextHighlight(forwardDNA);
+			        if (reverseDNA) { track.removeTextHighlight(reverseDNA); }
+	               } );
+		       $(forwardDNA).bind("mousemove", function(event) {
+	                      var gcoord = track.gview.getGenomeCoord(event);
+			      if ((!track.last_dna_coord) || (gcoord !== track.last_dna_coord)) {
+				  var blockCoord = gcoord - leftBase;
+				  track.last_dna_coord = gcoord;
+				  track.setTextHighlight(forwardDNA, blockCoord, blockCoord, "dna-highlighted");
+				  if (reverseDNA)  {
+				      track.setTextHighlight(reverseDNA, blockCoord, blockCoord, "dna-highlighted");
+				  }
+			      }
+		       } );
+		       if (reverseDNA) {
+			   $(reverseDNA).bind("mouseleave", function(event) {
+				track.removeTextHighlight(forwardDNA);
+			        track.removeTextHighlight(reverseDNA); 
+		           } ); 
+			   $(reverseDNA).bind("mousemove", function(event) {
+			      var gcoord = track.gview.getGenomeCoord(event);
+			      if ((!track.last_dna_coord) || (gcoord !== track.last_dna_coord)) {
+				  var blockCoord = gcoord - leftBase;
+				  track.last_dna_coord = gcoord;
+				  track.setTextHighlight(forwardDNA, blockCoord, blockCoord, "dna-highlighted");
+				  track.setTextHighlight(reverseDNA, blockCoord, blockCoord, "dna-highlighted");
+			      }
+		           } );
 		       }
 
 		       if (track.show_protein_translation && track.show_reverse_strand) {
@@ -980,4 +1022,58 @@ SequenceTrack.prototype.setAnnotTrack = function(annotTrack) {
 	this.annotTrack = annotTrack;
 	this.initContextMenu();
 };
+
+
+
+/* 
+ * Given an element that contains text, highlights a given range of the text
+ * If called repeatedly, removes highlighting from previous call first
+ * 
+ * Assumes there is no additional markup within element, just a text node
+ *    (would like to eventually rewrite to remove this restriction?  Possibly could use HTML Range manipulation, 
+ *        i.e. range.surroundContents() etc. )
+ * 
+ * optionally specify what class to use to indicate highlighting (defaults to "text-highlight")
+ * 
+ * adapted from http://stackoverflow.com/questions/9051369/highlight-substring-in-element 
+ */
+SequenceTrack.prototype.setTextHighlight = function (element, start, end, classname) {
+    if (! classname) { classname = "text-highlight"; }
+    var item = $(element);
+    var str = item.data("origHTML");
+    if (!str) {
+        str = item.html();
+        item.data("origHTML", str);
+    }
+    str = str.substr(0, start) +
+        '<span class="' + classname + '">' + 
+        str.substr(start, end - start + 1) +
+        '</span>' +
+        str.substr(end + 1);
+    item.html(str);
+};
+
+/*  
+ *  remove highlighting added with setTextHighlight
+ */
+SequenceTrack.prototype.removeTextHighlight = function(element) {
+    var item = $(element);
+    var str = item.data("origHTML");
+    if (str) { 
+	item.html(str);
+    }
+}
+
+
+/* 
+ * highlightText is nice,  
+ * what would be _really_ good is a residue highlighter that works in genome coords, and 
+ *     does highlights across all blocks that overlap genome coord range
+ * NOT YET IMPLEMENTED
+ */
+/*
+ SequenceTrack.prototype.highlightResidues = function(genomeStart, genomeEnd) {
+}
+*/
+
 

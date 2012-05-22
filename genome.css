@@ -191,6 +191,12 @@ div.sequence {
     /* top: 15px; */
     cursor: pointer; 
    /* z-index: 15; */
+/*
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+*/
 }
 
 /* 
@@ -263,6 +269,10 @@ div.sequence .aa-residues.offset2 {
 }
 */
 
+/* highlighting of dna residues in DNA track on mouseover */
+div.sequence .dna-highlighted {
+    background: #F9BF3A
+}
 
 /* don't think this is currently (April 2012) being used */
 div.sequence .highlighted {
@@ -288,7 +298,7 @@ div.annot-sequence  {
 	and onto the block or feature div underneath
     */ 
     pointer-events: none;
-/*    
+/*
     -webkit-user-select: none;
     -khtml-user-select: none;
     -moz-user-select: none;
