@@ -427,9 +427,23 @@ Browser.prototype.addDeferred = function(f) {
  * configuration.
  */
 Browser.prototype.addConfigData = function( /**Object*/ config_data ) {
+    var tracks_array = [];
 
+    // GAH WebApollo hack to fix multiple "include" tracklist entries
+    var merge_tracks = $.isArray(config_data.tracks) && $.isArray(this.config.tracks);
+    if (merge_tracks)  {
+	console.log("want to merge tracks: ");
+	console.log(this.config.tracks);
+	console.log(config_data.tracks);
+	tracks_array = this.config.tracks.concat(config_data.tracks);
+	console.log("tracks array:");
+	console.log(tracks_array); 
+	this.config.tracks = tracks_array;
+    }
 
-    Util.deepUpdate( this.config, config_data );
+    else  {
+	Util.deepUpdate( this.config, config_data );
+    }
 };
 
 /**
