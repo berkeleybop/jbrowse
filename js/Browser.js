@@ -301,6 +301,9 @@ Browser.prototype.loadConfig = function () {
         if( !config )
             return;
 
+	console.log("loading include:");
+	console.log(config);
+
         // set defaults for format and version
         if( ! ('format' in config) ) {
             config.format = 'JB_json';
