@@ -7,6 +7,7 @@ function FeatureEdgeMatchManager() {
   this.annotSelectionManager.addListener(this);
   this.verbose_edges = false;
   this.unmatchableTypes = this.featSelectionManager.unselectableTypes;
+  this.unedgeableTypes = { "wholeCDS" : true };
 }
 
 FeatureEdgeMatchManager.singleton = new FeatureEdgeMatchManager();
@@ -97,6 +98,7 @@ FeatureEdgeMatchManager.prototype.selectionAdded = function(feat)  {
 
     if (verbose_edges)  { console.log("qmin = " + qmin + ", qmax = " + qmax); }
     var unmatchableTypes = this.unmatchableTypes;
+    var unedgeableTypes = this.unedgeableTypes;
     
     var ftracks = $("div.track").each( function(index, trackdiv)  {  
         var target_track = trackdiv.track;
@@ -141,7 +143,8 @@ FeatureEdgeMatchManager.prototype.selectionAdded = function(feat)  {
 			    // console.log(rsubdivs);
 			    for (var i in source_subfeats)  {
 				var ssfeat = source_subfeats[i];
-				if (unmatchableTypes[ssfeat.get('type')])  {  // don't do matching for source features of type registered as unmatchable
+				var sstype = ssfeat.get('type');
+				if (unmatchableTypes[sstype] || unedgeableTypes[sstype])  {  // don't do matching for source features of type registered as unmatchable
 				    continue;
 				}
 
@@ -149,7 +152,8 @@ FeatureEdgeMatchManager.prototype.selectionAdded = function(feat)  {
 				var ssmax = source_attrs.get(ssfeat, "End");
 				for (var j in target_subfeats)  {
 				    var tsfeat = target_subfeats[j];
-				    if (unmatchableTypes[tsfeat.get('type')])  {  // don't do matching for target features of type registered as unmatchable
+				    var tstype = tsfeat.get('type');
+				    if (unmatchableTypes[tstype] || unedgeableTypes[tstype]) {  // don't do matching for target features of type registered as unmatchable
 					continue;
 				    }
 				    var tsmin = target_attrs.get(tsfeat, "Start");
