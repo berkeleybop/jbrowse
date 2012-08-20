@@ -406,8 +406,11 @@ FeatureTrack.prototype.fillHist = function(blockIndex, block,
             if (!(typeof hist[bin] == 'number' && isFinite(hist[bin])))
                 continue;
             binDiv = document.createElement("div");
-	    var cname = this.getClassName();
-	    binDiv.className = cname + "-hist";;
+	    var cname = track.getClassName();
+//	    binDiv.className = cname + "-hist";
+	    binDiv.className = "feature-hist";
+	    $(binDiv).addClass(cname + "-hist");
+
             binDiv.style.cssText =
                 "left: " + ((bin / track.numBins) * 100) + "%; "
                 + "height: "
