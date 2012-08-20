@@ -435,13 +435,15 @@ Browser.prototype.addConfigData = function( /**Object*/ config_data ) {
     // GAH WebApollo hack to fix multiple "include" tracklist entries
     var merge_tracks = $.isArray(config_data.tracks) && $.isArray(this.config.tracks);
     if (merge_tracks)  {
-	console.log("want to merge tracks: ");
-	console.log(this.config.tracks);
-	console.log(config_data.tracks);
+	console.log("merging tracks: ");
+	var prevcount = this.config.tracks.length;
+//	console.log(this.config.tracks);
+//	console.log(config_data.tracks);
 	tracks_array = this.config.tracks.concat(config_data.tracks);
-	console.log("tracks array:");
-	console.log(tracks_array); 
+//	console.log("tracks array:");
+//	console.log(tracks_array); 
 	this.config.tracks = tracks_array;
+	console.log("previous track count: ", prevcount, " new track count: ", this.config.tracks.length);
     }
 
     else  {
