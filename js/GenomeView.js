@@ -1575,6 +1575,10 @@ GenomeView.prototype.updateTrackList = function() {
     }
 };
 
+GenomeView.prototype.setBrowser = function(browser) {
+	this.browser = browser;
+}
+
 /*
 
   Copyright (c) 2007-2009 The Evolutionary Software Foundation

@@ -381,15 +381,22 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 		       $(forwardDNA).bind("mouseleave", function(event) {
 				track.removeTextHighlight(forwardDNA);
 			        if (reverseDNA) { track.removeTextHighlight(reverseDNA); }
-	               } );
+			        track.last_dna_coord = undefined;
+		       } );
 		       $(forwardDNA).bind("mousemove", function(event) {
 	                      var gcoord = track.gview.getGenomeCoord(event);
 			      if ((!track.last_dna_coord) || (gcoord !== track.last_dna_coord)) {
 				  var blockCoord = gcoord - leftBase;
 				  track.last_dna_coord = gcoord;
 				  track.setTextHighlight(forwardDNA, blockCoord, blockCoord, "dna-highlighted");
+				  if (!track.freezeHighlightedBases) {
+					  track.lastHighlightedForwardDNA = forwardDNA;
+				  }
 				  if (reverseDNA)  {
 				      track.setTextHighlight(reverseDNA, blockCoord, blockCoord, "dna-highlighted");
+					  if (!track.freezeHighlightedBases) {
+						  track.lastHighlightedReverseDNA = reverseDNA;
+					  }
 				  }
 			      }
 		       } );
@@ -397,6 +404,7 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 			   $(reverseDNA).bind("mouseleave", function(event) {
 				track.removeTextHighlight(forwardDNA);
 			        track.removeTextHighlight(reverseDNA); 
+			        track.last_dna_coord = undefined;
 		           } ); 
 			   $(reverseDNA).bind("mousemove", function(event) {
 			      var gcoord = track.gview.getGenomeCoord(event);
@@ -405,6 +413,10 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 				  track.last_dna_coord = gcoord;
 				  track.setTextHighlight(forwardDNA, blockCoord, blockCoord, "dna-highlighted");
 				  track.setTextHighlight(reverseDNA, blockCoord, blockCoord, "dna-highlighted");
+				  if (!track.freezeHighlightedBases) {
+					  track.lastHighlightedForwardDNA = forwardDNA;
+					  track.lastHighlightedReverseDNA = reverseDNA;
+				  }
 			      }
 		           } );
 		       }
@@ -707,6 +719,7 @@ SequenceTrack.prototype.initContextMenu = function() {
     		label: "Toggle Reverse Strand",
     		onClick: function(event) {
 		    thisObj.show_reverse_strand = ! thisObj.show_reverse_strand;
+		    thisObj.clearHighlightedBases();
 		    thisObj.hideAll();
 		    thisObj.changed();
     		    // thisObj.toggleReverseStrand();
@@ -718,6 +731,7 @@ SequenceTrack.prototype.initContextMenu = function() {
     		label: "Toggle Protein Translation",
     		onClick: function(event) {
 		    thisObj.show_protein_translation = ! thisObj.show_protein_translation;
+		    thisObj.clearHighlightedBases();
 		    thisObj.hideAll();
 		    thisObj.changed();
     		    // thisObj.toggleProteinTranslation();
@@ -731,6 +745,7 @@ SequenceTrack.prototype.initContextMenu = function() {
     	thisObj.residues_context_menu.addChild(new dijit.MenuItem( {
     		label: "Create Genomic Insertion",
     		onClick: function() {
+    			thisObj.freezeHighlightedBases = true;
     			thisObj.createGenomicInsertion();
     		}
     	} ));
@@ -738,6 +753,7 @@ SequenceTrack.prototype.initContextMenu = function() {
     	thisObj.residues_context_menu.addChild(new dijit.MenuItem( {
     		label: "Create Genomic Deletion",
     		onClick: function(event) {
+    			thisObj.freezeHighlightedBases = true;
     			thisObj.createGenomicDeletion();
     		}
     	} ));
@@ -746,6 +762,7 @@ SequenceTrack.prototype.initContextMenu = function() {
     	thisObj.residues_context_menu.addChild(new dijit.MenuItem( {
     		label: "Create Genomic Substitution",
     		onClick: function(event) {
+    			thisObj.freezeHighlightedBases = true;
     			thisObj.createGenomicSubstitution();
     		}
     	} ));
@@ -764,6 +781,19 @@ SequenceTrack.prototype.initContextMenu = function() {
 		     if (item._setSelected) { item._setSelected(false); }
 	             if (item._onUnhover) { item._onUnhover(); }
 		});
+		
+		thisObj.freezeHighlightedBases = true;
+		
+	};
+
+	thisObj.residues_context_menu.onBlur = function() {
+		thisObj.freezeHighlightedBases = false;
+	};
+
+	thisObj.residues_context_menu.onClose = function(event) {
+		if (!thisObj.freezeHighlightedBases) {
+			thisObj.clearHighlightedBases();
+		}
 	};
 
     thisObj.annot_context_menu.startup();
@@ -1041,6 +1071,9 @@ SequenceTrack.prototype.setAnnotTrack = function(annotTrack) {
  * adapted from http://stackoverflow.com/questions/9051369/highlight-substring-in-element 
  */
 SequenceTrack.prototype.setTextHighlight = function (element, start, end, classname) {
+	if (this.freezeHighlightedBases) {
+		return;
+	}
     if (! classname) { classname = "text-highlight"; }
     var item = $(element);
     var str = item.data("origHTML");
@@ -1060,12 +1093,23 @@ SequenceTrack.prototype.setTextHighlight = function (element, start, end, classn
  *  remove highlighting added with setTextHighlight
  */
 SequenceTrack.prototype.removeTextHighlight = function(element) {
+	if (this.freezeHighlightedBases) {
+		return;
+	}
     var item = $(element);
     var str = item.data("origHTML");
     if (str) { 
 	item.html(str);
     }
-}
+};
+
+SequenceTrack.prototype.clearHighlightedBases = function() {
+	this.freezeHighlightedBases = false;
+	this.removeTextHighlight(this.lastHighlightedForwardDNA);
+	if (this.lastHighlightedReverseDNA) {
+		this.removeTextHighlight(this.lastHighlightedReverseDNA);
+	}
+};
 
 
 /* 

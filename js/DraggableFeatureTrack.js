@@ -64,7 +64,7 @@ DraggableFeatureTrack.prototype.loadSuccess = function(trackInfo) {
 	this.initFeatureDialog();
     }
     FeatureTrack.prototype.loadSuccess.call(this, trackInfo);
-}
+};
 
 DraggableFeatureTrack.prototype.setSelectionManager = function(selman)  {
     if (this.selectionManager)  {
