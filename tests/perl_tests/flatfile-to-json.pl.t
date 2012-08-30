@@ -236,5 +236,37 @@ for my $testfile ( "tests/data/au9_scaffold_subset.gff3", "tests/data/au9_scaffo
       ) or diag explain $trackdata;
 }
 
+{   #diag "running on Group1.33_Amel_4.5.maker.gff with --webapollo flag, test for webapollo friendly nclist attribute, CDS features combined into wholeCDS features, and UTR features merged into an exon features";
+
+    my $tempdir = tempdir();
+    dircopy( 'tests/data/MAKER', $tempdir );
+
+    run_with (
+        '--out' => $tempdir,
+	'--gff' => 'tests/data/MAKER/Group1.33_Amel_4.5.maker.gff',
+	'--arrowheadClass' => 'trellis-arrowhead',
+	'--getSubs',
+	'--subfeatureClasses' => '{"CDS": "ogsv3-CDS", "UTR": "ogsv3-UTR", "exon":"ogsv3-exon", "wholeCDS":null}',
+	'--cssClass' => 'refseq-transcript',
+	'--type' => 'mRNA',
+	'--trackLabel' => 'just_maker_singleton',
+	'--webapollo'
+        );
+
+    my $read_json = sub { slurp( $tempdir, @_ ) };
+    my $track_data = $read_json->(qw( tracks just_maker_singleton Group1.33 trackData.json));
+
+    is_deeply( $track_data->{'intervals'}->{'nclist'},
+    	      [ 0, 245453, 247006, 1, "maker", undef, "mRNA", undef, "1:gnomon_566853_mRNA", "gnomon_566853_mRNA",
+	      	 [ [ 1, 245453, 245533, 1, undef, undef, "exon", undef, undef, undef, undef ], 
+	      [ 1, 245701, 245879, 1, undef, undef, "exon", undef, undef, undef, undef ], 
+	      [ 1, 246045, 246278, 1, undef, undef, "exon", undef, undef, undef, undef ], 
+	      [ 1, 246388, 247006, 1, undef, undef, "exon", undef, undef, undef, undef ], 
+	      [ 1, 245759, 246815, 1, undef, undef, "wholeCDS", undef, undef, undef, undef ] ] 
+	      ],
+               'got the right nclist output'
+               ) or diag explain $track_data->{'intervals'}->{'nclist'};
+
+}
 
 done_testing;
