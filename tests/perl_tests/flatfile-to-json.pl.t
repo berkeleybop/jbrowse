@@ -236,7 +236,7 @@ for my $testfile ( "tests/data/au9_scaffold_subset.gff3", "tests/data/au9_scaffo
       ) or diag explain $trackdata;
 }
 
-{   #diag "running on Group1.33_Amel_4.5.maker.gff with --webapollo flag, test for webapollo friendly nclist attribute, CDS features combined into wholeCDS features, and UTR features merged into an exon features";
+{   #diag "running on Group1.33_Amel_4.5.maker.gff with --webApollo flag, test for webapollo friendly nclist attribute, CDS features combined into wholeCDS features, and UTR features merged into an exon features";
 
     my $tempdir = tempdir();
     dircopy( 'tests/data/MAKER', $tempdir );
@@ -250,22 +250,25 @@ for my $testfile ( "tests/data/au9_scaffold_subset.gff3", "tests/data/au9_scaffo
 	'--cssClass' => 'refseq-transcript',
 	'--type' => 'mRNA',
 	'--trackLabel' => 'just_maker_singleton',
-	'--webapollo'
+	'--webApollo'
         );
 
     my $read_json = sub { slurp( $tempdir, @_ ) };
     my $track_data = $read_json->(qw( tracks just_maker_singleton Group1.33 trackData.json));
 
-    is_deeply( $track_data->{'intervals'}->{'nclist'},
-    	      [ 0, 245453, 247006, 1, "maker", undef, "mRNA", undef, "1:gnomon_566853_mRNA", "gnomon_566853_mRNA",
-	      	 [ [ 1, 245453, 245533, 1, undef, undef, "exon", undef, undef, undef, undef ], 
-	      [ 1, 245701, 245879, 1, undef, undef, "exon", undef, undef, undef, undef ], 
-	      [ 1, 246045, 246278, 1, undef, undef, "exon", undef, undef, undef, undef ], 
-	      [ 1, 246388, 247006, 1, undef, undef, "exon", undef, undef, undef, undef ], 
-	      [ 1, 245759, 246815, 1, undef, undef, "wholeCDS", undef, undef, undef, undef ] ] 
-	      ],
-               'got the right nclist output'
-               ) or diag explain $track_data->{'intervals'}->{'nclist'};
+    # make sure we got rid of CDS features
+    my @CDSfeat = grep {$_->[6] eq 'CDS' } @{$track_data->{'intervals'}->{'nclist'}->[0]->[10]};
+    ok(scalar @CDSfeat == 0, '--webApollo flag should get rid of CDS features');
+
+    # check wholeCDS
+    my @wholeCDSfeat = grep {$_->[6] eq 'wholeCDS' } @{$track_data->{'intervals'}->{'nclist'}->[0]->[10]};
+    ok(scalar @wholeCDSfeat == 1, '--webApollo flag should cause wholeCDS feature to be created');
+    is_deeply( $wholeCDSfeat[0],  [ 1, 245759, 246815, 1, 'maker', 0, "wholeCDS", undef, '1:gnomon_566853_mRNA:cds', undef, [] ],
+               'got the right wholeCDS feature'
+               ) or diag explain $wholeCDSfeat[0];
+
+    # check UTRs merged into exon
+    ok( 1 == 0, 'add tests for UTRs merged into exon');	       
 
 }
 
