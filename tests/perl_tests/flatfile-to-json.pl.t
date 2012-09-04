@@ -267,8 +267,13 @@ for my $testfile ( "tests/data/au9_scaffold_subset.gff3", "tests/data/au9_scaffo
                'got the right wholeCDS feature'
                ) or diag explain $wholeCDSfeat[0];
 
-    # check UTRs merged into exon
-    ok( 1 == 0, 'add tests here for UTRs being merged into exon features');	       
+    my @utr_feats = grep {$_->[6] =~ '((five|three)_prime_)*UTR$' } @{$track_data->{'intervals'}->{'nclist'}->[0]->[10]};
+    ok( scalar @utr_feats == 0, '--webApollo flag gets rid of UTR and five|three_prime_UTR features');
+
+    # JR TODO - 
+    # possibly add more elaborate tests to do with checking whether UTR features are merged with nearest exon 
+    # instead of blindly assuming that the UTRs are contained entirely within an existing exon. Conferring with
+    # GH about this via email.
 
 }
 

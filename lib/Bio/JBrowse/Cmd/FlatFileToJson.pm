@@ -298,7 +298,7 @@ sub _find_passing_features {
 sub webApolloize {
   # this subroutine alters $feat in two ways
   # 1) combines CDS features into one big long wholeCDS feature (and then deletes the CDS features)
-  # 2) merges UTR features into adjacent exons
+  # 2) gets rid of UTR features
   my $feat = shift;
 
   # if there is at least one CDS then make a wholeCDS (if there isn't one) then merge CDSs into the wholeCDS, nuking each CDS
@@ -313,6 +313,7 @@ sub webApolloize {
     # make new children by iterating through CDSs to:
     # 1) reset wholeCDS coordinates to the max and min coordinates of CDSs and 
     # 2) delete CDSs
+    # 3) delete UTRs
     my @newChildren;
     my @sortedCDScoords = sort map {$_->{start}, $_->{end}} @{getChildren( $feat, 'CDS' )};
     foreach my $thisChild ( @{getChildren( $feat )} ){
@@ -320,14 +321,15 @@ sub webApolloize {
 	$thisChild->{start} = $sortedCDScoords[0];
 	$thisChild->{end} = $sortedCDScoords[-1];
       }
-      push @newChildren, $thisChild unless ( $thisChild->{type} eq 'CDS' );
+      unless ( $thisChild->{type} eq 'CDS' ||
+	       $thisChild->{type} =~ /((five|three)_prime_)*UTR$/
+	     ){
+	push @newChildren, $thisChild;
+      }
     }
     $feat->{'child_features'} = \@newChildren;
 
   }
-
-  # merge UTR features into exons
-  my $macguffin;
 
   return $feat;
 }
