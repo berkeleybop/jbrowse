@@ -1,12 +1,15 @@
-describe("Player", function() {
+describe("GFF3Parser", function() {
   var player;
   var song;
 
   beforeEach(function() {
-    player = new Player();
-    song = new Song();
   });
 
+  it("1 should be true", function() {
+	  expect(1).toBeTruthy();
+      });
+
+  /*
   it("should be able to play a Song", function() {
     player.play(song);
     expect(player.currentlyPlayingSong).toEqual(song);
@@ -14,6 +17,7 @@ describe("Player", function() {
     //demonstrates use of custom matcher
     expect(player).toBePlaying(song);
   });
+
 
   describe("when song has been paused", function() {
     beforeEach(function() {
@@ -55,4 +59,6 @@ describe("Player", function() {
       }).toThrow("song is already playing");
     });
   });
+  */
+
 });
