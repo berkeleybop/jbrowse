@@ -37,6 +37,7 @@ flatfile-to-json.pl - format data into JBrowse JSON format from an annotation fi
       [ --nclChunk <chunk size for generated NCLs> ]                          \
       [ --compress ]                                                          \
       [ --sortMem <memory in bytes to use for sorting> ]                      \
+      [ --webApollo ]                      
 
 =head1 ARGUMENTS
 
@@ -156,6 +157,10 @@ Bytes of RAM to use for sorting features.  Default 512MB.
 Correspond to C<<-thin_type>> and C<<-thick_type>> in
 L<Bio::FeatureIO::bed>.  Do C<<perldoc Bio::FeatureIO::bed>> for
 details.
+
+=item --webApollo <type>
+
+Write out JSON for use with WebApollo instead of Jbrowse. As of 8/2012 this entails 1) joining all CDS features into one big wholeCDS feature that spans from the start of the first CDS to the end of the last CDS and 2) merging UTRs into exon features. 
 
 =back
 
