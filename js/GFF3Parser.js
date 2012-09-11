@@ -29,27 +29,44 @@ justaddcoffee@gmail.com
 
 function GFF3toJson() {
 }
-GFF3toJson.prototype.parse = function(gff3File) {
-    // this method uses fileReader, which requires
-    // Firefox >= 3.6 || Chrome >= 7 || IE >= 10
+GFF3toJson.prototype.parse = function(gff3String) {
+    // Right now this method assumes that gff3String is the entire GFF3
+    // file in string form. This sucks because it means we'll have to 
+    // have both the parsed and unparsed GFF3 data in memory which is 
+    // a waste of memory and will affect performance when the GFF3 files 
+    // are big. We can refactor this later. 
+    var json; // to be returned
 
-    this.gff3File = gff3File; 
-    if ( gff3File ) {
-	var r = new FileReader();
-	var reader=new FileReader();
-	/*r.onload = function(e) { 
-	  var contents = e.target.result;
-	  console.log( "Got the file.n"  + "name: " + gff3File.name + "n" + "type: " + gff3File.type + "n"  +"size: " + gff3File.size + " bytesn"
-	  + "starts with: " + contents.substr(1, contents.indexOf("n"))
-	  );  
-	  }
+    // for each line in string:
+    //    if Parent attribute
+    //       find Parent in JSON
+    //       put into Children array of Parent
+    //    else 
+    //       put into JSON as Parent without any Children
+
+    var lines = gff3String.match(/^.*((\r\n|\n|\r)|$)/gm);
+    for (var i = 0; i < lines.length; i++) {
+	var fields = lines[i].split("\t");
+
+	// look for Parent attribute in fields[8]
+	var attributes = new Hash;
+	var attributesKeyVal = fields[8].split(/(?<!\\)\;/);
+
+	/*
+expectedJson = [{
+"parent":
+["Group1.33","maker","gene","245454","247006",".","+",".","ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%252E33-pred_gff_GNOMON-gene-4.137"],
+"children": 
+ [{
+  "parent": 
+  ["Group1.33","maker","mRNA","245454","247006",".","+",".","ID=1:gnomon_566853_mRNA;Parent=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=gnomon_566853_mRNA;_AED=0.45;_eAED=0.45;_QI=138|1|1|1|1|1|4|191|259"],
+  "children": [
+  ["Group1.33","maker","exon","245454","245533",".","+",".","ID=1:gnomon_566853_mRNA:exon:5976;Parent=1:gnomon_566853_mRNA"],
+  ["Group1.33","maker","exon","245702","245879",".","+",".","ID=1:gnomon_566853_mRNA:exon:5977;Parent=1:gnomon_566853_mRNA"]]}]}
+];
 	*/
-	reader.readAsText( gff3File, "UTF-8" );
-	console.log("here's what's in the file: " + reader.result)
-	null;
-    } else { 
-	alert("Failed to load file");
+
     }
-    
+    return json;
 };
 
