@@ -18,9 +18,35 @@ describe("GFF3toJson", function() {
 	it("should respond to parse", function() {
 		expect(gff3Parser.parse).toBeDefined();
 	    });
+
+	it("should return something non-null", function() {
+		var parsedJson = gff3Parser.parse( makerGff3String );
+		expect(parsedJson).not.toBeNull();
+	    });
+
+	it("should return a parent in parsed JSON", function() {
+		var parsedJson = gff3Parser.parse( makerGff3String );
+		expect(parsedJson).toBeDefined();
+		expect(parsedJson[0]).toBeDefined();
+		expect(parsedJson[0]["parent"]).toBeDefined();
+	    });
+
+	it("should return a parent that is an array of 9 element in parsed JSON", function() {
+		var parsedJson = gff3Parser.parse( makerGff3String );
+		expect(parsedJson).toBeDefined();
+		expect(parsedJson[0]).toBeDefined();
+		expect(parsedJson[0]["parent"]).toBeDefined();
+		expect(parsedJson[0]["parent"].length).toEqual(9)
+	    });
+
+	it("should return children in parsed JSON", function() {
+		var parsedJson = gff3Parser.parse( makerGff3String );
+		expect(parsedJson).toBeDefined();
+		expect(parsedJson[0]).toBeDefined();
+		expect(parsedJson[0]["children"]).toBeDefined();
+	    });
 	
 	it("should correctly parse Maker GFF3 file to json", function() {
-
 		var actualJson = gff3Parser.parse( makerGff3String );
 		var expectedJson = [{"parent":
 				     ["Group1.33","maker","gene","245454","247006",".","+",".","ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%252E33-pred_gff_GNOMON-gene-4.137"],
