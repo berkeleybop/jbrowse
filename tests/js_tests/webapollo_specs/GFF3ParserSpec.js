@@ -24,19 +24,20 @@ describe("GFF3toJson", function() {
 		expect(parsedJson).not.toBeNull();
 	    });
 
-	it("should return a parent in parsed JSON", function() {
+	it("should return a parent with the right ID in parsed JSON", function() {
 		var parsedJson = gff3Parser.parse( makerGff3String );
 		expect(parsedJson).toBeDefined();
 		expect(parsedJson[0]).toBeDefined();
-		expect(parsedJson[0]["parent"]).toBeDefined();
+		expect(parsedJson[0]["ID"]).toEqual("maker-Group1%2E33-pred_gff_GNOMON-gene-4.137");
 	    });
 
-	it("should return a parent that is an array of 9 element in parsed JSON", function() {
+	it("should return a parent with correct data array of 9 element in parsed JSON", function() {
 		var parsedJson = gff3Parser.parse( makerGff3String );
 		expect(parsedJson).toBeDefined();
 		expect(parsedJson[0]).toBeDefined();
-		expect(parsedJson[0]["parent"]).toBeDefined();
-		expect(parsedJson[0]["parent"].length).toEqual(9)
+		expect(parsedJson[0]["data"]).toBeDefined();
+		expect(parsedJson[0]["data"].length).toEqual(9);
+		expect(parsedJson[0]["data"] === ["Group1.33","maker","gene","245454","247006",".","+",".","ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%252E33-pred_gff_GNOMON-gene-4.137"]).toBeTruthy;
 	    });
 
 	it("should return children in parsed JSON", function() {
@@ -45,20 +46,31 @@ describe("GFF3toJson", function() {
 		expect(parsedJson[0]).toBeDefined();
 		expect(parsedJson[0]["children"]).toBeDefined();
 	    });
-	
+
+	/*
 	it("should correctly parse Maker GFF3 file to json", function() {
 		var actualJson = gff3Parser.parse( makerGff3String );
-		var expectedJson = [{"parent":
-				     ["Group1.33","maker","gene","245454","247006",".","+",".","ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%252E33-pred_gff_GNOMON-gene-4.137"],
-				     "children": 
-				     [{
-					     "parent": 
-					     ["Group1.33","maker","mRNA","245454","247006",".","+",".","ID=1:gnomon_566853_mRNA;Parent=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=gnomon_566853_mRNA;_AED=0.45;_eAED=0.45;_QI=138|1|1|1|1|1|4|191|259"],
-					     "children": [
-							  ["Group1.33","maker","exon","245454","245533",".","+",".","ID=1:gnomon_566853_mRNA:exon:5976;Parent=1:gnomon_566853_mRNA"],
-							  ["Group1.33","maker","exon","245702","245879",".","+",".","ID=1:gnomon_566853_mRNA:exon:5977;Parent=1:gnomon_566853_mRNA"]]}]}
-		    ];
-		expect(actualJson).toEqual( expectedJson );
+		var expectedJson = [
+				    {
+					"ID": "maker-Group1%2E33-pred_gff_GNOMON-gene-4.137",
+					"data":["Group1.33","maker","gene","245454","247006",".","+",".","ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%252E33-pred_gff_GNOMON-gene-4.137"],
+					"children": [
+		{
+		    "ID": "1:gnomon_566853_mRNA",
+		    "data": ["Group1.33","maker","mRNA","245454","247006",".","+",".","ID=1:gnomon_566853_mRNA;Parent=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=gnomon_566853_mRNA;_AED=0.45;_eAED=0.45;_QI=138|1|1|1|1|1|4|191|259"],
+		    "children": [
+		{
+		    "ID": "1:gnomon_566853_mRNA:exon:5976",
+		    "data": ["Group1.33","maker","exon","245454","245533",".","+",".","ID=1:gnomon_566853_mRNA:exon:5976;Parent=1:gnomon_566853_mRNA"],
+		    "children": [],
+		},
+		{
+		    "ID": "1:gnomon_566853_mRNA:exon:5977",
+		    "data": ["Group1.33","maker","exon","245702","245879",".","+",".","ID=1:gnomon_566853_mRNA:exon:5977;Parent=1:gnomon_566853_mRNA"],
+		    "children": [],
+		}
+				 ]}]}];
+
 	    });
-	
+	*/
     });
