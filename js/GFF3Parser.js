@@ -7,21 +7,35 @@ Group1.33	maker	exon	245454	245533	.	+	.	ID=1:gnomon_566853_mRNA:exon:5976;Paren
 Group1.33	maker	exon	245702	245879	.	+	.	ID=1:gnomon_566853_mRNA:exon:5977;Parent=1:gnomon_566853_mRNA;
 
 and returns a JSON data structure like this:
-
-[{
-"parent":
-  ["Group1.33","maker","gene","245454","247006",".","+",".","ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%252E33-pred_gff_GNOMON-gene-4.137"],
-"children": 
-  [{
-    "parent": 
-    ["Group1.33","maker","mRNA","245454","247006",".","+",".","ID=1:gnomon_566853_mRNA;Parent=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=gnomon_566853_mRNA;_AED=0.45;_eAED=0.45;_QI=138|1|1|1|1|1|4|191|259"],
-   "children": [
-      ["Group1.33","maker","exon","245454","245533",".","+",".","ID=1:gnomon_566853_mRNA:exon:5976;Parent=1:gnomon_566853_mRNA"],
-      ["Group1.33","maker","exon","245702","245879",".","+",".","ID=1:gnomon_566853_mRNA:exon:5977;Parent=1:gnomon_566853_mRNA"]
-    ]}]
- }
- ... next parent/child/descendants, e.g. gene/mRNA/exons or whatever ...
-]
+{
+"parsedData": [
+  {
+  "ID": "maker-Group1%2E33-pred_gff_GNOMON-gene-4.137",
+  "data":["Group1.33","maker","gene","245454","247006",".","+",".","ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%252E33-pred_gff_GNOMON-gene-4.137"],
+  "children": [
+       {
+          "ID": "1:gnomon_566853_mRNA",
+          "data": ["Group1.33","maker","mRNA","245454","247006",".","+",".","ID=1:gnomon_566853_mRNA;Parent=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=gnomon_566853_mRNA;_AED=0.45;_eAED=0.45;_QI=138|1|1|1|1|1|4|191|259"],
+          "children": [
+            {
+            "ID": "1:gnomon_566853_mRNA:exon:5976",
+            "data": ["Group1.33","maker","exon","245454","245533",".","+",".","ID=1:gnomon_566853_mRNA:exon:5976;Parent=1:gnomon_566853_mRNA"],
+            "children": [],
+            },
+            {
+	    "ID": "1:gnomon_566853_mRNA:exon:5977",
+            "data": ["Group1.33","maker","exon","245702","245879",".","+",".","ID=1:gnomon_566853_mRNA:exon:5977;Parent=1:gnomon_566853_mRNA"]
+            "children": [],
+            }
+           ]
+        }
+     ]
+   }
+   ... next parent/child/descendants, e.g. gene/mRNA/exons or whatever ...
+],
+"parseErrors" : [""]
+"parseWarnings" : ["no GFF3 pragma"]
+}
 
 Created by Justin Reese 2012
 justaddcoffee@gmail.com
@@ -36,7 +50,12 @@ GFF3toJson.prototype.parse = function(gff3String) {
     // a waste of memory and will affect performance when the GFF3 files 
     // are big. We can refactor this later to accept a stream instead of 
     // a string. 
-    var parsedData = []; // parsed GFF3 in JSON format, to be returned
+
+    var parsedData = {
+	"parsedData" : [],
+	"parseErrors": [],
+	"parseWarnings": [],
+    }; // parsed GFF3 in JSON format, to be returned
 
     // for each line in string:
     //    if Parent attribute
@@ -81,10 +100,10 @@ GFF3toJson.prototype.parse = function(gff3String) {
 	}
 	else {
  	    // put into JSON as Parent without any Children
-	    var thisLine = {"parent": fields, "children": []};
-	    parsedData.push( thisLine );
+	    var thisLine = {"ID": attributesKeyVal["ID"], "data": fields, "children": []};
+	    parsedData["parsedData"].push( thisLine );
+	    var foo = "bar";	    
 	}
-	var foo = "bar";
 	var bar = "baz";
 	
     }
