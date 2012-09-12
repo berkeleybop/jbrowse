@@ -31,11 +31,12 @@ function GFF3toJson() {
 }
 GFF3toJson.prototype.parse = function(gff3String) {
     // Right now this method assumes that gff3String is the entire GFF3
-    // file in string form. This sucks because it means we'll have to 
+    // file in string form. This sucks a bit because it means we'll have to 
     // have both the parsed and unparsed GFF3 data in memory which is 
     // a waste of memory and will affect performance when the GFF3 files 
-    // are big. We can refactor this later. 
-    var json; // to be returned
+    // are big. We can refactor this later to accept a stream instead of 
+    // a string. 
+    var parsedData = []; // parsed GFF3 in JSON format, to be returned
 
     // for each line in string:
     //    if Parent attribute
@@ -46,11 +47,49 @@ GFF3toJson.prototype.parse = function(gff3String) {
 
     var lines = gff3String.match(/^.*((\r\n|\n|\r)|$)/gm);
     for (var i = 0; i < lines.length; i++) {
+	// make sure lines[i] has stuff in it
+	if(typeof(lines[i]) == 'undefined' || lines[i] == null) {
+	    continue;
+	}
+	lines[i].replace(/(\n|\r)+$/, ''); // chomp 
 	var fields = lines[i].split("\t");
+	// check that we have enough fields
+	if(fields.length < 8 ){
+	    console.log("Number of fields < 8! Skipping this line:\n\t" + lines[i] + "\n");
+	    continue;
+	}
+	else {
+	    if (fields.length > 8 ){
+		console.log("Number of fields > 8!\n\t" + lines[i] + "\nI'll try to parse this line anyway.");
+	    }
+	}
 
-	// look for Parent attribute in fields[8]
-	var attributes = new Hash;
-	var attributesKeyVal = fields[8].split(/(?<!\\)\;/);
+	// parse ninth field into key/value pairs
+	var attributesKeyVal = new Object;
+	if(typeof(fields[8]) != undefined && fields[8] != null) {
+	    var ninthFieldSplit = fields[8].split(/;/);
+	    for ( var j = 0; j < ninthFieldSplit.length; j++){
+		var theseKeyVals = ninthFieldSplit[j].split(/\=/);
+		if ( theseKeyVals.length == 2 ){
+		    attributesKeyVal[theseKeyVals[0]] = theseKeyVals[1];
+		}
+	    }
+	}
+	if ( attributesKeyVal["Parent"] != undefined ){
+	    // find parent
+	    
+	}
+	else {
+ 	    // put into JSON as Parent without any Children
+	    var thisLine = {"parent": fields, "children": []};
+	    parsedData.push( thisLine );
+	}
+	var foo = "bar";
+	var bar = "baz";
+	
+    }
+    return parsedData;
+};
 
 	/*
 expectedJson = [{
@@ -65,8 +104,3 @@ expectedJson = [{
   ["Group1.33","maker","exon","245702","245879",".","+",".","ID=1:gnomon_566853_mRNA:exon:5977;Parent=1:gnomon_566853_mRNA"]]}]}
 ];
 	*/
-
-    }
-    return json;
-};
-
