@@ -254,7 +254,8 @@ for my $testfile ( "tests/data/au9_scaffold_subset.gff3", "tests/data/au9_scaffo
         );
 
     my $read_json = sub { slurp( $tempdir, @_ ) };
-    my $track_data = $read_json->(qw( tracks just_maker_singleton Group1.33 trackData.json));
+    my $track_data = $read_json->(qw( tracks just_maker_singleton Group1.33 trackData.json ));
+    my $track_list = $read_json->(qw( trackList.json ));
 
     # make sure we got rid of CDS features
     my @CDSfeat = grep {$_->[6] eq 'CDS' } @{$track_data->{'intervals'}->{'nclist'}->[0]->[10]};
@@ -270,11 +271,15 @@ for my $testfile ( "tests/data/au9_scaffold_subset.gff3", "tests/data/au9_scaffo
     my @utr_feats = grep {$_->[6] =~ '((five|three)_prime_)*UTR$' } @{$track_data->{'intervals'}->{'nclist'}->[0]->[10]};
     ok( scalar @utr_feats == 0, '--webApollo flag gets rid of UTR and five|three_prime_UTR features');
 
-    # JR TODO - 
-    # possibly add more elaborate tests to do with checking whether UTR features are merged with nearest exon 
-    # instead of blindly assuming that the UTRs are contained entirely within an existing exon. Conferring with
-    # GH about this via email.
-
+    # check for "renderClassName" : "ogsv3-transcript-render" keyval in mRNA features
+    my @renderClassNameValues =  map {$_->{'style'}->{'renderClassName'}} @{$track_list->{'tracks'}};		
+    my @renderClassNameValuesCorrect =  ( "ogsv3-transcript-render", "ogsv3-transcript-render", "ogsv3-transcript-render", "ogsv3-transcript-render");
+    ok(is_deeply( \@renderClassNameValues, \@renderClassNameValuesCorrect, '--webApollo flag puts "renderClassName" : "ogsv3-transcript-render" into all mRNA features'));
+	
+    # check for "type" values are changed from "FeatureTrack" to "DraggableFeatureTrack"
+    my @typeValues =  map {$_->{'type'}} @{$track_list->{'tracks'}};		
+    my @typeValuesCorrect =  ( 'DraggableFeatureTrack', 'DraggableFeatureTrack', 'DraggableFeatureTrack', 'DraggableFeatureTrack' );
+    ok(is_deeply( \@typeValues, \@typeValuesCorrect, '--webApollo flag changes type values to DraggableFeatureTrack into all mRNA features'));
 }
 
 done_testing;
