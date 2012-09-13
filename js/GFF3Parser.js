@@ -91,7 +91,9 @@ GFF3toJson.prototype.parse = function(gff3String) {
 	    var ninthFieldSplit = fields[8].split(/;/);
 	    for ( var j = 0; j < ninthFieldSplit.length; j++){
 		var theseKeyVals = ninthFieldSplit[j].split(/\=/);
-		if ( theseKeyVals.length == 2 ){
+		theseKeyVals[0] = unescape(theseKeyVals[0]);
+		theseKeyVals[1] = unescape(theseKeyVals[1]);
+		if ( theseKeyVals.length >= 2 ){
 		    attributesKeyVal[theseKeyVals[0]] = theseKeyVals[1];
 		}
 	    }
