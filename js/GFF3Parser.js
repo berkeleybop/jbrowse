@@ -57,6 +57,8 @@ GFF3toJson.prototype.parse = function(gff3String) {
 	"parseWarnings": [],
     }; // parsed GFF3 in JSON format, to be returned
 
+    var idsIHaveKnown = []; 
+
     // for each line in string:
     //    if Parent attribute
     //       find Parent in JSON
@@ -104,6 +106,8 @@ GFF3toJson.prototype.parse = function(gff3String) {
 	    parsedData["parsedData"].push( thisLine );
 	    var foo = "bar";	    
 	}
+
+	idsIHaveKnown.push( attributesKeyVal["ID"] );
 	var bar = "baz";
 	
     }

@@ -153,7 +153,7 @@ sub run {
             $featureCounts{$chrom} += 1;
 
 	    # alter $feat and children to be webApollo flavored, if necessary
-	    $feat = webApolloize( $feat ) if ( $self->opt('webApollo') );
+	    $feat = webApolloizeFeature( $feat ) if ( $self->opt('webApollo') );
 
             my $row = [ $chrom,
                         $feature_stream->flatten_to_feature( $feat ),
@@ -171,6 +171,12 @@ sub run {
                                              \%config,
                                              $config{key},
                                            );
+
+    # webApollo-ize the trackList, if necessary:
+    if ( $self->opt('webApollo') ){
+       $track->{'jsclass'} = 'DraggableFeatureTrack';
+       $track->{'config'}->{'style'}->{'renderClassName'} = 'ogsv3-transcript-render';
+    }
 
     my $curChrom = 'NONE YET';
     my $totalMatches = 0;
@@ -295,7 +301,7 @@ sub _find_passing_features {
     } @_;
 }
 
-sub webApolloize {
+sub webApolloizeFeature {
   # this subroutine alters $feat in two ways
   # 1) combines CDS features into one big long wholeCDS feature (and then deletes the CDS features)
   # 2) gets rid of UTR features

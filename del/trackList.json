@@ -1,0 +1,28 @@
+{
+   "tracks" : [
+      {
+         "autocomplete" : "none",
+         "style" : {
+            "renderClassName" : "ogsv3-transcript-render",
+            "className" : "refseq-transcript",
+            "subfeatureClasses" : {
+               "wholeCDS" : null,
+               "exon" : "ogsv3-exon",
+               "CDS" : "ogsv3-CDS",
+               "UTR" : "ogsv3-UTR"
+            },
+            "arrowheadClass" : "trellis-arrowhead",
+            "type" : "DraggableFeatureTrack"
+         },
+         "key" : "just_maker_singleton",
+         "webApollo" : 1,
+         "phase" : null,
+         "urlTemplate" : "tracks/just_maker_singleton/{refseq}/trackData.json",
+         "compress" : 0,
+         "type" : "DraggableFeatureTrack",
+         "label" : "just_maker_singleton",
+         "subfeatures" : 1
+      }
+   ],
+   "formatVersion" : 1
+}

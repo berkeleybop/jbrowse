@@ -271,15 +271,12 @@ for my $testfile ( "tests/data/au9_scaffold_subset.gff3", "tests/data/au9_scaffo
     my @utr_feats = grep {$_->[6] =~ '((five|three)_prime_)*UTR$' } @{$track_data->{'intervals'}->{'nclist'}->[0]->[10]};
     ok( scalar @utr_feats == 0, '--webApollo flag gets rid of UTR and five|three_prime_UTR features');
 
-    # check for "renderClassName" : "ogsv3-transcript-render" keyval in mRNA features
-    my @renderClassNameValues =  map {$_->{'style'}->{'renderClassName'}} @{$track_list->{'tracks'}};		
-    my @renderClassNameValuesCorrect =  ( "ogsv3-transcript-render", "ogsv3-transcript-render", "ogsv3-transcript-render", "ogsv3-transcript-render");
-    ok(is_deeply( \@renderClassNameValues, \@renderClassNameValuesCorrect, '--webApollo flag puts "renderClassName" : "ogsv3-transcript-render" into all mRNA features'));
-	
-    # check for "type" values are changed from "FeatureTrack" to "DraggableFeatureTrack"
-    my @typeValues =  map {$_->{'type'}} @{$track_list->{'tracks'}};		
-    my @typeValuesCorrect =  ( 'DraggableFeatureTrack', 'DraggableFeatureTrack', 'DraggableFeatureTrack', 'DraggableFeatureTrack' );
-    ok(is_deeply( \@typeValues, \@typeValuesCorrect, '--webApollo flag changes type values to DraggableFeatureTrack into all mRNA features'));
+    # check for "renderClassName" : "ogsv3-transcript-render" keyval in mRNA feature
+    ok($track_list->{'tracks'}->[3]->{'style'}->{'renderClassName'} eq 'ogsv3-transcript-render', '--webApollo flag puts "renderClassName" : "ogsv3-transcript-render" into mRNA feature');
+
+    # check for "type" values are changed from "FeatureTrack" to "DraggableFeatureTrack" in mRNA feature
+    ok($track_list->{'tracks'}->[3]->{'type'} eq 'DraggableFeatureTrack','--webApollo flag changes type values to DraggableFeatureTrack in mRNA feature');
+
 }
 
 done_testing;
