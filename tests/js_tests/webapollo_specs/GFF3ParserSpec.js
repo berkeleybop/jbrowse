@@ -79,8 +79,8 @@ describe("GFF3toJson", function() {
 	it("should correctly parse eighth field of GFF3", function() {
 		expect(jsonOutput["parsedData"][0]["data"][7]).toEqual(".");
 		    });
-	it("should correctly parse ningth field of GFF3 (with hex codes)", function() {
-		expect(jsonOutput["parsedData"][0]["data"][8]).toEqual("ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;")
+	it("should correctly parse ningth field of GFF3", function() {
+		expect(jsonOutput["parsedData"][0]["data"][8]).toEqual("ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;");
 		    });
 
 	it("should correctly parse attributes in ninth field without hex codes", function() {

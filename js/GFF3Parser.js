@@ -72,7 +72,7 @@ GFF3toJson.prototype.parse = function(gff3String) {
 	if(typeof(lines[i]) == 'undefined' || lines[i] == null) {
 	    continue;
 	}
-	lines[i].replace(/(\n|\r)+$/, ''); // chomp 
+	lines[i] = lines[i].replace(/(\n|\r)+$/, ''); // chomp 
 	var fields = lines[i].split("\t");
 	// check that we have enough fields
 	if(fields.length < 8 ){
@@ -107,9 +107,7 @@ GFF3toJson.prototype.parse = function(gff3String) {
 	    parsedData["parsedData"].push( thisLine );
 	    var foo = "bar";	    
 	}
-
 	idsIHaveKnown.push( attributesKeyVal["ID"] );
-	var bar = "baz";
 	
     }
     return parsedData;
