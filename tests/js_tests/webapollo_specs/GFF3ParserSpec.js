@@ -11,6 +11,11 @@ describe("GFF3toJson", function() {
 		gff3Parser = new GFF3toJson();		
 		makerGff3String = "Group1.33	maker	gene	245454	247006	.	+	.	ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;\nGroup1.33	maker	mRNA	245454	247006	.	+	.	ID=1:gnomon_566853_mRNA;Parent=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=gnomon_566853_mRNA;_AED=0.45;_eAED=0.45;_QI=138|1|1|1|1|1|4|191|259;\nGroup1.33	maker	exon	245454	245533	.	+	.	ID=1:gnomon_566853_mRNA:exon:5976;Parent=1:gnomon_566853_mRNA;\nGroup1.33	maker	exon	245702	245879	.	+	.	ID=1:gnomon_566853_mRNA:exon:5977;Parent=1:gnomon_566853_mRNA;\nGroup1.33	maker	exon	246046	246278	.	+	.	ID=1:gnomon_566853_mRNA:exon:5978;Parent=1:gnomon_566853_mRNA;\nGroup1.33	maker	exon	246389	247006	.	+	.	ID=1:gnomon_566853_mRNA:exon:5979;Parent=1:gnomon_566853_mRNA;\nGroup1.33	maker	five_prime_UTR	245454	245533	.	+	.	ID=1:gnomon_566853_mRNA:five_prime_utr;Parent=1:gnomon_566853_mRNA;\nGroup1.33	maker	five_prime_UTR	245702	245759	.	+	.	ID=1:gnomon_566853_mRNA:five_prime_utr;Parent=1:gnomon_566853_mRNA;\nGroup1.33	maker	CDS	245760	245879	.	+	0	ID=1:gnomon_566853_mRNA:cds;Parent=1:gnomon_566853_mRNA;\nGroup1.33	maker	CDS	246046	246278	.	+	0	ID=1:gnomon_566853_mRNA:cds;Parent=1:gnomon_566853_mRNA;\nGroup1.33	maker	CDS	246389	246815	.	+	1	ID=1:gnomon_566853_mRNA:cds;Parent=1:gnomon_566853_mRNA;\nGroup1.33	maker	three_prime_UTR	246816	247006	.	+	.	ID=1:gnomon_566853_mRNA:three_prime_utr;Parent=1:gnomon_566853_mRNA;\n";
 		jsonOutput = gff3Parser.parse( makerGff3String );
+
+		makerGff3String2 = "Group1.33	maker	mRNA	245454	247006	.	+	.	ID=1:gnomon_566853_mRNA;Parent=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=gnomon_566853_mRNA;_AED=0.45;_eAED=0.45;_QI=138|1|1|1|1|1|4|191|259;\nGroup1.33	maker	gene	245454	247006	.	+	.	ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;";
+
+		jsonOutput2 = gff3Parser.parse( makerGff3String2 );
+
 	    });
 
 	it("1 should be true", function() {
@@ -78,39 +83,19 @@ describe("GFF3toJson", function() {
 		expect(jsonOutput["parsedData"][0]["children"]).toBeDefined();
 	    });
 
-	it("should put child into 'children' attribute of parent", function() {
+	it("should put child into 'children' attribute of parent (when parent is seen before child)", function() {
 		expect(jsonOutput["parsedData"][0]["children"][0]["ID"]).toEqual("1:gnomon_566853_mRNA");
 	    });
+
+	it("should put child into 'children' attribute of parent (when child is seen before parent)", function() {
+		expect(jsonOutput2["parsedData"][0]["children"][0]["ID"]).toEqual("1:gnomon_566853_mRNA");
+	    });
 	
-	it("should put grandchildren into 'children' of attribute of parent", function() {
+	it("should put grandchildren into 'children' of attribute of 'children' attribute of grandparent", function() {
 		expect(jsonOutput["parsedData"][0]["children"][0]["children"][0]["ID"]).toEqual("1:gnomon_566853_mRNA:exon:5976");
 	    });
-	    
-	    /*
-	      it("should correctly parse Maker GFF3 file to json", function() {
-	      var actualJson = gff3Parser.parse( makerGff3String );
-	      var expectedJson = [
-	      {
-	      "ID": "maker-Group1%2E33-pred_gff_GNOMON-gene-4.137",
-	      "data":["Group1.33","maker","gene","245454","247006",".","+",".","ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%252E33-pred_gff_GNOMON-gene-4.137"],
-	      "children": [
-	      {
-	      "ID": "1:gnomon_566853_mRNA",
-	      "data": ["Group1.33","maker","mRNA","245454","247006",".","+",".","ID=1:gnomon_566853_mRNA;Parent=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=gnomon_566853_mRNA;_AED=0.45;_eAED=0.45;_QI=138|1|1|1|1|1|4|191|259"],
-	      "children": [
-	      {
-	      "ID": "1:gnomon_566853_mRNA:exon:5976",
-	      "data": ["Group1.33","maker","exon","245454","245533",".","+",".","ID=1:gnomon_566853_mRNA:exon:5976;Parent=1:gnomon_566853_mRNA"],
-	      "children": [],
-	      },
-	      {
-	      "ID": "1:gnomon_566853_mRNA:exon:5977",
-	      "data": ["Group1.33","maker","exon","245702","245879",".","+",".","ID=1:gnomon_566853_mRNA:exon:5977;Parent=1:gnomon_566853_mRNA"],
-	      "children": [],
-	      }
-	      ]}]}];
-	      
-	      });
-	    */
-	    });
+
+	// TODO
+	// deal with escaped things, i.e. hex codes
+    });
 
