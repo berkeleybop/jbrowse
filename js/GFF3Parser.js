@@ -96,13 +96,14 @@ GFF3toJson.prototype.parse = function(gff3String) {
 		}
 	    }
 	}
+
 	if ( attributesKeyVal["Parent"] != undefined ){
 	    // find parent
 	    
 	}
 	else {
  	    // put into JSON as Parent without any Children
-	    var thisLine = {"ID": attributesKeyVal["ID"], "data": fields, "children": []};
+	    var thisLine = {"ID": attributesKeyVal["ID"], "attributes" :  attributesKeyVal, "data": fields, "children": []};
 	    parsedData["parsedData"].push( thisLine );
 	    var foo = "bar";	    
 	}
