@@ -79,7 +79,7 @@ describe("GFF3toJson", function() {
 	it("should correctly parse eighth field of GFF3", function() {
 		expect(jsonOutput["parsedData"][0]["data"][7]).toEqual(".");
 		    });
-	it("should correctly parse ningth field of GFF3", function() {
+	it("should correctly parse ninth field of GFF3", function() {
 		expect(jsonOutput["parsedData"][0]["data"][8]).toEqual('ID=this_parent_id_12345;Name=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;');
 	    });
 
@@ -95,15 +95,15 @@ describe("GFF3toJson", function() {
 		expect(jsonOutput["parsedData"][0]["children"]).toBeDefined();
 	    });
 
-	it("should put child into 'children' attribute of parent (when parent is seen before child)", function() {
+	it("should put child into 'children' array of parent (when parent is seen before child)", function() {
 		expect(jsonOutput["parsedData"][0]["children"][0]["ID"]).toEqual("1:gnomon_566853_mRNA");
 	    });
 
-	it("should put child into 'children' attribute of parent (when child is seen before parent)", function() {
+	it("should put child into 'children' array of parent (when child is seen before parent)", function() {
 		expect(jsonOutput2["parsedData"][0]["children"][0]["ID"]).toEqual("1:gnomon_566853_mRNA");
 	    });
 	
-	it("should put grandchildren into 'children' of attribute of 'children' attribute of grandparent", function() {
+	it("should put grandchildren into 'children' array of 'children' array of grandparent", function() {
 		expect(jsonOutput["parsedData"][0]["children"][0]["children"][0]["ID"]).toEqual("1:gnomon_566853_mRNA:exon:5976");
 	    });
     });
