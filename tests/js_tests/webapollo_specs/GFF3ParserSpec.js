@@ -16,6 +16,10 @@ describe("GFF3toJson", function() {
 
 		jsonOutput2 = gff3Parser.parse( makerGff3String2 );
 
+		makerGff3String3 = "Group1.33	maker	mRNA	245454	247006	.	+	.	ID=1:gnomon_566853_mRNA;metacharacterzoo=2C3D3B5C7C28295B7B7D5E242A2B3F2E0D0A092526";
+		jsonOutput3 = gff3Parser.parse( makerGff3String3 );
+
+
 	    });
 
 	it("1 should be true", function() {
@@ -79,6 +83,14 @@ describe("GFF3toJson", function() {
 		expect(jsonOutput["parsedData"][0]["data"][8]).toEqual("ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;")
 		    });
 
+	it("should correctly parse attributes in ninth field without hex codes", function() {
+		expect(jsonOutput3["parsedData"][0]["attributes"]["ID"]).toEqual("1:gnomon_566853_mRNA");
+	    });
+
+	it("should correctly parse attributes in ninth field with hex codes", function() {
+		expect(jsonOutput3["parsedData"][0]["attributes"]["metacharacterzoo"]).toEqual(",=;\|()[{}^$*+?.\n\t%&");
+	    });
+
 	it("should return children in parsed JSON", function() {
 		expect(jsonOutput["parsedData"][0]["children"]).toBeDefined();
 	    });
@@ -94,8 +106,5 @@ describe("GFF3toJson", function() {
 	it("should put grandchildren into 'children' of attribute of 'children' attribute of grandparent", function() {
 		expect(jsonOutput["parsedData"][0]["children"][0]["children"][0]["ID"]).toEqual("1:gnomon_566853_mRNA:exon:5976");
 	    });
-
-	// TODO
-	// deal with escaped things, i.e. hex codes
     });
 
