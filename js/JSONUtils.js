@@ -285,10 +285,10 @@ JSONUtils.createApolloFeature = function(arep, jfeature, specified_type)   {
 		//  var subtype = subfeat[subfields["type"]];
 		var subtype = arep.get(subfeat, "Type");
 		// if "wholeCDS", then translate to the equivalent "CDS" for server
-		if (subtype === "wholeCDS")  {
+		if (subtype === "wholeCDS" || subtype === "polypeptide") {
 		    afeature.children[i] = JSONUtils.createApolloFeature(arep, subfeat, "CDS"); 
 		}
-		else  {  // currently clietn "CDS" (CDS-segment), "UTR", etc. are all converted to "exon"
+		else  {  // currently client "CDS" (CDS-segment), "UTR", etc. are all converted to "exon"
 		    afeature.children[i] = JSONUtils.createApolloFeature(arep, subfeat, "exon"); 	
 		}
 	    }
