@@ -2848,7 +2848,7 @@ div.generic_parent-hist {
 *  (-moz*, -webkit*, -ms* prefixed versions needed because box-sizing property name currently differs across browsers)
 */
 .left-edge-match  {
-    border-left: solid red 4px;
+    border-left: solid red 2px;
     box-sizing: border-box;
     -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;
@@ -2860,7 +2860,7 @@ div.generic_parent-hist {
 *  (-moz*, -webkit*, -ms* prefixed versions needed because box-sizing property name currently differs across browsers)
 */
 .right-edge-match  {
-    border-right: solid red 4px;
+    border-right: solid red 2px;
     box-sizing: border-box;
     -moz-box-sizing: border-box;i
     -webkit-box-sizing: border-box;
