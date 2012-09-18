@@ -2,6 +2,10 @@ describe("GFF3toJson", function() {
 	// GFF3toJson takes a GFF3 URL and converts it to an array of hash refs where each
 	// hash has a "parent" key/value pair and zero or more "children" key/value pairs, 
 	// and the children in turn can have more parent/children. 
+
+	// Some legal GFF3 features not supported by this code yet:
+	// - features with multiple parents
+	// - features with identical IDs on multiple lines
 	var gff3Parser;
 	var makerGff3String;
 	var makerCorrectJsonFile;
@@ -22,10 +26,6 @@ describe("GFF3toJson", function() {
 
 	    });
 
-	it("1 should be true", function() {
-		expect(1).toBeTruthy();
-	    });
-	
 	it("should respond to parse", function() {
 		expect(gff3Parser.parse).toBeDefined();
 	    });
