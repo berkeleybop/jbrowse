@@ -178,6 +178,15 @@ AnnotTrack.prototype.loadSuccess = function(trackInfo) {
     this.hide();
     this.show();
     
+    dojo.addOnUnload(this, function() {
+        var track = this;
+        if (AnnotTrack.listeners[track.getUniqueTrackName()]) {
+            if (AnnotTrack.listeners[track.getUniqueTrackName()].fired == -1) {
+            	AnnotTrack.listeners[track.getUniqueTrackName()].cancel();
+            }
+        }
+    });
+    
 };
 
 AnnotTrack.prototype.createAnnotationChangeListener = function() {
@@ -257,7 +266,12 @@ AnnotTrack.prototype.createAnnotationChangeListener = function() {
 			return;
 		}
 //		track.handleError(response);
-		track.handleError({responseText: '{ error: "Server connection error" }'});
+		if (response.responseText) {
+			track.handleError(response);
+		}
+		else {
+			track.handleError({responseText: '{ error: "Server connection error" }'});
+		}
 	    console.error("HTTP status code: ", ioArgs.xhr.status); //
 	    track.comet_working = false;
 	    return response;
@@ -2171,6 +2185,8 @@ AnnotTrack.prototype.searchSequence = function() {
     var trackName = track.getUniqueTrackName();
 
     var content = dojo.create("div");
+    var sequenceToolsDiv = dojo.create("div", { class: "search_sequence_tools" }, content);
+    var sequenceToolsSelect = dojo.create("select", { class: "search_sequence_tools_select" }, sequenceToolsDiv);
     var sequenceDiv = dojo.create("div", { class: "search_sequence_area" }, content);
     var sequenceLabel = dojo.create("div", { class: "search_sequence_label", innerHTML: "Enter sequence" }, sequenceDiv);
     var sequenceFieldDiv = dojo.create("div", { }, sequenceDiv);
@@ -2191,6 +2207,34 @@ AnnotTrack.prototype.searchSequence = function() {
     var matches = dojo.create("div", { }, matchDiv);
     
     dojo.style(headerDiv, { display: "none" });
+
+    var getSequenceSearchTools = function() {
+    	var ok = false;
+    	var operation = "get_sequence_search_tools";
+    	dojo.xhrPost( {
+    		postData: '{ "track": "' + trackName + '", "operation": "' + operation + '" }', 
+    		url: context_path + "/AnnotationEditorService",
+    		sync: true,
+    		handleAs: "json",
+    		timeout: 5000 * 1000, // Time in milliseconds
+    		load: function(response, ioArgs) {
+    			if (response.sequence_search_tools.length == 0) {
+    				ok = false;
+    				return;
+    			}
+    			for (var i = 0; i < response.sequence_search_tools.length; ++i) {
+    				dojo.create("option", { innerHTML: response.sequence_search_tools[i] }, sequenceToolsSelect);
+    			}
+    			ok = true;
+    		},
+    		error: function(response, ioArgs) {
+				track.handleError(response);
+				console.error("HTTP status code: ", ioArgs.xhr.status); 
+				return response;
+    		}
+    	});
+    	return ok;
+    };
     
     var search = function() {
     	var residues = dojo.attr(sequenceField, "value").toUpperCase();
@@ -2199,8 +2243,8 @@ AnnotTrack.prototype.searchSequence = function() {
     		alert("No sequence entered");
     		ok = false;
     	}
-    	else if (residues.match(/[^ACGTN\n]/)) {
-    		alert("The sequence should only containg A, C, G, T, N");
+    	else if (residues.match(/[^ACDEFGHIKLMNPQRSTVWXY\n]/)) {
+    		alert("The sequence should only contain non redundant IUPAC nucleotide or amino acid codes (except for N/X)");
     		ok = false;
     	}
     	var searchAllRefSeqs = dojo.attr(searchAllRefSeqsCheckbox, "checked");
@@ -2212,7 +2256,7 @@ AnnotTrack.prototype.searchSequence = function() {
     		}
     		else  {
     			dojo.xhrPost( {
-    				postData: '{ "track": "' + trackName + '", "search": { "residues": "' + residues + (!searchAllRefSeqs ? '", "database_id": "' + track.refSeq.name : '') + '"}, "operation": "' + operation + '" }', 
+    				postData: '{ "track": "' + trackName + '", "search": { "key": "' + sequenceToolsSelect.value + '", "residues": "' + residues + (!searchAllRefSeqs ? '", "database_id": "' + track.refSeq.name : '') + '"}, "operation": "' + operation + '" }', 
     				url: context_path + "/AnnotationEditorService",
     				sync: true,
     				handleAs: "json",
@@ -2284,9 +2328,14 @@ AnnotTrack.prototype.searchSequence = function() {
     dojo.connect(sequenceButton, "onclick", search);
     dojo.connect(searchAllRefSeqsLabel, "onclick", function() {
     	dojo.attr(searchAllRefSeqsCheckbox, "checked", !searchAllRefSeqsCheckbox.checked);
-    })
-
-    this.openDialog("Search sequence", content);
+    });
+    
+    if (getSequenceSearchTools()) {
+    	this.openDialog("Search sequence", content);
+    }
+    else {
+    	alert("No search plugins setup");
+    }
 
 };
 
@@ -2411,6 +2460,7 @@ AnnotTrack.prototype.initAnnotContextMenu = function() {
 				} ));
 				contextMenuItems["flip_strand"] = index++;
 				annot_context_menu.addChild(new dijit.MenuSeparator());
+				index++;
 				annot_context_menu.addChild(new dijit.MenuItem( {
 					label: "Comments",
 					onClick: function(event) {
@@ -2426,6 +2476,7 @@ AnnotTrack.prototype.initAnnotContextMenu = function() {
 				} ));
 				contextMenuItems["edit_dbxrefs"] = index++;
 				annot_context_menu.addChild(new dijit.MenuSeparator());
+				index++;
 				annot_context_menu.addChild(new dijit.MenuItem( {
 					label: "Undo",
 					onClick: function(event) {
@@ -2441,6 +2492,7 @@ AnnotTrack.prototype.initAnnotContextMenu = function() {
 				} ));
 				contextMenuItems["redo"] = index++;
 				annot_context_menu.addChild(new dijit.MenuSeparator());
+				index++;
 			}
 			annot_context_menu.addChild(new dijit.MenuItem( {
 				label: "Information",

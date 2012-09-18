@@ -41,25 +41,26 @@ Ruler.prototype.render_to = function( target_div ) {
 
     try {
         dojo.require('dojox.charting.Chart2D');
-        var chart1 = new dojox.charting.Chart2D( container, {fill: 'transparent'} );
-        chart1.addAxis( "y", {
-                            vertical: true,
-                            fill: 'transparent',
-                            min: this.min,
-                            max: this.max
-                            // minorTickStep: 0.5,
-                            // majorTickStep: 1
-                            //labels: [{value: 1, text: "One"}, {value: 3, text: "Ten"}]
-                        });
-        chart1.addPlot("default", {type: "Bubble", fill: 'transparent'});
-        chart1.render();
+        dojo.ready(function() {
+            var chart1 = new dojox.charting.Chart2D( container, {fill: 'transparent'} );
+            chart1.addAxis( "y", {
+                                vertical: true,
+                                fill: 'transparent',
+                                min: this.min,
+                                max: this.max
+                                // minorTickStep: 0.5,
+                                // majorTickStep: 1
+                                //labels: [{value: 1, text: "One"}, {value: 3, text: "Ten"}]
+                            });
+            chart1.addPlot("default", {type: "Bubble", fill: 'transparent'});
+            chart1.render();
 
-        // hack to remove a undesirable opaque white rectangle i can't
-        // coax dojox.charting to leave out
-        var undesirable_rect = container.childNodes[0].childNodes[1];
-        if( undesirable_rect )
-            undesirable_rect.setAttribute('fill-opacity',0);
-
+            // hack to remove a undesirable opaque white rectangle i can't
+            // coax dojox.charting to leave out
+            var undesirable_rect = container.childNodes[0].childNodes[1];
+            if( undesirable_rect )
+                undesirable_rect.setAttribute('fill-opacity',0);
+        });
     } catch (x) {
         console.error(x+'');
         console.error("Failed to draw Ruler with SVG, your browser may not support the necessary technology.");
