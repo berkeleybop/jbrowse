@@ -323,6 +323,8 @@ DraggableFeatureTrack.prototype.handleSubFeatures = function(feature, featDiv,
 	if (this.verbose_render)  { console.log("wholeCDS:"); console.log(wholeCDS); }
     }
 
+    var priorCdsLength = 0;
+    if (debugFrame)  { console.log("====================================================="); }
     for (i = 0; i < slength; i++) {
 	subfeat = subfeats[i];
 	var uid = subfeat.uid;
@@ -337,7 +339,7 @@ DraggableFeatureTrack.prototype.handleSubFeatures = function(feature, featDiv,
         var subDiv = this.renderSubfeature(feature, featDiv, subfeat, displayStart, displayEnd, block);
 	// if subfeat is of type "exon", add CDS/UTR rendering
 	if (subDiv && wholeCDS && (subtype === "exon")) {
-	    this.renderExonSegments(subfeat, subDiv, cdsMin, cdsMax, displayStart, displayEnd);
+	    priorCdsLength = this.renderExonSegments(subfeat, subDiv, cdsMin, cdsMax, displayStart, displayEnd, priorCdsLength);
 	}
 	if (this.verbose_render)  { 
 	    console.log("in DraggableFeatureTrack.handleSubFeatures, subDiv: ");
@@ -349,8 +351,17 @@ DraggableFeatureTrack.prototype.handleSubFeatures = function(feature, featDiv,
 
 /**
  *  TODO: still need to factor in truncation based on displayStart and displayEnd???
+
+From: http://mblab.wustl.edu/GTF22.html
+Frame is calculated as (3 - ((length-frame) mod 3)) mod 3.
+    (length-frame) is the length of the previous feature starting at the first whole codon (and thus the frame subtracted out).
+    (length-frame) mod 3 is the number of bases on the 3' end beyond the last whole codon of the previous feature.
+    3-((length-frame) mod 3) is the number of bases left in the codon after removing those that are represented at the 3' end of the feature.
+    (3-((length-frame) mod 3)) mod 3 changes a 3 to a 0, since three bases makes a whole codon, and 1 and 2 are left unchanged. 
  */
-DraggableFeatureTrack.prototype.renderExonSegments = function(subfeature, subDiv, cdsMin, cdsMax, displayStart, displayEnd)  {
+var debugFrame = false;
+DraggableFeatureTrack.prototype.renderExonSegments = function(subfeature, subDiv, cdsMin, cdsMax, 
+							      displayStart, displayEnd, priorCdsLength)  {
     var attrs = this.attrs;
     var subStart = attrs.get(subfeature, "Start");
     var subEnd = attrs.get(subfeature, "End");
@@ -361,87 +372,129 @@ DraggableFeatureTrack.prototype.renderExonSegments = function(subfeature, subDiv
     var CDSclass = this.config.style.subfeatureClasses["CDS"];
     if (! UTRclass)  { UTRclass = this.className + "-UTR"; }
     if (! CDSclass)  { CDSclass = this.className + "-CDS"; }
-		       
 
+ //   if (debugFrame)  { console.log("exon: " + subStart); }
     // if the feature has been truncated to where it doesn't cover
     // this subfeature anymore, just skip this subfeature
-    if ((subEnd <= displayStart) || (subStart >= displayEnd)) return undefined;
+    var render = ((subEnd > displayStart) || (subStart < displayEnd));
+//    if ((subEnd <= displayStart) || (subStart >= displayEnd))  { return undefined; }
 
     var segDiv;
     // whole exon is untranslated (falls outside wholeCDS range, or no CDS info found)
     if ((cdsMin === undefined && cdsMax === undefined) ||    
 	(cdsMax <= subStart || cdsMin >= subEnd))  {
-	segDiv = document.createElement("div");
-	// not worrying about appending "plus-"/"minus-" based on strand yet
-	segDiv.className = UTRclass;
-	if (Util.is_ie6) segDiv.appendChild(document.createComment());
-	segDiv.style.cssText =
-            "left: " + (100 * ((subStart - subStart) / subLength)) + "%;"
-            + "top: 0px;"
-            + "width: " + (100 * ((subEnd - subStart) / subLength)) + "%;";
-	subDiv.appendChild(segDiv);
+	if (render)  {
+	    segDiv = document.createElement("div");
+	    // not worrying about appending "plus-"/"minus-" based on strand yet
+	    segDiv.className = UTRclass;
+	    if (Util.is_ie6) segDiv.appendChild(document.createComment());
+	    segDiv.style.cssText =
+		"left: " + (100 * ((subStart - subStart) / subLength)) + "%;"
+		+ "top: 0px;"
+		+ "width: " + (100 * ((subEnd - subStart) / subLength)) + "%;";
+	    subDiv.appendChild(segDiv);
+	}
     }
     // whole exon is translated
     else if (cdsMin <= subStart && cdsMax >= subEnd) {
-	segDiv = document.createElement("div");
-	// not worrying about appending "plus-"/"minus-" based on strand yet
-	segDiv.className = CDSclass;
+	var overhang = priorCdsLength % 3;  // number of bases overhanging
+	// var cdsAbsoluteFrame = (subStart + cdsRelativeFrame) % 3;
+	//	var cdsAbsoluteFrame = (cdsRelativeFrame + (subStart % 3)) % 3;
+	//var cdsFrame = (subStart + ((3 - (priorCdsLength % 3)) % 3)) % 3;
+        //	var cdsFrame = (3 - (priorCdsLength % 3)) % 3;
+	var relFrame = (3 - (priorCdsLength % 3)) % 3;
+	var cdsFrame = (subStart + ((3 - (priorCdsLength % 3)) % 3)) % 3;
+
+	if (debugFrame)  { console.log("whole exon: " + subStart + ", initFrame: " + (cdsMin % 3) + 
+				       ", overhang: " + overhang + ", relFrame: " + relFrame + ", subFrame: " + (subStart % 3) + 
+				       ", cdsFrame: " + cdsFrame); }
 	
-	if (Util.is_ie6) segDiv.appendChild(document.createComment());
-	segDiv.style.cssText =
-            "left: " + (100 * ((subStart - subStart) / subLength)) + "%;"
-            + "top: 0px;"
-            + "width: " + (100 * ((subEnd - subStart) / subLength)) + "%;";
-	subDiv.appendChild(segDiv);
+	if (render)  {
+	    segDiv = document.createElement("div");
+	    // not worrying about appending "plus-"/"minus-" based on strand yet
+	    segDiv.className = CDSclass;
+	    if (Util.is_ie6) segDiv.appendChild(document.createComment());
+	    segDiv.style.cssText =
+		"left: " + (100 * ((subStart - subStart) / subLength)) + "%;"
+		+ "top: 0px;"
+		+ "width: " + (100 * ((subEnd - subStart) / subLength)) + "%;";
+	    $(segDiv).addClass("cds-frame" + cdsFrame);
+	    subDiv.appendChild(segDiv);
+	}
+	priorCdsLength += subLength;
     }
     // partial translation of exon
     else  {
 	// calculate 5'UTR, CDS segment, 3'UTR
 	var cdsSegStart = Math.max(cdsMin, subStart);
 	var cdsSegEnd = Math.min(cdsMax, subEnd);
+	var overhang = priorCdsLength % 3;  // number of bases overhanging
+	var cdsFrame = 0;
+	if (priorCdsLength > 0)  {
+	    var relFrame = (3 - (priorCdsLength % 3)) % 3;
+	    var cdsFrame = (subStart + ((3 - (priorCdsLength % 3)) % 3)) % 3;
+
+//	    var cdsFrame
+	    if (debugFrame)  { console.log("partial exon: " + subStart + ", initFrame: " + (cdsMin % 3) + 
+					   ", overhang: " + overhang + ", relFrame: " + relFrame + ", subFrame: " + (subStart % 3) + 
+					   ", cdsFrame: " + cdsFrame); }
+	}
+	else  {
+	    var cdsFrame = cdsMin % 3;
+	}
+
 	var utrStart;
 	var utrEnd;
 	// make left UTR (if needed)
 	if (cdsMin > subStart) {
 	    utrStart = subStart;
 	    utrEnd = cdsSegStart;
+	    if (render)  {
+		segDiv = document.createElement("div");
+		// not worrying about appending "plus-"/"minus-" based on strand yet
+		segDiv.className = UTRclass;
+		if (Util.is_ie6) segDiv.appendChild(document.createComment());
+		segDiv.style.cssText =
+		    "left: " + (100 * ((utrStart - subStart) / subLength)) + "%;"
+		    + "top: 0px;"
+		    + "width: " + (100 * ((utrEnd - utrStart) / subLength)) + "%;";
+		subDiv.appendChild(segDiv);
+	    }
+	}
+	if (render)  {
+	    // make CDS segment
 	    segDiv = document.createElement("div");
 	    // not worrying about appending "plus-"/"minus-" based on strand yet
-	    segDiv.className = UTRclass;
+	    segDiv.className = CDSclass;
 	    if (Util.is_ie6) segDiv.appendChild(document.createComment());
 	    segDiv.style.cssText =
-		"left: " + (100 * ((utrStart - subStart) / subLength)) + "%;"
+		"left: " + (100 * ((cdsSegStart - subStart) / subLength)) + "%;"
 		+ "top: 0px;"
-		+ "width: " + (100 * ((utrEnd - utrStart) / subLength)) + "%;";
+		+ "width: " + (100 * ((cdsSegEnd - cdsSegStart) / subLength)) + "%;";
+	    
+	    $(segDiv).addClass("cds-frame" + cdsFrame);
 	    subDiv.appendChild(segDiv);
 	}
-	// make CDS segment
-	segDiv = document.createElement("div");
-	// not worrying about appending "plus-"/"minus-" based on strand yet
-	segDiv.className = CDSclass;
-	if (Util.is_ie6) segDiv.appendChild(document.createComment());
-	segDiv.style.cssText =
-            "left: " + (100 * ((cdsSegStart - subStart) / subLength)) + "%;"
-            + "top: 0px;"
-            + "width: " + (100 * ((cdsSegEnd - cdsSegStart) / subLength)) + "%;";
-	subDiv.appendChild(segDiv);
+	priorCdsLength += (cdsSegEnd - cdsSegStart);
 
 	// make right UTR  (if needed)
 	if (cdsMax < subEnd)  {
 	    utrStart = cdsSegEnd;
 	    utrEnd = subEnd;
-	    segDiv = document.createElement("div");
-	    // not worrying about appending "plus-"/"minus-" based on strand yet
-	    segDiv.className = UTRclass;
-	    if (Util.is_ie6) segDiv.appendChild(document.createComment());
-	    segDiv.style.cssText =
-		"left: " + (100 * ((utrStart - subStart) / subLength)) + "%;"
-		+ "top: 0px;"
-		+ "width: " + (100 * ((utrEnd - utrStart) / subLength)) + "%;";
-	    subDiv.appendChild(segDiv);
+	    if (render)  {
+		segDiv = document.createElement("div");
+		// not worrying about appending "plus-"/"minus-" based on strand yet
+		segDiv.className = UTRclass;
+		if (Util.is_ie6) segDiv.appendChild(document.createComment());
+		segDiv.style.cssText =
+		    "left: " + (100 * ((utrStart - subStart) / subLength)) + "%;"
+		    + "top: 0px;"
+		    + "width: " + (100 * ((utrEnd - utrStart) / subLength)) + "%;";
+		subDiv.appendChild(segDiv);
+	    }
 	}
     }
-    return null;
+    return priorCdsLength;
 };
 
 

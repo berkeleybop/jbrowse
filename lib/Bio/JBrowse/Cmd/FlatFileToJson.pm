@@ -21,6 +21,8 @@ use ArrayRepr;
 use GenomeDB;
 use ExternalSorter;
 use JSON 2;
+use Clone qw(clone);
+use List::MoreUtils qw/ uniq /;
 
 sub option_defaults {
     ( type => [],
@@ -55,6 +57,7 @@ sub option_definitions {
         "nclChunk=i",
         "compress",
         "sortMem=i",
+        "webApollo",
         "help|h|?",
     )
 }
@@ -104,6 +107,7 @@ sub run {
         },
         key          => defined( $self->opt('key') ) ? $self->opt('key') : $self->opt('trackLabel'),
         compress     => $self->opt('compress'),
+        webApollo    => $self->opt('webApollo'),
      );
 
     my $feature_stream = $self->opt('gff') ? $self->make_gff_stream :
@@ -148,6 +152,9 @@ sub run {
             my $chrom = $feat->{seq_id};
             $featureCounts{$chrom} += 1;
 
+	    # alter $feat and children to be webApollo flavored, if necessary
+	    $feat = webApolloizeFeature( $feat ) if ( $self->opt('webApollo') );
+
             my $row = [ $chrom,
                         $feature_stream->flatten_to_feature( $feat ),
                         $feature_stream->flatten_to_name( $feat ),
@@ -164,6 +171,12 @@ sub run {
                                              \%config,
                                              $config{key},
                                            );
+
+    # webApollo-ize the trackList, if necessary:
+    if ( $self->opt('webApollo') ){
+       $track->{'jsclass'} = 'DraggableFeatureTrack';
+       $track->{'config'}->{'style'}->{'renderClassName'} = 'ogsv3-transcript-render';
+    }
 
     my $curChrom = 'NONE YET';
     my $totalMatches = 0;
@@ -286,6 +299,55 @@ sub _find_passing_features {
             # otherwise, look for passing features in its subfeatures
             : _find_passing_features( $pass_feature, @{$feature->{child_features}} );
     } @_;
+}
+
+sub webApolloizeFeature {
+  # this subroutine alters $feat in two ways
+  # 1) combines CDS features into one big long wholeCDS feature (and then deletes the CDS features)
+  # 2) gets rid of UTR features
+  my $feat = shift;
+
+  # if there is at least one CDS then make a wholeCDS (if there isn't one) then merge CDSs into the wholeCDS, nuking each CDS
+  if ( my @CDSFeats = @{getChildren( $feat, 'CDS' )} ){
+    # make a wholeCDS feature from the first CDS if there isn't already one
+    if ( scalar @{getChildren( $feat, 'wholeCDS' )} < 1 ){
+      my $wholeCDSFeat = clone $CDSFeats[0];
+      $wholeCDSFeat->{'type'} = 'wholeCDS';
+      push @{$feat->{'child_features'}}, $wholeCDSFeat;
+    }
+
+    # make new children by iterating through CDSs to:
+    # 1) reset wholeCDS coordinates to the max and min coordinates of CDSs and 
+    # 2) delete CDSs
+    # 3) delete UTRs
+    my @newChildren;
+    my @sortedCDScoords = sort map {$_->{start}, $_->{end}} @{getChildren( $feat, 'CDS' )};
+    foreach my $thisChild ( @{getChildren( $feat )} ){
+      if ($thisChild->{type} eq 'wholeCDS'){
+	$thisChild->{start} = $sortedCDScoords[0];
+	$thisChild->{end} = $sortedCDScoords[-1];
+      }
+      unless ( $thisChild->{type} eq 'CDS' ||
+	       $thisChild->{type} =~ /((five|three)_prime_)*UTR$/
+	     ){
+	push @newChildren, $thisChild;
+      }
+    }
+    $feat->{'child_features'} = \@newChildren;
+
+  }
+
+  return $feat;
+}
+
+sub getChildren {
+  my $feat = shift;
+  my $type = shift if @_;
+  my @children = @{$feat->{'child_features'}};
+  if ( defined $type ){
+    @children = ( grep {$_->{'type'} eq $type } @children);
+  }
+  return \@children;
 }
 
 1;
