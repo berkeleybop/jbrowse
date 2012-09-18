@@ -58,6 +58,7 @@ sub option_definitions {
         "compress",
         "sortMem=i",
         "webApollo",
+        "renderClassName=s",
         "help|h|?",
     )
 }
@@ -174,8 +175,13 @@ sub run {
 
     # webApollo-ize the trackList, if necessary:
     if ( $self->opt('webApollo') ){
-       $track->{'jsclass'} = 'DraggableFeatureTrack';
-       $track->{'config'}->{'style'}->{'renderClassName'} = 'ogsv3-transcript-render';
+       if ($self->opt('renderClassName')) {
+           $track->{'jsclass'} = 'DraggableFeatureTrack';
+           $track->{'config'}->{'style'}->{'renderClassName'} = $self->opt('renderClassName');
+       }
+       else {
+           die "Missing required --renderClassName option when using --webApollo\n";
+       }
     }
 
     my $curChrom = 'NONE YET';
