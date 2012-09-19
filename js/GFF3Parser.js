@@ -80,6 +80,15 @@ GFF3toJson.prototype.parse = function(gff3String) {
     var hasParentIDs = [];
 
     for (var i = 0; i < lines.length; i++) {
+
+	// check for ##FASTA pragma
+	if( lines[i].match(/^##FASTA/) ){
+	    break;
+	}
+	// skip comment lines
+	if( lines[i].match(/^#/) ){
+	    continue;
+	}
 	// make sure lines[i] has stuff in it
 	if(typeof(lines[i]) == 'undefined' || lines[i] == null) {
 	    continue;
