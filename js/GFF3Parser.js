@@ -89,6 +89,10 @@ GFF3toJson.prototype.parse = function(gff3String) {
 	if( lines[i].match(/^#/) ){
 	    continue;
 	}
+	// skip comment lines
+	if( lines[i].match(/^\s*$/) ){
+	    continue;
+	}
 	// make sure lines[i] has stuff in it
 	if(typeof(lines[i]) == 'undefined' || lines[i] == null) {
 	    continue;
@@ -96,13 +100,13 @@ GFF3toJson.prototype.parse = function(gff3String) {
 	lines[i] = lines[i].replace(/(\n|\r)+$/, ''); // chomp 
 	var fields = lines[i].split("\t");
 	// check that we have enough fields
-	if(fields.length < 8 ){
-	    console.log("Number of fields < 8! Skipping this line:\n\t" + lines[i] + "\n");
+	if(fields.length < 9 ){
+	    console.log("Number of fields < 9! Skipping this line:\n\t" + lines[i] + "\n");
 	    continue;
 	}
 	else {
-	    if (fields.length > 8 ){
-		console.log("Number of fields > 8!\n\t" + lines[i] + "\nI'll try to parse this line anyway.");
+	    if (fields.length > 9 ){
+		console.log("Number of fields > 9!\n\t" + lines[i] + "\nI'll try to parse this line anyway.");
 	    }
 	}
 
