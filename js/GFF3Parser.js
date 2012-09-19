@@ -120,8 +120,14 @@ GFF3toJson.prototype.parse = function(gff3String) {
 	    noParent[attributesKeyVal["ID"]] = thisLine;
 	    noParentIDs.push( attributesKeyVal["ID"] );
 	}
-	seenIDs[attributesKeyVal["ID"]]++;
-
+	
+	// keep track of what IDs we've seen
+	if ( isNaN(seenIDs[attributesKeyVal["ID"]]) ){
+	    seenIDs[attributesKeyVal["ID"]] = 1;
+	}
+	else {
+	    seenIDs[attributesKeyVal["ID"]]++;
+	}
     }
 
     // put things with no parent in parsedData straight away
@@ -134,16 +140,33 @@ GFF3toJson.prototype.parse = function(gff3String) {
     // now put children (and grandchildren, and so on) in data struct
     for (var i = 0; i < hasParentIDs.length; i++) {
 	var thisID = hasParentIDs[i];
-	
-	if ( seenIDs[attributesKeyVal["ID"]] == undefined ){
-	    // put in orphans
-	    continue;
+	var thisLine = hasParent[thisID];
+	var thisParentID = thisLine["attributes"]["Parent"];
+
+	if ( isNaN(seenIDs[thisID]) || seenIDs[thisID] == undefined ){ // this is an orphan, shouldn't happen with proper GFF3 files
+	    parsedData["parsedData"].push( thisLine );
 	}
-	for ( var j = 0; j < parsedData["parsedData"].length; j++ ){
+	else { 
+	    // find parent, very slow, but we can refactor later if necessary
+	    // need to rewrite this as a recursive search 
+	    for ( var j = 0; j < parsedData["parsedData"].length; j++ ){ 
+		// check top level feature for j
+		if ( thisParentID == parsedData["parsedData"][j]["ID"] ){
+		    parsedData["parsedData"][j]["children"].push( thisLine );
+		    continue;
+		}
+		// check in j's children (for now, great grandchildren are going to be orphans)
+		if ( parsedData["parsedData"][j]["children"].length > 0 ){
+		    for( k = 0; k < parsedData["parsedData"][j]["children"].length; k++){
+			if ( thisParentID == parsedData["parsedData"][j]["children"][k]["ID"] ){
+                            parsedData["parsedData"][j]["children"][k]["children"].push( thisLine );
+			    continue;
+			}
+		    }
+		}
+	    }
 	}
 
-	var bar = 'baz';
     }
-
     return parsedData;
 };
