@@ -250,7 +250,8 @@ for my $testfile ( "tests/data/au9_scaffold_subset.gff3", "tests/data/au9_scaffo
 	'--cssClass' => 'refseq-transcript',
 	'--type' => 'mRNA',
 	'--trackLabel' => 'just_maker_singleton',
-	'--webApollo'
+	'--webApollo',
+	'--renderClassName' => 'ogsv3-transcript-render'
         );
 
     my $read_json = sub { slurp( $tempdir, @_ ) };
@@ -272,7 +273,7 @@ for my $testfile ( "tests/data/au9_scaffold_subset.gff3", "tests/data/au9_scaffo
     ok( scalar @utr_feats == 0, '--webApollo flag gets rid of UTR and five|three_prime_UTR features');
 
     # check for "renderClassName" : "ogsv3-transcript-render" keyval in mRNA feature
-    ok($track_list->{'tracks'}->[3]->{'style'}->{'renderClassName'} eq 'ogsv3-transcript-render', '--webApollo flag puts "renderClassName" : "ogsv3-transcript-render" into mRNA feature');
+    ok($track_list->{'tracks'}->[3]->{'style'}->{'renderClassName'} eq 'ogsv3-transcript-render', '--renderClassName ogsv3-transcript-render flag puts "renderClassName" : "ogsv3-transcript-render" into mRNA feature');
 
     # check for "type" values are changed from "FeatureTrack" to "DraggableFeatureTrack" in mRNA feature
     ok($track_list->{'tracks'}->[3]->{'type'} eq 'DraggableFeatureTrack','--webApollo flag changes type values to DraggableFeatureTrack in mRNA feature');
