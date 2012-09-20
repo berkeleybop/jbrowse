@@ -44,9 +44,6 @@ justaddcoffee@gmail.com
 function GFF3toJson() {
 }
 
-GFF3toJson.prototype.recursiveChildSearch = function(idToFind, objectToSearch) {
-}
-
 GFF3toJson.prototype.parse = function(gff3String) {
     // Right now this method assumes that gff3String is the entire GFF3
     // file in string form. This sucks a bit because it means we'll have to 
@@ -65,9 +62,35 @@ GFF3toJson.prototype.parse = function(gff3String) {
     // for each entry in noParent hash:
     //       put into JSON as Parent without any Children (yet)
     // for each entry in hasParent has
-    //       make sure Parent ID is in seenIDs, or put in orphans and put error in parseErrors array
-    //       find Parent in hash
+    //       make sure Parent ID is in seenIDs, or continue (TODO: put in orphans and put error in parseErrors array)
+    //       find Parent in data structure (depth first search)
     //       put into Children array of Parent
+
+    // search for a given ID in children, grandchildren, great-grandchildren, etc.
+    var recursion_level = 0;
+    var maximum_recursion_level = 10; 
+    var recursiveChildSearch = function(thisLine, featureArrayToSearch) {
+	recursion_level++;
+	var thisParentId = thisLine["attributes"]["Parent"];
+	// first, search each item in featureArrayToSearch
+	for ( var j = 0; j < featureArrayToSearch.length; j++ ){ 
+	    if ( thisParentId == featureArrayToSearch[j]["ID"] ){
+		featureArrayToSearch[j]["children"].push( thisLine );
+		return true;
+	    }
+	    // a bit paranoid about infinite recursion
+	    if ( recursion_level > maximum_recursion_level ){
+		return false;
+	    }
+	    // recurse if there there are children
+	    if ( featureArrayToSearch[j]["children"].length > 0 ){
+		if ( recursiveChildSearch(thisLine, featureArrayToSearch[j]["children"] )){
+		    return true;
+		}
+	    }
+	}
+	return false;
+    }
 
     var parsedData = {
 	"parsedData" : [],
@@ -164,34 +187,8 @@ GFF3toJson.prototype.parse = function(gff3String) {
 	    parsedData["parsedData"].push( thisLine );
 	}
 	else { 
-	    // depth first search to find parent/grandparent/great-grandparent
-	    // very slow, but we can refactor later if necessary
-	    // maybe need to rewrite this as a recursive search 
-	    for ( var j = 0; j < parsedData["parsedData"].length; j++ ){ 
-		// check top level feature for j
-		if ( thisParentID == parsedData["parsedData"][j]["ID"] ){
-		    parsedData["parsedData"][j]["children"].push( thisLine );
-		    continue;
-		}
-		// check in j's children, if there are any
-		if ( parsedData["parsedData"][j]["children"].length > 0 ){
-		    for( k = 0; k < parsedData["parsedData"][j]["children"].length; k++){
-			if ( thisParentID == parsedData["parsedData"][j]["children"][k]["ID"] ){
-                            parsedData["parsedData"][j]["children"][k]["children"].push( thisLine );
-			    continue;
-			}
-			// check in j's grand-children, if there are any
-			if (parsedData["parsedData"][j]["children"][k]["children"].length > 0 ) {
-			    for( l = 0; l < parsedData["parsedData"][j]["children"][k]["children"].length; l++){
-				if ( thisParentID == parsedData["parsedData"][j]["children"][k]["children"][l]["ID"] ){
-				    parsedData["parsedData"][j]["children"][k]["children"][l]["children"].push( thisLine );
-				    continue;
-				}
-			    }
-			}
-		    }
-		}
-	    }
+	    // put this child in the right children array, recursively
+	    recursiveChildSearch(thisLine, parsedData["parsedData"]);
 	}
 
     }
