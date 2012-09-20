@@ -43,6 +43,10 @@ justaddcoffee@gmail.com
 
 function GFF3toJson() {
 }
+
+GFF3toJson.prototype.recursiveChildSearch = function(idToFind, objectToSearch) {
+}
+
 GFF3toJson.prototype.parse = function(gff3String) {
     // Right now this method assumes that gff3String is the entire GFF3
     // file in string form. This sucks a bit because it means we'll have to 
@@ -160,20 +164,30 @@ GFF3toJson.prototype.parse = function(gff3String) {
 	    parsedData["parsedData"].push( thisLine );
 	}
 	else { 
-	    // find parent, very slow, but we can refactor later if necessary
-	    // need to rewrite this as a recursive search 
+	    // depth first search to find parent/grandparent/great-grandparent
+	    // very slow, but we can refactor later if necessary
+	    // maybe need to rewrite this as a recursive search 
 	    for ( var j = 0; j < parsedData["parsedData"].length; j++ ){ 
 		// check top level feature for j
 		if ( thisParentID == parsedData["parsedData"][j]["ID"] ){
 		    parsedData["parsedData"][j]["children"].push( thisLine );
 		    continue;
 		}
-		// check in j's children (for now, great grandchildren are going to be orphans)
+		// check in j's children, if there are any
 		if ( parsedData["parsedData"][j]["children"].length > 0 ){
 		    for( k = 0; k < parsedData["parsedData"][j]["children"].length; k++){
 			if ( thisParentID == parsedData["parsedData"][j]["children"][k]["ID"] ){
                             parsedData["parsedData"][j]["children"][k]["children"].push( thisLine );
 			    continue;
+			}
+			// check in j's grand-children, if there are any
+			if (parsedData["parsedData"][j]["children"][k]["children"].length > 0 ) {
+			    for( l = 0; l < parsedData["parsedData"][j]["children"][k]["children"].length; l++){
+				if ( thisParentID == parsedData["parsedData"][j]["children"][k]["children"][l]["ID"] ){
+				    parsedData["parsedData"][j]["children"][k]["children"][l]["children"].push( thisLine );
+				    continue;
+				}
+			    }
 			}
 		    }
 		}
