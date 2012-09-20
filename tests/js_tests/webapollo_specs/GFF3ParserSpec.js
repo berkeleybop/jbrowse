@@ -6,10 +6,21 @@ describe("GFF3toJson", function() {
 	// Some legal GFF3 features not supported by this code yet:
 	// - features with multiple parents
 	// - features with identical IDs on multiple lines
+
+	// variables for holding fixtures and parsed output
 	var gff3Parser;
 	var makerGff3String;
-	var makerCorrectJsonFile;
-	var jsonOuput;
+	var makerGff3String2;
+	var makerGff3String3;
+	var makerGff3String4;
+	var makerGff3String5;
+	var makerGff3String6;
+	var jsonOutput;
+	var jsonOutput2;
+	var jsonOutput3;
+	var jsonOutput4;
+	var jsonOutput5;
+	var jsonOutput6;
 
 	beforeEach(function() {
 		gff3Parser = new GFF3toJson();		
@@ -29,6 +40,11 @@ describe("GFF3toJson", function() {
 		makerGff3String5 = "##gff-version   3\n#Group1.33	maker	gene	245454	247006	.	+	.	ID=this_parent_id_12345;Name=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;";
 		jsonOutput5 = gff3Parser.parse( makerGff3String5 );
 
+		// here's a fixture with great granchildren. doesn't necessarily make sense biologically, just using this to test parsing of deep features.
+		// the deepest I'm going to test is great grandchildren. 
+		makerGff3String6 = "Group1.33	maker	gene	245454	247006	.	+	.	ID=this_parent_id_12345;Name=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;\nGroup1.33	maker	mRNA	245454	247006	.	+	.	ID=1:gnomon_566853_mRNA;Parent=this_parent_id_12345;Name=gnomon_566853_mRNA;_AED=0.45;_eAED=0.45;_QI=138|1|1|1|1|1|4|191|259;\nGroup1.33	maker	exon	245454	245533	.	+	.	ID=1:gnomon_566853_mRNA:exon:5976;Parent=1:gnomon_566853_mRNA;\nGroup1.33	maker	three_prime_UTR	246816	247006	.	+	.	ID=1:gnomon_566853_mRNA:three_prime_utr;Parent=1:gnomon_566853_mRNA:exon:5976;\nGroup1.33	maker	TF_binding_site	246816	246820	.	+	.	ID=1:gnomon_566853_TFBS;Parent=1:gnomon_566853_mRNA:three_prime_utr;";
+
+		jsonOutput6 = gff3Parser.parse( makerGff3String6 );
 	    });
 
 	it("should respond to parse", function() {
@@ -110,6 +126,10 @@ describe("GFF3toJson", function() {
 	
 	it("should put grandchildren into 'children' array of 'children' array of grandparent", function() {
 		expect(jsonOutput["parsedData"][0]["children"][0]["children"][0]["ID"]).toEqual("1:gnomon_566853_mRNA:exon:5976");
+	    });
+
+	it("should put great-grandchildren into 'children' array of 'children' array of 'children' array of great-grandparent", function() {
+		expect(jsonOutput["parsedData"][0]["children"][0]["children"][0]["children"][0]["ID"]).toEqual("1:gnomon_566853_TFBS;Parent=1:gnomon_566853_mRNA:three_prime_utr;");
 	    });
 
 	it("should stop parsing at ##FASTA pragma", function() {
