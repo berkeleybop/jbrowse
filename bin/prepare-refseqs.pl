@@ -271,13 +271,34 @@ unless ($noSeq) {
                                       {
                                        'label' => $seqTrackName,
                                        'key' => $seqTrackName,
-                                       'type' => "SequenceTrack",
-                                       'chunkSize' => $chunkSize,
-                                       'urlTemplate' => "$seqRel/{refseq}/",
-                                       ( $compress ? ( 'compress' => 1 ): () ),
+                                       'type' => "AnnotSequenceTrack",
+				       'config' => {
+                                         'chunkSize' => $chunkSize,
+					 'residuesUrlTemplate' => "$seqRel/{refseq}/",
+                                         'urlTemplate' => "sequence_alterations_trackData.json",
+					 'style' => {
+						 'uniqueIdField' => 'id',
+						 'className' => '{type}'
+					 },
+                                         'compress' => $compress ? 1 : 0,
+					 'type' => 1,
+					 'subfeatures' => 1
+				       }
                                       };
                                     return $trackList;
                             });
+}
+
+my $oldRefSeqsJson = "seq/refSeqs.json";
+my $newRefSeqsJson = "$outDir/refSeqs.json";
+unlink($newRefSeqsJson) or
+	die "Error removing old linked refSeqs.json: $!\n"
+	if -e $newRefSeqsJson;
+eval { symlink($oldRefSeqsJson, $newRefSeqsJson); };
+if ($@) {
+    unless (link("$outDir/$oldRefSeqsJson", $newRefSeqsJson)) {
+        warn "Unable to link refSeqs.json - you'll need to do it manually.\n";
+    }
 }
 
 exit;

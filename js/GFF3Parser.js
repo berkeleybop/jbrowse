@@ -1,5 +1,5 @@
 /* 
-This is a very lightweight and simple GFF3 parser that takes a GFF3 file such as this:
+This is a very simple GFF3 parser that takes a GFF3 file such as this:
 
 Group1.33	maker	gene	245454	247006	.	+	.	ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%252E33-pred_gff_GNOMON-gene-4.137;
 Group1.33	maker	mRNA	245454	247006	.	+	.	ID=1:gnomon_566853_mRNA;Parent=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=gnomon_566853_mRNA;_AED=0.45;_eAED=0.45;_QI=138|1|1|1|1|1|4|191|259;
@@ -43,6 +43,7 @@ justaddcoffee@gmail.com
 
 function GFF3toJson() {
 }
+
 GFF3toJson.prototype.parse = function(gff3String) {
     // Right now this method assumes that gff3String is the entire GFF3
     // file in string form. This sucks a bit because it means we'll have to 
@@ -51,23 +52,74 @@ GFF3toJson.prototype.parse = function(gff3String) {
     // are big. We can refactor this later to accept a stream instead of 
     // a string. 
 
+    // Pseudocode for what I'm doing below: 
+    // for each line in giant GFF3 string (slurped GFF3 file):
+    //    parse data into fields, parse 9th field into attributes hash
+    //    if hasParentAttribute
+    //       put into hasParent hash where key == id, value = hash of data struct with parsed fields and parsed attributes
+    //    else 
+    //       put into noParent hash where key == id, value = hash of data struct with parsed fields and parsed attributes
+    // for each entry in noParent hash:
+    //       put into JSON as Parent without any Children (yet)
+    // for each entry in hasParent has
+    //       make sure Parent ID is in seenIDs, or continue (TODO: put in orphans and put error in parseErrors array)
+    //       find Parent in data structure (depth first search)
+    //       put into Children array of Parent
+
+    // search for a given ID in children, grandchildren, great-grandchildren, etc.
+    var recursion_level = 0;
+    var maximum_recursion_level = 10; 
+    var recursiveChildSearch = function(thisLine, featureArrayToSearch) {
+	recursion_level++;
+	var thisParentId = thisLine["attributes"]["Parent"];
+	// first, search each item in featureArrayToSearch
+	for ( var j = 0; j < featureArrayToSearch.length; j++ ){ 
+	    if ( thisParentId == featureArrayToSearch[j]["ID"] ){
+		featureArrayToSearch[j]["children"].push( thisLine );
+		return true;
+	    }
+	    // a bit paranoid about infinite recursion
+	    if ( recursion_level > maximum_recursion_level ){
+		return false;
+	    }
+	    // recurse if there there are children
+	    if ( featureArrayToSearch[j]["children"].length > 0 ){
+		if ( recursiveChildSearch(thisLine, featureArrayToSearch[j]["children"] )){
+		    return true;
+		}
+	    }
+	}
+	return false;
+    }
+
     var parsedData = {
 	"parsedData" : [],
 	"parseErrors": [],
 	"parseWarnings": [],
     }; // parsed GFF3 in JSON format, to be returned
 
-    var idsIHaveKnown = []; 
+    var lines = gff3String.match(/^.*((\r\n|\n|\r)|$)/gm); // this is wasteful, maybe try to avoid storing split lines separately later
+    var hasParent = {}; // child (or grandchild, or whatever) features
+    var noParent = {}; // toplevel features without parents
 
-    // for each line in string:
-    //    if Parent attribute
-    //       find Parent in JSON
-    //       put into Children array of Parent
-    //    else 
-    //       put into JSON as Parent without any Children
+    var seenIDs = {};
+    var noParentIDs = [];
+    var hasParentIDs = [];
 
-    var lines = gff3String.match(/^.*((\r\n|\n|\r)|$)/gm);
     for (var i = 0; i < lines.length; i++) {
+
+	// check for ##FASTA pragma
+	if( lines[i].match(/^##FASTA/) ){
+	    break;
+	}
+	// skip comment lines
+	if( lines[i].match(/^#/) ){
+	    continue;
+	}
+	// skip comment lines
+	if( lines[i].match(/^\s*$/) ){
+	    continue;
+	}
 	// make sure lines[i] has stuff in it
 	if(typeof(lines[i]) == 'undefined' || lines[i] == null) {
 	    continue;
@@ -75,13 +127,13 @@ GFF3toJson.prototype.parse = function(gff3String) {
 	lines[i] = lines[i].replace(/(\n|\r)+$/, ''); // chomp 
 	var fields = lines[i].split("\t");
 	// check that we have enough fields
-	if(fields.length < 8 ){
-	    console.log("Number of fields < 8! Skipping this line:\n\t" + lines[i] + "\n");
+	if(fields.length < 9 ){
+	    console.log("Number of fields < 9! Skipping this line:\n\t" + lines[i] + "\n");
 	    continue;
 	}
 	else {
-	    if (fields.length > 8 ){
-		console.log("Number of fields > 8!\n\t" + lines[i] + "\nI'll try to parse this line anyway.");
+	    if (fields.length > 9 ){
+		console.log("Number of fields > 9!\n\t" + lines[i] + "\nI'll try to parse this line anyway.");
 	    }
 	}
 
@@ -99,18 +151,46 @@ GFF3toJson.prototype.parse = function(gff3String) {
 	    }
 	}
 
+	var thisLine = {"ID": attributesKeyVal["ID"], "attributes" :  attributesKeyVal, "data": fields, "children": []};
 	if ( attributesKeyVal["Parent"] != undefined ){
-	    // find parent
-	    
+	    hasParent[attributesKeyVal["ID"]] = thisLine;
+	    hasParentIDs.push( attributesKeyVal["ID"] );
 	}
 	else {
- 	    // put into JSON as Parent without any Children
-	    var thisLine = {"ID": attributesKeyVal["ID"], "attributes" :  attributesKeyVal, "data": fields, "children": []};
-	    parsedData["parsedData"].push( thisLine );
-	    var foo = "bar";	    
+	    noParent[attributesKeyVal["ID"]] = thisLine;
+	    noParentIDs.push( attributesKeyVal["ID"] );
 	}
-	idsIHaveKnown.push( attributesKeyVal["ID"] );
 	
+	// keep track of what IDs we've seen
+	if ( isNaN(seenIDs[attributesKeyVal["ID"]]) ){
+	    seenIDs[attributesKeyVal["ID"]] = 1;
+	}
+	else {
+	    seenIDs[attributesKeyVal["ID"]]++;
+	}
+    }
+
+    // put things with no parent in parsedData straight away
+    for (var i = 0; i < noParentIDs.length; i++) {
+	var thisID = noParentIDs[i];
+	var thisLine = noParent[thisID];
+	parsedData["parsedData"].push( thisLine );
+    }
+
+    // now put children (and grandchildren, and so on) in data struct
+    for (var i = 0; i < hasParentIDs.length; i++) {
+	var thisID = hasParentIDs[i];
+	var thisLine = hasParent[thisID];
+	var thisParentID = thisLine["attributes"]["Parent"];
+
+	if ( isNaN(seenIDs[thisID]) || seenIDs[thisID] == undefined ){ // this is an orphan, shouldn't happen with proper GFF3 files
+	    parsedData["parsedData"].push( thisLine );
+	}
+	else { 
+	    // put this child in the right children array, recursively
+	    recursiveChildSearch(thisLine, parsedData["parsedData"]);
+	}
+
     }
     return parsedData;
 };
