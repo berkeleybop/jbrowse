@@ -325,8 +325,19 @@ DraggableFeatureTrack.prototype.handleSubFeatures = function(feature, featDiv,
 
     var priorCdsLength = 0;
     if (debugFrame)  { console.log("====================================================="); }
+
+    var strand = feature.get('strand');
+    var reverse = false;
+    if (strand === -1 || strand === '-') {
+	reverse = true;
+    }
     for (i = 0; i < slength; i++) {
-	subfeat = subfeats[i];
+	if (reverse) {
+	    subfeat = subfeats[slength-i-1];
+	}
+	else  {
+	    subfeat = subfeats[i];	    
+	}
 	var uid = subfeat.uid;
 	if (!uid)  {
 	    uid = this.getSubfeatId(subfeat, i, parentId);
@@ -338,8 +349,9 @@ DraggableFeatureTrack.prototype.handleSubFeatures = function(feature, featDiv,
 	// if (subtype == "wholeCDS")  {  continue; }
         var subDiv = this.renderSubfeature(feature, featDiv, subfeat, displayStart, displayEnd, block);
 	// if subfeat is of type "exon", add CDS/UTR rendering
-	if (subDiv && wholeCDS && (subtype === "exon")) {
-	    priorCdsLength = this.renderExonSegments(subfeat, subDiv, cdsMin, cdsMax, displayStart, displayEnd, priorCdsLength);
+	// if (subDiv && wholeCDS && (subtype === "exon")) {  
+	if (wholeCDS && (subtype === "exon")) {   // pass even if subDiv is null (not drawn), in order to correctly calc downstream CDS frame 
+	    priorCdsLength = this.renderExonSegments(subfeat, subDiv, cdsMin, cdsMax, displayStart, displayEnd, priorCdsLength, reverse);
 	}
 	if (this.verbose_render)  { 
 	    console.log("in DraggableFeatureTrack.handleSubFeatures, subDiv: ");
@@ -361,25 +373,33 @@ Frame is calculated as (3 - ((length-frame) mod 3)) mod 3.
  */
 var debugFrame = false;
 DraggableFeatureTrack.prototype.renderExonSegments = function(subfeature, subDiv, cdsMin, cdsMax, 
-							      displayStart, displayEnd, priorCdsLength)  {
+							      displayStart, displayEnd, priorCdsLength, reverse)  {
     var attrs = this.attrs;
     var subStart = attrs.get(subfeature, "Start");
     var subEnd = attrs.get(subfeature, "End");
     var subLength = subEnd - subStart;
-    // look for UTR and CDS subfeature class mapping from trackData
-    //    if can't find, then default to parent feature class + "-UTR" or "-CDS"
-    var UTRclass = this.config.style.subfeatureClasses["UTR"];
-    var CDSclass = this.config.style.subfeatureClasses["CDS"];
-    if (! UTRclass)  { UTRclass = this.className + "-UTR"; }
-    if (! CDSclass)  { CDSclass = this.className + "-CDS"; }
+    var UTRclass, CDSclass;
 
  //   if (debugFrame)  { console.log("exon: " + subStart); }
+
     // if the feature has been truncated to where it doesn't cover
     // this subfeature anymore, just skip this subfeature
-    var render = ((subEnd > displayStart) || (subStart < displayEnd));
+    // GAH: was OR, but should be AND?? var render = ((subEnd > displayStart) && (subStart < displayEnd));
+    var render = subDiv && (subEnd > displayStart) && (subStart < displayEnd);
+
+    // look for UTR and CDS subfeature class mapping from trackData
+    //    if can't find, then default to parent feature class + "-UTR" or "-CDS"
+    if (render) {
+	UTRclass = this.config.style.subfeatureClasses["UTR"];
+	CDSclass = this.config.style.subfeatureClasses["CDS"];
+	if (! UTRclass)  { UTRclass = this.className + "-UTR"; }
+	if (! CDSclass)  { CDSclass = this.className + "-CDS"; }
+    }
+
 //    if ((subEnd <= displayStart) || (subStart >= displayEnd))  { return undefined; }
 
     var segDiv;
+    console.log("render sub frame");
     // whole exon is untranslated (falls outside wholeCDS range, or no CDS info found)
     if ((cdsMin === undefined && cdsMax === undefined) ||    
 	(cdsMax <= subStart || cdsMin >= subEnd))  {
@@ -403,7 +423,13 @@ DraggableFeatureTrack.prototype.renderExonSegments = function(subfeature, subDiv
 	//var cdsFrame = (subStart + ((3 - (priorCdsLength % 3)) % 3)) % 3;
         //	var cdsFrame = (3 - (priorCdsLength % 3)) % 3;
 	var relFrame = (3 - (priorCdsLength % 3)) % 3;
-	var cdsFrame = (subStart + ((3 - (priorCdsLength % 3)) % 3)) % 3;
+	var cdsFrame;
+	if (reverse)  { cdsFrame = ((subEnd-1) + ((3 - (priorCdsLength % 3)) % 3)) % 3;
+			//console.log("subEnd: " + subEnd);
+		      }
+	else  { cdsFrame = (subStart + ((3 - (priorCdsLength % 3)) % 3)) % 3; 
+		// console.log("subStart: " + subStart);
+	      }
 
 	if (debugFrame)  { console.log("whole exon: " + subStart + ", initFrame: " + (cdsMin % 3) + 
 				       ", overhang: " + overhang + ", relFrame: " + relFrame + ", subFrame: " + (subStart % 3) + 
@@ -432,7 +458,8 @@ DraggableFeatureTrack.prototype.renderExonSegments = function(subfeature, subDiv
 	var cdsFrame = 0;
 	if (priorCdsLength > 0)  {
 	    var relFrame = (3 - (priorCdsLength % 3)) % 3;
-	    var cdsFrame = (subStart + ((3 - (priorCdsLength % 3)) % 3)) % 3;
+	    if (reverse)  { cdsFrame = ((subEnd-1) + ((3 - (priorCdsLength % 3)) % 3)) % 3; }
+	    else  { cdsFrame = (subStart + ((3 - (priorCdsLength % 3)) % 3)) % 3; }
 
 //	    var cdsFrame
 	    if (debugFrame)  { console.log("partial exon: " + subStart + ", initFrame: " + (cdsMin % 3) + 
@@ -440,7 +467,12 @@ DraggableFeatureTrack.prototype.renderExonSegments = function(subfeature, subDiv
 					   ", cdsFrame: " + cdsFrame); }
 	}
 	else  {
-	    var cdsFrame = cdsMin % 3;
+	    if (reverse) {
+		cdsFrame = (cdsMax-1) % 3; // console.log("rendering reverse frame");
+	    }
+	    else  {
+		cdsFrame = cdsMin % 3;		
+	    }
 	}
 
 	var utrStart;
