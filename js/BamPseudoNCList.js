@@ -22,8 +22,6 @@ function BamPseudoNCList(bamfile, refSeq, attrs) {
     this.getSublist = this.attrs.makeFastGetter("Sublist");
     this.setSublist = this.attrs.makeFastSetter("Sublist");
 
-    this.refLength = refSeq.length;
-
     this.lazyClass = BamUtils.lazyClass;
 //    this.lazyIndex = BamUtils.lazyIndex;
 //    this.sublistIndex = BamUtils.sublistIndex;
@@ -32,16 +30,23 @@ function BamPseudoNCList(bamfile, refSeq, attrs) {
     // for now make topList an array of lazy-load chunks, each of length chunk_size
     //   like NCList, if iterate() touches lazy-load chunk, will trigger loading (but via bamfile rather than urltemplate)
     var chunk_size = 1000;
-    var maxindex = Math.ceil(this.refLength / chunk_size);
-    // console.log("refSeq length: " + this.refLength + ", lazy chunks: " + maxindex);
-    for (var i=0; i<maxindex; i++) {
-	var chunk_min = i * chunk_size;
-	var chunk_max = chunk_min + chunk_size;
-	if (chunk_max > this.refLength) { chunk_max = this.refLength; }
+    //    var maxindex = Math.ceil(this.refLength / chunk_size);
+    // var maxindex = Math.ceil(this.refSeq.end / chunk_size);
+    console.log("refSeq start: ", refSeq.start, ", end: ", refSeq.end, " length: ", refSeq.length);
+    if ((refSeq.end - refSeq.start) !== refSeq.length) {  console.log("ERROR!!! refseq length disagrees with start/end, end-start: ", (refSeq.end - refSeq.start)); }
+
+    var chunk_min;
+    var chunk_max = Math.floor(refSeq.start / chunk_size) * chunk_size;
+    while (chunk_max < refSeq.end) { 
+	chunk_min = chunk_max;
+	chunk_max = chunk_min + chunk_size;
+	if (chunk_max > this.refSeq.end) { chunk_max = this.refSeq.end; }
 	// includes empty Object at chunk[lazyIndex] to indicate it's a "fake" lazy loading feature
 	var chunk = [ this.lazyClass, chunk_min, chunk_max, {} ]; 
 	this.topList.push(chunk);
     }
+    // console.log("lazy chunks: " + this.topList.length);
+    //    console.log("last min: ", chunk_min, ", max: ", chunk_max, ", max-end:", (chunk_max-refSeq.end));
 };
 
 // BamPseudoNCList.prototype.importExisting   // similar functionality merged into constructor
@@ -219,18 +224,34 @@ BamPseudoNCList.prototype.iterHelper = function(arr, from, to, fun, finish,
 					   }
 					   else {
 					       // set state to "loaded"
-					       console.log("finished load of BAM chunk: " + chunkMin + " -- " + chunkMax);
 					       // if (chunkMin != cmin)  { console.log("chunk starts don't match!  chunkMin = " + chunkMin + ", cmin = " + cmin); }
 					       lfield.state = "loaded";
 
 					       // create JBrowse JSON feats array from returned BAM records
 					       var bamfeats = [];
+					       var bamhash = { };
+					       var idfield = BamUtils.ID;
+					       var dups = [];
 					       for (var bindex = 0; bindex < bamrecords.length; bindex++)  {
 						   var record = bamrecords[bindex];
 						   var bamfeat = BamUtils.convertBamRecord(record, ncl.make_cigar_subfeats);
-						   bamfeats.push(bamfeat);
+						   // trying to catch case where get duplicate BAM records 
+						   //    see issue 
+						   // if (bamfeat[idfield] == "HWUSI-EAS594-R_0059:2:36:10569:14568#ACAGTG/294595-294695") {console.log("MATCH, record: " + bindex); }
+						   if (bamhash[bamfeat[idfield]])  {
+						       // console.log("filtered out identical bam feature: " + bamfeat[idfield]);
+						       dups.push( bamfeat[idfield] );
+						   }
+						   else  {
+						       bamhash[bamfeat[idfield]] = true;
+						       bamfeats.push(bamfeat);
+						   }
 					       }
+					       console.log("finished load of BAM chunk: " + chunkMin + " -- " + chunkMax + ", featcount: " + bamrecords.length);
+
+					       if (dups.length > 0) { console.log("duplicate bam feature count: " + dups.length); console.log(dups); }
 					       // console.log("loaded BAM feature count: " + bamrecords.length);
+					       // console.log(bamhash);
 					       // construct nested containment list array from JSON feats
 					       //     (using modified NCList.fill() method
 					       // populate lazyFeat[sublistIndex] with NCL array
