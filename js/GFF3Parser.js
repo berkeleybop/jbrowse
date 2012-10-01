@@ -1,4 +1,7 @@
 /* 
+Created by Justin Reese 9/2012
+justaddcoffee@gmail.com
+
 This is a very simple GFF3 parser that takes a GFF3 file such as this:
 
 Group1.33	maker	gene	245454	247006	.	+	.	ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%252E33-pred_gff_GNOMON-gene-4.137;
@@ -37,12 +40,10 @@ and returns a JSON data structure like this:
 "parseWarnings" : ["no GFF3 pragma"]
 }
 
-Created by Justin Reese 2012
-justaddcoffee@gmail.com
 */
 
 function GFF3toJson() {
-}
+};
 
 GFF3toJson.prototype.parse = function(gff3String) {
     // Right now this method assumes that gff3String is the entire GFF3
