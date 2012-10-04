@@ -3128,7 +3128,7 @@ div.blastn-alignment-match-hist {
     position: absolute;
     height: 8px; 
     margin-top: 4px;
-    background-color: rgb(255,51,204);
+    background-color: rgb(0,200,204);
     z-index: 8;
     min-width: 1px;
     cursor: pointer;
@@ -3139,7 +3139,57 @@ div.blastn-alignment-match-hist {
 }
 
 div.blastx-alignment-match-hist {
-    background-color: rgb(255,51,204);
+    background-color: rgb(0,200,204);
+    border-color: gray;
+}
+
+/***************************************************************
+*  tblastx alignment styling
+****************************************************************/
+.tblastx-alignment-match, 
+.plus-tblastx-alignment-match, 
+.minus-tblastx-alignment-match {
+    position: absolute;
+    height: 16px;
+    margin-top: 0px;
+    z-index: 6;
+    min-width: 1px;
+    cursor: pointer;
+}
+
+.tblastx-alignment-render  {
+    position: absolute;
+    height: 4px;
+    margin-top: 6px;
+    margin-bottom: 6px;  /* don't think this actually is needed */
+    background-color: gray;
+    /* annotline div may be added to annot div _after_ child feature divs, so 
+       if want child divs in front of annotline, make sure has lower 
+       z-index than child divs */
+    z-index: 2;  
+    min-width: 1px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.tblastx-alignment-part, 
+.plus-tblastx-alignment-part, 
+.minus-tblastx-alignment-part  {
+    position: absolute;
+    height: 8px; 
+    margin-top: 4px;
+    background-color: rgb(0,200,104);
+    z-index: 8;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+div.tblastx-alignment-match-hist {
+    background-color: rgb(0,200,104);
     border-color: gray;
 }
 
@@ -3178,7 +3228,7 @@ div.blastx-alignment-match-hist {
     position: absolute;
     height: 8px; 
     margin-top: 4px;
-    background-color: rgb(153,255,204);
+    background-color: rgb(153,100,204);
     z-index: 8;
     min-width: 1px;
     cursor: pointer;
@@ -3189,7 +3239,7 @@ div.blastx-alignment-match-hist {
 }
 
 div.snap_masked-alignment-match-hist {
-    background-color: rgb(153,255,204);
+    background-color: rgb(153,100,204);
     border-color: gray;
 }
 
@@ -3228,7 +3278,7 @@ div.snap_masked-alignment-match-hist {
     position: absolute;
     height: 8px; 
     margin-top: 4px;
-    background-color: rgb(250,250,210);
+    background-color: rgb(100,100,210);
     z-index: 8;
     min-width: 1px;
     cursor: pointer;
@@ -3239,7 +3289,7 @@ div.snap_masked-alignment-match-hist {
 }
 
 div.est2genome-alignment-match-hist {
-    background-color: rgb(250,250,210);
+    background-color: rgb(100,100,210);
     border-color: gray;
 }
 
@@ -3278,7 +3328,7 @@ div.est2genome-alignment-match-hist {
     position: absolute;
     height: 8px; 
     margin-top: 4px;
-    background-color: rgb(255,255,0);
+    background-color: rgb(117,150,255);
     z-index: 8;
     min-width: 1px;
     cursor: pointer;
@@ -3289,7 +3339,7 @@ div.est2genome-alignment-match-hist {
 }
 
 div.protein2genome-alignment-match-hist {
-    background-color: rgb(255,255,0);
+    background-color: rgb(117,150,255);
     border-color: gray;
 }
 
