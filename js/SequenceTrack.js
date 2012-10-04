@@ -429,6 +429,8 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 			       var tstart = blockStart + i;
 			       // var frame = tstart % 3;
 			       var frame = (track.refSeq.length - blockEnd + i) % 3;
+			       // frame = (frame + (3 - (track.refSeq.length % 3))) % 3;
+			       frame = (Math.abs(frame - 2) + (track.refSeq.length % 3)) % 3;
 			       var transProtein = track.renderTranslation( extendedStartResidues, i, blockLength, true);
 			       $(transProtein).addClass("frame" + frame);
 			       framedivs[frame] = transProtein;
@@ -565,7 +567,7 @@ SequenceTrack.prototype.renderResidues = function ( seq ) {
     return container;
 };
 
-/** end is ignored, assume all of seq is translated (except nay extra bases at end) */
+/** end is ignored, assume all of seq is translated (except any extra bases at end) */
 SequenceTrack.prototype.renderTranslation = function ( input_seq, offset, blockLength, reverse) {
     var verbose = false;
     // sequence of diagnostic block
@@ -1118,9 +1120,26 @@ SequenceTrack.prototype.clearHighlightedBases = function() {
  *     does highlights across all blocks that overlap genome coord range
  * NOT YET IMPLEMENTED
  */
-/*
- SequenceTrack.prototype.highlightResidues = function(genomeStart, genomeEnd) {
+ /*SequenceTrack.prototype.highlightResidues = function(genomeStart, genomeEnd) {
 }
 */
+
+/*
+ *  More efficient form 
+ *  residues_class is CSS class of residues:  forward, reverse, frame0, frame1, frame2, frameMinus1, frameMinus2, frameMinus3
+ *  highlight_class is CSS class for the highlighted span
+ *  ranges is an ordered array (min to max) of ranges, each range is itself an array of form [start, end] in genome coords
+ *  ranges MUST NOT overlap
+ * 
+ * assumes:
+ *     ranges do not overlap
+ *     any previous highlighting is removed (revert to raw residues before applying new highlighting)
+ *     
+ * 
+ *  In implementation can insert span elements in reverse order, so that indexing into string is always accurate (not tripped up by span elements inserted farther upstream)
+ *     will need to clamp to bounds of each block   
+ */
+/*SequenceTrack.prototype.highlightResidues = function(highlight_class, residues_class, ranges) */
+
 
 

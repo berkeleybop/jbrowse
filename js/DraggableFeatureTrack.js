@@ -399,7 +399,7 @@ DraggableFeatureTrack.prototype.renderExonSegments = function(subfeature, subDiv
 //    if ((subEnd <= displayStart) || (subStart >= displayEnd))  { return undefined; }
 
     var segDiv;
-    console.log("render sub frame");
+    // console.log("render sub frame");
     // whole exon is untranslated (falls outside wholeCDS range, or no CDS info found)
     if ((cdsMin === undefined && cdsMax === undefined) ||    
 	(cdsMax <= subStart || cdsMin >= subEnd))  {
