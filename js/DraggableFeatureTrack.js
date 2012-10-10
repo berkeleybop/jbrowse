@@ -350,7 +350,11 @@ DraggableFeatureTrack.prototype.handleSubFeatures = function(feature, featDiv,
         var subDiv = this.renderSubfeature(feature, featDiv, subfeat, displayStart, displayEnd, block);
 	// if subfeat is of type "exon", add CDS/UTR rendering
 	// if (subDiv && wholeCDS && (subtype === "exon")) {  
-	if (wholeCDS && (subtype === "exon")) {   // pass even if subDiv is null (not drawn), in order to correctly calc downstream CDS frame 
+	// if (wholeCDS && (subtype === "exon")) {   // pass even if subDiv is null (not drawn), in order to correctly calc downstream CDS frame 
+
+	// CHANGED to call renderExonSegments even if no wholeCDS -- 
+	//     non wholeCDS means undefined cdsMin, which will trigger creation of UTR div for entire exon
+	if (subtype === "exon") {   // pass even if subDiv is null (not drawn), in order to correctly calc downstream CDS frame 
 	    priorCdsLength = this.renderExonSegments(subfeat, subDiv, cdsMin, cdsMax, displayStart, displayEnd, priorCdsLength, reverse);
 	}
 	if (this.verbose_render)  { 

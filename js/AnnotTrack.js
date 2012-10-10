@@ -796,15 +796,66 @@ AnnotTrack.prototype.createAnnotations = function(feats)  {
 	var target_track = this;
 	var features_nclist = target_track.features;
 	var featuresToAdd = new Array();
+	var parentFeatures = new Object();
 	for (var i in feats)  {
 		var dragfeat = feats[i];
+		var is_subfeature = (!!dragfeat.parent);  // !! is shorthand for returning true if value is defined and non-null
+		var parentId = is_subfeature ? dragfeat.parent.uid : dragfeat.uid;
+		if (parentFeatures[parentId] === undefined) {
+			parentFeatures[parentId] = new Array();
+			parentFeatures[parentId].isSubfeature = is_subfeature;
+		}
+		parentFeatures[parentId].push(dragfeat);
+	}
+	
+	for (var i in parentFeatures) {
+		var featArray = parentFeatures[i];
+		if (featArray.isSubfeature) {
+			var parentFeature = featArray[0].parent;
+			var parentSourceTrack = parentFeature.track;
+			var fmin = undefined;
+			var fmax = undefined;
+			var featureToAdd = $.extend({}, parentFeature);
+			parentSourceTrack.attrs.set(featureToAdd, "Subfeatures", new Array());
+			for (var k = 0; k < featArray.length; ++k) {
+				var dragfeat = featArray[k];
+				var source_track = dragfeat.track;
+				var childFmin = source_track.attrs.get(dragfeat, "Start");
+				var childFmax = source_track.attrs.get(dragfeat, "End");
+				if (fmin === undefined || childFmin < fmin) {
+					fmin = childFmin;
+				}
+				if (fmax === undefined || childFmax > fmax) {
+					fmax = childFmax;
+				}
+				parentSourceTrack.attrs.get(featureToAdd, "Subfeatures").push(dragfeat);
+			}
+			parentSourceTrack.attrs.set(featureToAdd, "Start", fmin);
+			parentSourceTrack.attrs.set(featureToAdd, "End", fmax);
+			var afeat = JSONUtils.createApolloFeature(parentSourceTrack.attrs, featureToAdd, "transcript");
+			featuresToAdd.push(afeat);
+		}
+		else {
+			for (var k = 0; k < featArray.length; ++k) {
+				var dragfeat = featArray[k];
+				var source_track = dragfeat.track;
+				var afeat = JSONUtils.createApolloFeature(source_track.attrs, dragfeat, "transcript");
+				featuresToAdd.push(afeat);
+			}
+		}
+	}
+
+	/*
+	{
+		
 		var source_track = dragfeat.track;
 		if (this.verbose_create)  {
 			console.log("creating annotation based on feature: ");
 			console.log(dragfeat);
 		}
 		var dragdiv = source_track.getFeatDiv(dragfeat);
-		var is_subfeature = (!!dragfeat.parent);  // !! is shorthand for returning true if value is defined and non-null
+
+
 		var newfeat = JSONUtils.convertToTrack(dragfeat, source_track, target_track);
 		var source_fields = source_track.fields;
 		var source_subFields = source_track.subFields;
@@ -816,16 +867,10 @@ AnnotTrack.prototype.createAnnotations = function(feats)  {
 		}
 		var afeat = JSONUtils.createApolloFeature(source_track.attrs, dragfeat, "transcript");
 		featuresToAdd.push(afeat);
+		
 	}
-	// creating JSON feature data struct that WebApollo server understands, 
-	//    based on JSON feature data struct that JBrowse understands
-	var afeat = JSONUtils.createApolloFeature(source_track.attrs, dragfeat, "transcript");
-	if (this.verbose_create)  {
-		console.log("remote annotation creation");
-		console.log("createApolloFeature: ");
-		console.log(afeat);
-	}
-
+	*/
+	
 	dojo.xhrPost( {
 		postData: '{ "track": "' + target_track.getUniqueTrackName() + '", "features": ' + JSON.stringify(featuresToAdd) + ', "operation": "add_transcript" }',
 		url: context_path + "/AnnotationEditorService",
@@ -2203,9 +2248,10 @@ AnnotTrack.prototype.searchSequence = function() {
     dojo.create("span", { innerHTML: "Score", class: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
     dojo.create("span", { innerHTML: "Significance", class: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
     dojo.create("span", { innerHTML: "Identity", class: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
-    var matchDiv = dojo.create("div", { }, content);
+    var matchDiv = dojo.create("div", { class: "search_sequence_matches" }, content);
     var matches = dojo.create("div", { }, matchDiv);
-    
+
+    dojo.style(matchDiv, { display: "none" });
     dojo.style(headerDiv, { display: "none" });
 
     var getSequenceSearchTools = function() {
@@ -2266,10 +2312,13 @@ AnnotTrack.prototype.searchSequence = function() {
     						matches.removeChild(matches.lastChild);
     					}
     					dojo.style(headerDiv, { display: "block"} );
+    					dojo.style(matchDiv, { display: "block"} );
     					for (var i = 0; i < response.matches.length; ++i) {
     						var match = response.matches[i];
     						var query = match.query;
     						var subject = match.subject;
+    						subject.location.fmin += track.refSeq.start;
+    						subject.location.fmax += track.refSeq.start;
     						var subjectStart = subject.location.fmin + 1;
     						var subjectEnd = subject.location.fmax + 1;
     						if (subject.location.strand == -1) {
@@ -2280,8 +2329,8 @@ AnnotTrack.prototype.searchSequence = function() {
     						var rawscore = match.rawscore;
     						var significance = match.significance;
     						var identity = match.identity;
-    						var row = dojo.create("div", { class: "search_sequence_matches_row" }, matches);
-    						var subjectIdColumn = dojo.create("span", { innerHTML: subject.feature.uniquename, class: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
+    						var row = dojo.create("div", { class: "search_sequence_matches_row" + (dojo.isFF ? " search_sequence_matches_row-firefox" : "") }, matches);
+    						var subjectIdColumn = dojo.create("span", { innerHTML: subject.feature.uniquename, class: "search_sequence_matches_field search_sequence_matches_generic_field", title: subject.feature.uniquename }, row);
     						var subjectStartColumn = dojo.create("span", { innerHTML: subjectStart, class: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
     						var subjectEndColumn = dojo.create("span", { innerHTML: subjectEnd, class: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
     						var scoreColumn = dojo.create("span", { innerHTML: match.rawscore, class: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);

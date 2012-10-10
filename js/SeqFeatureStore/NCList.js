@@ -85,6 +85,9 @@ SeqFeatureStore.NCList.prototype.histogram = function() {
 
 SeqFeatureStore.NCList.prototype.iterate = function( startBase, endBase, origFeatCallback, finishCallback ) {
     var that = this;
+    if (this.attrs === undefined) {
+        return undefined;
+    }
     var accessors    = this.attrs.accessors(),
         /** @inner */
         featCallBack = function( feature, path ) {

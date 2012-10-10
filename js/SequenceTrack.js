@@ -942,10 +942,12 @@ SequenceTrack.prototype.storedFeatureCount = function(start, end)  {
     // get accurate count of features loaded (should do this within the XHR.load() function
     var track = this;
     if (start == undefined) {
-    	start = 0;
+//    	start = 0;
+    	start = track.refSeq.start;
     }
     if (end == undefined) {
-    	end = track.refSeq.length;
+//    	end = track.refSeq.length;
+    	end = track.refSeq.end;
     }
     var count = 0;
     this.features.iterate(start, end, function() { count++; });

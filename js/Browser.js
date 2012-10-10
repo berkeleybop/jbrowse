@@ -143,7 +143,7 @@ Browser.prototype.initSequence = function() {
     // #1) URL "loc" query param
     if (this.config.location) {
 	loc = Util.parseLocString(this.config.location);
-	if (loc) { seqname = loc.ref; }
+	if (loc && loc.ref) { seqname = loc.ref; }
 	else  { seqname = this.config.location; }
 	seq = Util.matchRefSeqName(seqname, this.allRefs);
     }

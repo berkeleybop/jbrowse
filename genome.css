@@ -994,6 +994,8 @@ div.generic_parent-hist {
     cursor: pointer;
     width: 100%;
 }
+
+
 /********************************************************
 *   RefSeq styling
 ***********************************************/
@@ -1880,7 +1882,7 @@ div.generic_parent-hist {
     position: absolute;
     height: 14px; 
     margin-top: 1px;
-    background-color: #DFA1E6;
+    background-color: #848DBF;
     border: 1px solid black;
     z-index: 8;
     min-width: 1px;
@@ -1969,7 +1971,7 @@ div.generic_parent-hist {
     position: absolute;
     height: 8px; 
     margin-top: 4px;
-    background-color: #1F3DDE;
+    background-color: #3BA08E;
     z-index: 8;
     min-width: 1px;
     cursor: pointer;

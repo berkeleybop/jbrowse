@@ -15,8 +15,12 @@ function SeqFeatureStore(args) {
 
     if( !args ) return;
 
-    this.loaded  = args.loaded;
-    this.changed = args.changeCallback;
+    if (args.loaded) {
+        this.loaded  = args.loaded;
+    }
+    if (args.changed) {
+        this.changed = args.changeCallback;
+    }
 };
 
 SeqFeatureStore.prototype = new Store('');
