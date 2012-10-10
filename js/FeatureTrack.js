@@ -877,7 +877,7 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
     // label end position as the end position for layout
     var name = feature.get('name');
     var labelScale = this.featureStore.density * this.config.scaleThresh.label;
-    if (name && (scale > labelScale) && (this.config.style.showFeatureName === undefined || this.config.style.showFeatureName)) {
+    if (name && (scale > labelScale) && (this.config.style.showFeatureName === undefined || this.config.style.showFeatureName))  {
 	featureEnd = Math.max(featureEnd,
                               featureStart + ((name ? name.length : 0)
 				              * (this.nameWidth / scale) ) );
@@ -979,7 +979,7 @@ FeatureTrack.prototype.renderFeature = function(feature, uniqueId, block, scale,
         }
     }
 
-    if (name && (scale > labelScale) && (this.config.style.showFeatureName === undefined || this.config.style.showFeatureName)) {
+    if (name && (scale > labelScale) && (this.config.style.showFeatureName === undefined || this.config.style.showFeatureName))  {
         var labelDiv;
         var featUrl = this.featureUrl(feature);
         if (featUrl) {
