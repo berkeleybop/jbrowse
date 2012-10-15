@@ -331,6 +331,9 @@ DraggableFeatureTrack.prototype.handleSubFeatures = function(feature, featDiv,
     if (strand === -1 || strand === '-') {
 	reverse = true;
     }
+    /* WARNING: currently assuming children are ordered by ascending min 
+     * (so if on minus strand then need to calc frame starting with the last exon)
+     */
     for (i = 0; i < slength; i++) {
 	if (reverse) {
 	    subfeat = subfeats[slength-i-1];
@@ -419,26 +422,35 @@ DraggableFeatureTrack.prototype.renderExonSegments = function(subfeature, subDiv
 	    subDiv.appendChild(segDiv);
 	}
     }
+
+/*
+ Frame is calculated as (3 - ((length-frame) mod 3)) mod 3.
+    (length-frame) is the length of the previous feature starting at the first whole codon (and thus the frame subtracted out).
+    (length-frame) mod 3 is the number of bases on the 3' end beyond the last whole codon of the previous feature.
+    3-((length-frame) mod 3) is the number of bases left in the codon after removing those that are represented at the 3' end of the feature.
+    (3-((length-frame) mod 3)) mod 3 changes a 3 to a 0, since three bases makes a whole codon, and 1 and 2 are left unchanged. 
+*/
     // whole exon is translated
     else if (cdsMin <= subStart && cdsMax >= subEnd) {
-	var overhang = priorCdsLength % 3;  // number of bases overhanging
-	// var cdsAbsoluteFrame = (subStart + cdsRelativeFrame) % 3;
-	//	var cdsAbsoluteFrame = (cdsRelativeFrame + (subStart % 3)) % 3;
-	//var cdsFrame = (subStart + ((3 - (priorCdsLength % 3)) % 3)) % 3;
-        //	var cdsFrame = (3 - (priorCdsLength % 3)) % 3;
+	var overhang = priorCdsLength % 3;  // number of bases overhanging from previous CDS 
 	var relFrame = (3 - (priorCdsLength % 3)) % 3;
-	var cdsFrame;
-	if (reverse)  { cdsFrame = ((subEnd-1) + ((3 - (priorCdsLength % 3)) % 3)) % 3;
-			//console.log("subEnd: " + subEnd);
-		      }
-	else  { cdsFrame = (subStart + ((3 - (priorCdsLength % 3)) % 3)) % 3; 
-		// console.log("subStart: " + subStart);
-	      }
-
-	if (debugFrame)  { console.log("whole exon: " + subStart + ", initFrame: " + (cdsMin % 3) + 
-				       ", overhang: " + overhang + ", relFrame: " + relFrame + ", subFrame: " + (subStart % 3) + 
-				       ", cdsFrame: " + cdsFrame); }
-	
+	var absFrame, cdsFrame, initFrame;
+	if (reverse)  { 
+	    initFrame = (cdsMax - 1) % 3;
+	    absFrame = (subEnd - 1) % 3;
+	    cdsFrame = (3 + absFrame - relFrame) % 3;
+	}
+	else  { 
+	    initFrame = cdsMin % 3;
+	    absFrame = (subStart % 3);
+	    cdsFrame = (absFrame + relFrame) % 3;
+	}
+	if (debugFrame)  { 
+		console.log("whole exon: " + subStart + " -- ", subEnd, " initFrame: ", initFrame, 
+				       ", overhang: " + overhang + ", relFrame: ", relFrame, ", absFrame: ", absFrame, 
+				       ", cdsFrame: " + cdsFrame);
+	}
+			   	
 	if (render)  {
 	    segDiv = document.createElement("div");
 	    // not worrying about appending "plus-"/"minus-" based on strand yet
@@ -459,18 +471,26 @@ DraggableFeatureTrack.prototype.renderExonSegments = function(subfeature, subDiv
 	var cdsSegStart = Math.max(cdsMin, subStart);
 	var cdsSegEnd = Math.min(cdsMax, subEnd);
 	var overhang = priorCdsLength % 3;  // number of bases overhanging
-	var cdsFrame = 0;
+	var absFrame, cdsFrame, initFrame;
 	if (priorCdsLength > 0)  {
 	    var relFrame = (3 - (priorCdsLength % 3)) % 3;
-	    if (reverse)  { cdsFrame = ((subEnd-1) + ((3 - (priorCdsLength % 3)) % 3)) % 3; }
-	    else  { cdsFrame = (subStart + ((3 - (priorCdsLength % 3)) % 3)) % 3; }
-
-//	    var cdsFrame
+	    if (reverse)  { 
+		//	cdsFrame = ((subEnd-1) + ((3 - (priorCdsLength % 3)) % 3)) % 3; }
+		initFrame = (cdsMax - 1) % 3;
+		absFrame = (subEnd - 1) % 3;
+		cdsFrame = (3 + absFrame - relFrame) % 3;
+	    }
+	    else  { 
+		// cdsFrame = (subStart + ((3 - (priorCdsLength % 3)) % 3)) % 3; 
+		initFrame = cdsMin % 3;
+		absFrame = (subStart % 3);
+		cdsFrame = (absFrame + relFrame) % 3;
+	    }
 	    if (debugFrame)  { console.log("partial exon: " + subStart + ", initFrame: " + (cdsMin % 3) + 
 					   ", overhang: " + overhang + ", relFrame: " + relFrame + ", subFrame: " + (subStart % 3) + 
 					   ", cdsFrame: " + cdsFrame); }
 	}
-	else  {
+	else  {  // actually shouldn't need this? -- if priorCdsLength = 0, then above conditional collapses down to same calc...
 	    if (reverse) {
 		cdsFrame = (cdsMax-1) % 3; // console.log("rendering reverse frame");
 	    }
