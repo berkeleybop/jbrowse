@@ -497,6 +497,8 @@ Browser.prototype.onFineMove = function(startbp, endbp) {
     this.locationTrap.style.cssText = locationTrapStyle;
 };
 
+
+
 /**
  * @private
  */
@@ -521,8 +523,18 @@ Browser.prototype.createTrackList = function( /**Element*/ parent ) {
     trackListDiv.className = "container handles";
     trackListDiv.style.cssText =
         "width: 100%; height: 100%; overflow-x: hidden; overflow-y: auto;";
-    trackListDiv.innerHTML = "<h2>Available Tracks</h2>";
+    trackListDiv.innerHTML = "<div id=\"tracklist_header\" style=\"text-align:center;\"><h2>Available Tracks</h2></div>";
     leftPane.appendChild(trackListDiv);
+
+    var fileLoader = null;
+    if (!!window.File && !!window.FileReader && !!window.FileList && !!window.Blob) {
+	console.log("browser supports HTML5 File API, local file loading enabled");
+	fileLoader = new FileLoader(trackListDiv, this);
+    }
+    else  {
+	console.log("browser does not support HTML5 File API, local file loading disabled");
+    }
+
     if (this.DEBUG_SPLITTER)  {
 	dojo.connect(leftPane, "mousedown", function(e)  { console.log("leftPane mouseDown: "); console.log(e); } );
 	dojo.connect(leftWidget, "mousedown", function(e)  { console.log("leftWidget mouseDown: "); console.log(e); } );
@@ -575,6 +587,8 @@ Browser.prototype.createTrackList = function( /**Element*/ parent ) {
 
     var trackCreate = /**@inner*/ function( trackConfig, hint) {
         var node;
+	// console.log("trackConfig:");
+	// console.log(trackConfig);
         if ("avatar" == hint) {
             return trackListCreate( trackConfig, hint);
         } else {
