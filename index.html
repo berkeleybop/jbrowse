@@ -2,7 +2,9 @@
 	  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
 	  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<!-- <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"lang="en"> -->
+<html lang="en">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
 
   <head>
     <title>WebApollo</title>
@@ -12,7 +14,7 @@
     <!-- load JQuery theme CSS remotely from Google CDN: -->
   <link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/themes/base/jquery-ui.css"/>  
 
-    <!-- load JQuery theme CSS from WebApollo server -->
+   <!-- load JQuery theme CSS from WebApollo server -->
     <!-- <link rel="stylesheet" type="text/css" href="jslib/jquery-ui.css"/>  -->
 
     <style type="text/css">
@@ -23,7 +25,7 @@
     <!--  Load JQuery, JQuery-UI, Dojo remotely from Google CDN: -->
 
 <!-- <script type="text/javascript" src="jslib/jquery-1.5/jquery-1.5.mod.js" ></script>	 -->
-<!-- 
+<!--
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>  
 
 -->
@@ -31,7 +33,7 @@
 <!-- <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.10/jquery-ui.js"></script> -->
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.js"></script> 
 
-  <script src="http://www.google.com/jsapi" type="text/javascript"></script>
+ <script src="http://www.google.com/jsapi" type="text/javascript"></script>
    <script type="text/javascript"> 
       // google.load("jquery", "1.7"); 
       // google.load("jquery", "1.5"); 
@@ -41,7 +43,7 @@
 
    <!--  Load JQuery, JQuery-ui, Dojo from WebApollo server: -->
 <!--
-    <script type="text/javascript" src="jslib/jquery-1.5/jquery-1.5.min.js" ></script> 
+   <script type="text/javascript" src="jslib/jquery-1.5/jquery-1.5.min.js" ></script> 
     <script type="text/javascript" src="jslib/jquery-ui-1.8.9.custom/js/jquery-ui-1.8.9.custom.min.js"></script> 
    <script type="text/javascript" src="jslib/dojo-1.5.0/dojo/dojo.js"></script>
 -->
@@ -124,7 +126,7 @@
     <script type="text/javascript" src="js/Permission.js"></script>
 
     <!-- for testing file loading -->
-   <!-- <script type="text/javascript" src="js/FileLoader.js"></script> -->
+   <script type="text/javascript" src="js/FileLoader.js"></script> 
 
     <!-- for testing direct BAM access -->
     <script type="text/javascript" src="js/BamFeatureTrack.js"></script>
@@ -189,11 +191,11 @@
                                    // trackData: trackInfo,
                                  refSeqs: dataRoot + "/seq/refSeqs.json",
                                    include: [
-                                      // dataRoot + "/debug_trackList.json"
-                                       dataRoot + "/trackList.json", 
-                                       "http://localhost:8080/trellis/A.mellifera/types?format=jbrowse-trackList"
-                                     // dataRoot + "/bam_trackList.json", 
-                                     // dataRoot + "/annotation_trackList.json"
+                                      dataRoot + "/trackList.json"
+                                      //, dataRoot + "/debug_trackList.json"
+                                      //, "http://localhost:8080/trellis/A.mellifera/types?format=jbrowse-trackList"
+                                     // , dataRoot + "/bam_trackList.json"
+                                     // , dataRoot + "/annotation_trackList.json"
                                  ],
                                   // nameUrl: dataRoot + "/names/root.json",
                                    defaultTracks: "DNA,Annotations,RefSeq",
@@ -216,10 +218,6 @@
   </head>
   
   <body>
-    <div id="GenomeBrowser" style="height: 100%; width: 100%; padding: 0; border: 0;"></div>
-<!--
-    Graph Load: 
-    <input type="file" id="files1" name="files1[]" multiple > </input>
- -->
- </body>
+<div id="GenomeBrowser" style="height: 100%; width: 100%; padding: 0; border: 0;"></div>
+</body>
 </html>
