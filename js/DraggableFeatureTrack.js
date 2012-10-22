@@ -181,6 +181,9 @@ DraggableFeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
 	}
     } );
 
+    this.initTrackLabelContextMenu();
+    this.tracklabel_context_menu.bindDomNode(labelDiv);
+
 };
 
 DraggableFeatureTrack.prototype.selectionAdded = function(feat, smanager) {
@@ -460,7 +463,9 @@ DraggableFeatureTrack.prototype.renderExonSegments = function(subfeature, subDiv
 		"left: " + (100 * ((subStart - subStart) / subLength)) + "%;"
 		+ "top: 0px;"
 		+ "width: " + (100 * ((subEnd - subStart) / subLength)) + "%;";
-	    $(segDiv).addClass("cds-frame" + cdsFrame);
+            if (this.config.style.colorCdsFrame) {
+		$(segDiv).addClass("cds-frame" + cdsFrame);
+	    }
 	    subDiv.appendChild(segDiv);
 	}
 	priorCdsLength += subLength;
@@ -527,8 +532,9 @@ DraggableFeatureTrack.prototype.renderExonSegments = function(subfeature, subDiv
 		"left: " + (100 * ((cdsSegStart - subStart) / subLength)) + "%;"
 		+ "top: 0px;"
 		+ "width: " + (100 * ((cdsSegEnd - cdsSegStart) / subLength)) + "%;";
-	    
-	    $(segDiv).addClass("cds-frame" + cdsFrame);
+	    if (this.config.style.colorCdsFrame) {
+		$(segDiv).addClass("cds-frame" + cdsFrame);
+	    }
 	    subDiv.appendChild(segDiv);
 	}
 	priorCdsLength += (cdsSegEnd - cdsSegStart);
@@ -850,6 +856,50 @@ DraggableFeatureTrack.prototype.endZoom = function(destScale, destBlockBases) {
     // this.scale = destScale;
 };
 
+DraggableFeatureTrack.prototype.initTrackLabelContextMenu = function()  {
+    var track = this;
+    this.tracklabel_context_menu = new dijit.Menu({});
+    var initState = (track.config.style.showFeatureName == undefined) ? true : track.config.style.showFeatureName;
+    // console.log("track: " + track.config.label + ", show label: " + initState);
+
+    this.tracklabel_context_menu.addChild(new dijit.MenuItem({ label: "Track Configuration", disabled: true }) );
+    
+    var feature_label_toggle = new dijit.CheckedMenuItem();
+    feature_label_toggle.set("label", "Show Label");
+    feature_label_toggle.set("checked", initState);
+    feature_label_toggle.set("onClick", function(event) {
+        track.config.style.showFeatureName = feature_label_toggle.checked;
+        track.hideAll();
+        track.changed();
+     } );
+    this.tracklabel_context_menu.addChild(feature_label_toggle);
+
+    var cds_frame_toggle = new dijit.CheckedMenuItem();
+    cds_frame_toggle.set("label", "Color By CDS Frame");
+    cds_frame_toggle.set("checked", false);
+    cds_frame_toggle.set("onClick", function(event) {
+        track.config.style.colorCdsFrame = cds_frame_toggle.checked;
+        if (track.config.style.colorCdsFrame) {
+	    track.gview.cds_frame_trackcount++;
+	}
+	else  {
+	    track.gview.cds_frame_trackcount--;
+	}
+        var strack = track.getSequenceTrack();
+        if (strack) {
+	    strack.hideAll();
+	    strack.changed();
+	}
+        track.hideAll();
+        track.changed();
+     } );
+    this.tracklabel_context_menu.addChild(cds_frame_toggle);
+
+    this.tracklabel_context_menu.addChild(new dijit.MenuItem( {
+							label: "..."
+						    } ));
+    this.tracklabel_context_menu.startup();
+};
 
 DraggableFeatureTrack.prototype.initFeatureContextMenu = function() {
     var thisObj = this;
@@ -907,7 +957,28 @@ DraggableFeatureTrack.prototype.openFeatureDialog = function(title, data) {
 };
 
 
-
+/** 
+ *  get the GenomeView's sequence track -- maybe move this to GenomeView?  
+ *  WebApollo assumes there is only one SequenceTrack
+ *     if there are multiple SequenceTracks, getSequenceTrack returns first one found
+ *         iterating through tracks list
+ */
+DraggableFeatureTrack.prototype.getSequenceTrack = function()  {
+    if (this.seqTrack)  {
+	 return this.seqTrack;
+    }
+    else  {
+	var tracks = this.gview.tracks;
+	for (var i = 0; i < tracks.length; i++)  {
+	    if (tracks[i] instanceof SequenceTrack)  {
+		this.seqTrack = tracks[i];
+		tracks[i].setAnnotTrack(this);
+		break;
+	    }
+	}
+	return this.seqTrack;
+    }
+}
 
 
 /*
