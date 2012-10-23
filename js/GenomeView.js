@@ -78,6 +78,7 @@ function GenomeView(elem, stripeWidth, refseq, zoomLevel, browserRoot) {
     this.tracks = [];
     this.uiTracks = [];
     this.trackIndices = {};
+    this.cds_frame_trackcount = 0;
 
     //set up size state (zoom levels, stripe percentage, etc.)
     this.sizeInit();

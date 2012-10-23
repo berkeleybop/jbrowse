@@ -328,12 +328,18 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 			       var frame = tstart % 3;
  			       if (verbose) { console.log("  forward translating: offset = " + i + ", frame = " + frame); }
 			       var transProtein = track.renderTranslation( extendedEndResidues, i, blockLength);
-			       $(transProtein).addClass("frame" + frame);
+			       // if coloring CDS in feature tracks by frame, use same "cds-frame" styling, 
+			       //    otherwise use more muted "frame" styling
+			       if (track.gview.cds_frame_trackcount > 0) {  
+				   $(transProtein).addClass("cds-frame" + frame);
+			       }
+			       else  {
+				   $(transProtein).addClass("frame" + frame);
+			       }
 			       framedivs[frame] = transProtein;
 			   }
 			   for (var i=2; i>=0; i--) {
 			       var transProtein = framedivs[i];
-			       // if (verbose) { console.log("frame: " + i); console.log(framedivs); console.log(transProtein); }
 			       seqNode.appendChild(transProtein);
 			       $(transProtein).bind("mousedown", track.residuesMouseDown);
 			       blockHeight += track.proteinHeight;
@@ -432,7 +438,12 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 			       // frame = (frame + (3 - (track.refSeq.length % 3))) % 3;
 			       frame = (Math.abs(frame - 2) + (track.refSeq.length % 3)) % 3;
 			       var transProtein = track.renderTranslation( extendedStartResidues, i, blockLength, true);
-			       $(transProtein).addClass("frame" + frame);
+			       if (track.gview.cds_frame_trackcount > 0) {  
+				   $(transProtein).addClass("cds-frame" + frame);
+			       }
+			       else  {
+				   $(transProtein).addClass("frame" + frame);
+			       }
 			       framedivs[frame] = transProtein;
 			   }
 			   // for (var i=2; i>=0; i--) {

@@ -2241,6 +2241,7 @@ AnnotTrack.prototype.searchSequence = function() {
     var searchAllRefSeqsLabel = dojo.create("span", { class: "search_all_ref_seqs_label", innerHTML: "Search all genomic sequences" }, searchAllRefSeqsDiv);
     var sequenceButtonDiv = dojo.create("div", { }, sequenceDiv);
     var sequenceButton = dojo.create("button", { innerHTML: "Search" }, sequenceButtonDiv);
+    var messageDiv = dojo.create("div", { class: "search_sequence_message", innerHTML: "No matches found" }, content);
     var headerDiv = dojo.create("div", { class: "search_sequence_matches_header" }, content);
     dojo.create("span", { innerHTML: "ID", class: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
     dojo.create("span", { innerHTML: "Start", class: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
@@ -2251,6 +2252,7 @@ AnnotTrack.prototype.searchSequence = function() {
     var matchDiv = dojo.create("div", { class: "search_sequence_matches" }, content);
     var matches = dojo.create("div", { }, matchDiv);
 
+    dojo.style(messageDiv, { display: "none" });
     dojo.style(matchDiv, { display: "none" });
     dojo.style(headerDiv, { display: "none" });
 
@@ -2311,6 +2313,13 @@ AnnotTrack.prototype.searchSequence = function() {
     					while (matches.hasChildNodes()) {
     						matches.removeChild(matches.lastChild);
     					}
+    					if (response.matches.length == 0) {
+    					    dojo.style(messageDiv, { display: "block" });
+    					    dojo.style(matchDiv, { display: "none" });
+    					    dojo.style(headerDiv, { display: "none" });
+    						return;
+    					}
+					    dojo.style(messageDiv, { display: "none" });
     					dojo.style(headerDiv, { display: "block"} );
     					dojo.style(matchDiv, { display: "block"} );
     					for (var i = 0; i < response.matches.length; ++i) {
