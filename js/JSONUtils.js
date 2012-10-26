@@ -382,3 +382,44 @@ JSONUtils.convertToTrack = function(feat, source_track, target_track)  {
     newfeat.uid = feat.uid;
     return newfeat;
 };
+
+/*
+*  takes one feature and all of its subfeatures (children/grandchildren/great-grandchildren/...) from 
+*  a parsed GFF3 data struct (returned from GFF3toJson()), and returns a a two-level feature array for 
+*  the lowest and next-lowest level. For example, given a data struct for a parsed gene/mRNA/exon GFF3
+*  it would return a two-level feature array for the mRNA and all of it's exons. 
+*/
+
+JSONUtils.prototype.convertParsedGFF3JsonToFeatureArray = function(jsonFeature) {
+    var featureArray = new Array();
+    featureArray[0] = 0;
+
+    // figure out how many levels we are dealing with here, b/c we need to return only the data for the lowest contained in the next lowest level,
+    // since Webapollo can only deal with two-level features. 
+
+    // recursive search of this feature to see how many levels there are
+    var recursion_level = 0;
+    var maximum_recursion_level = 10; 
+    var determineNumLevels = function(thisJsonFeature) {
+	recursion_level++;
+
+	if ( recursion_level > maximum_recursion_level ){
+	    return false;
+	}
+
+	// recurse if there there are children
+	if ( jsonFeature.children != null && thisJsonFeature.children.length > 0 ){
+	    if ( determineNumLevels(thisJsonFeature) ){
+		return true;
+	    }
+	}
+	return false;
+    }
+    determineNumLevels( jsonFeature.parsedData );
+    var numLevelsInJsonFeature = recursion_level;
+
+    var foobar = 1;
+    var foobaz = 2;
+
+    return featureArray;
+};
