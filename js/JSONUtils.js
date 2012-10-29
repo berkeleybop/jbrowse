@@ -412,7 +412,9 @@ JSONUtils.prototype.convertParsedGFF3JsonToFeatureArray = function(jsonFeature) 
     // get parent in jsonFeature.parsedData, which is at depth - 1
     var thisParent = JSONUtils.getFeatureAtGivenDepth(jsonFeature, gff3Depth - 1);
 
+    //
     // now set parent info
+    // 
     featureArray[1] = parseInt(thisParent.data[3]); // set start
     featureArray[2] = parseInt(thisParent.data[4]); // set end
     featureArray[3] = thisParent.data[6]; // set strand
@@ -434,6 +436,27 @@ JSONUtils.prototype.convertParsedGFF3JsonToFeatureArray = function(jsonFeature) 
 	featureArray[9] = parsedNinthField["Name"];
     }
 
+    // 
+    // now set children info 
+    // 
+    var childrenArray = new Array; // make array for all child features
+     if ( !!thisParent.children ){
+ 	for ( i = 0; i < thisParent.children.length; i++ ){
+ 	    childrenArray[i] = new Array;
+ 	    childrenArray[i][0] = 1; // ? 
+ 	    childrenArray[i][1] = parseInt(thisParent.children[i].data[3]); // start
+ 	    childrenArray[i][2] = parseInt(thisParent.children[i].data[4]); // end
+ 	    childrenArray[i][3] = thisParent.children[i].data[6]; // strand
+ 	    childrenArray[i][4] = thisParent.children[i].data[1]; // source
+ 	    childrenArray[i][5] = thisParent.children[i].data[7]; // phase
+ 	    childrenArray[i][6] = thisParent.children[i].data[2]; // type
+ 	    childrenArray[i][7] = thisParent.children[i].data[5]; // score
+ 	    // childrenArray[i][8] = thisParent.children[i].data[6]; // id
+ 	    // childrenArray[i][9] = thisParent.children[i].data[6]; // name 
+ 	}
+     }
+     featureArray[10] = childrenArray; // load up children
+    
     return featureArray;
 };
 
