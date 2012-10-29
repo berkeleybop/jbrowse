@@ -994,6 +994,8 @@ div.generic_parent-hist {
     cursor: pointer;
     width: 100%;
 }
+
+
 /********************************************************
 *   RefSeq styling
 ***********************************************/
@@ -1880,7 +1882,7 @@ div.generic_parent-hist {
     position: absolute;
     height: 14px; 
     margin-top: 1px;
-    background-color: #DFA1E6;
+    background-color: #848DBF;
     border: 1px solid black;
     z-index: 8;
     min-width: 1px;
@@ -1969,7 +1971,7 @@ div.generic_parent-hist {
     position: absolute;
     height: 8px; 
     margin-top: 4px;
-    background-color: #1F3DDE;
+    background-color: #3BA08E;
     z-index: 8;
     min-width: 1px;
     cursor: pointer;
@@ -2789,7 +2791,6 @@ div.generic_parent-hist {
     background-repeat: no-repeat;
 }
 
-/*
 .cds-frame0 {
     background-color: #FF8080;
 }
@@ -2801,7 +2802,6 @@ div.generic_parent-hist {
 .cds-frame2 {
     background-color: #8080FF;
 }
-*/
 
 /**
 *   appearance of resizing box when dragging annotation edges
@@ -2959,4 +2959,486 @@ input.nav {
 }
 */
 
+/****************************************************
+*  MAKER styling
+*****************************************************/
 
+.maker-transcript, 
+.plus-maker-transcript, 
+.minus-maker-transcript  {
+    position: absolute;
+    height: 16px;
+    margin-top: 0px;
+    z-index: 6;
+    min-width: 1px;
+    cursor: pointer;
+}
+
+.maker-transcript-render  {
+    position: absolute;
+    height: 4px;
+    margin-top: 6px;
+    margin-bottom: 6px;  /* don't think this actually is needed */
+    background-color: gray;
+    /* annotline div may be added to annot div _after_ child feature divs, so 
+       if want child divs in front of annotline, make sure has lower 
+       z-index than child divs */
+    z-index: 2;  
+    min-width: 1px;
+    cursor: pointer;
+    width: 100%;
+}
+.maker-exon,
+.plus-maker-exon, 
+.minus-maker-exon {
+    position: absolute;
+    height: 16px;
+    margi-top: 0px;
+    z-index: 6;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+.maker-CDS, 
+.plus-maker-CDS, 
+.minus-maker-CDS  {
+    position: absolute;
+    height: 12px;
+    margin-top: 2px;
+    background-color: rgb(255,204,204);
+    border-style: solid;
+    border-color: #555;
+    border-width: 1px;
+    cursor: pointer;
+    z-index: 10;
+    min-width: 1px;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+.maker-UTR, 
+.plus-maker-UTR, 
+.minus-maker-UTR {
+    position: absolute;
+    height: 8px; 
+    margin-top: 4px;
+    background-color: rgb(255,204,204);
+    z-index: 8;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+div.maker-transcript-hist {
+    background-color: rgb(255,204,204);
+    border-color: gray;
+}
+
+/***************************************************************
+*  blastn alignment styling
+****************************************************************/
+.blastn-alignment-match, 
+.plus-blastn-alignment-match, 
+.minus-blastn-alignment-match {
+    position: absolute;
+    height: 16px;
+    margin-top: 0px;
+    z-index: 6;
+    min-width: 1px;
+    cursor: pointer;
+}
+
+.blastn-alignment-render  {
+    position: absolute;
+    height: 4px;
+    margin-top: 6px;
+    margin-bottom: 6px;  /* don't think this actually is needed */
+    background-color: gray;
+    /* annotline div may be added to annot div _after_ child feature divs, so 
+       if want child divs in front of annotline, make sure has lower 
+       z-index than child divs */
+    z-index: 2;  
+    min-width: 1px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.blastn-alignment-part, 
+.plus-blastn-alignment-part, 
+.minus-blastn-alignment-part  {
+    position: absolute;
+    height: 8px; 
+    margin-top: 4px;
+    background-color: rgb(102,204,102);
+    z-index: 8;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+div.blastn-alignment-match-hist {
+    background-color: rgb(102,204,102);
+    border-color: gray;
+}
+
+/***************************************************************
+*  blastx alignment styling
+****************************************************************/
+.blastx-alignment-match, 
+.plus-blastx-alignment-match, 
+.minus-blastx-alignment-match {
+    position: absolute;
+    height: 16px;
+    margin-top: 0px;
+    z-index: 6;
+    min-width: 1px;
+    cursor: pointer;
+}
+
+.blastx-alignment-render  {
+    position: absolute;
+    height: 4px;
+    margin-top: 6px;
+    margin-bottom: 6px;  /* don't think this actually is needed */
+    background-color: gray;
+    /* annotline div may be added to annot div _after_ child feature divs, so 
+       if want child divs in front of annotline, make sure has lower 
+       z-index than child divs */
+    z-index: 2;  
+    min-width: 1px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.blastx-alignment-part, 
+.plus-blastx-alignment-part, 
+.minus-blastx-alignment-part  {
+    position: absolute;
+    height: 8px; 
+    margin-top: 4px;
+    background-color: rgb(0,200,204);
+    z-index: 8;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+div.blastx-alignment-match-hist {
+    background-color: rgb(0,200,204);
+    border-color: gray;
+}
+
+/***************************************************************
+*  tblastx alignment styling
+****************************************************************/
+.tblastx-alignment-match, 
+.plus-tblastx-alignment-match, 
+.minus-tblastx-alignment-match {
+    position: absolute;
+    height: 16px;
+    margin-top: 0px;
+    z-index: 6;
+    min-width: 1px;
+    cursor: pointer;
+}
+
+.tblastx-alignment-render  {
+    position: absolute;
+    height: 4px;
+    margin-top: 6px;
+    margin-bottom: 6px;  /* don't think this actually is needed */
+    background-color: gray;
+    /* annotline div may be added to annot div _after_ child feature divs, so 
+       if want child divs in front of annotline, make sure has lower 
+       z-index than child divs */
+    z-index: 2;  
+    min-width: 1px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.tblastx-alignment-part, 
+.plus-tblastx-alignment-part, 
+.minus-tblastx-alignment-part  {
+    position: absolute;
+    height: 8px; 
+    margin-top: 4px;
+    background-color: rgb(0,200,104);
+    z-index: 8;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+div.tblastx-alignment-match-hist {
+    background-color: rgb(0,200,104);
+    border-color: gray;
+}
+
+/***************************************************************
+*  snap_masked alignment styling
+****************************************************************/
+.snap_masked-alignment-match, 
+.plus-snap_masked-alignment-match, 
+.minus-snap_masked-alignment-match {
+    position: absolute;
+    height: 16px;
+    margin-top: 0px;
+    z-index: 6;
+    min-width: 1px;
+    cursor: pointer;
+}
+
+.snap_masked-alignment-render  {
+    position: absolute;
+    height: 4px;
+    margin-top: 6px;
+    margin-bottom: 6px;  /* don't think this actually is needed */
+    background-color: gray;
+    /* annotline div may be added to annot div _after_ child feature divs, so 
+       if want child divs in front of annotline, make sure has lower 
+       z-index than child divs */
+    z-index: 2;  
+    min-width: 1px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.snap_masked-alignment-part, 
+.plus-snap_masked-alignment-part, 
+.minus-snap_masked-alignment-part  {
+    position: absolute;
+    height: 8px; 
+    margin-top: 4px;
+    background-color: rgb(153,100,204);
+    z-index: 8;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+div.snap_masked-alignment-match-hist {
+    background-color: rgb(153,100,204);
+    border-color: gray;
+}
+
+/***************************************************************
+*  est2genome alignment styling
+****************************************************************/
+.est2genome-alignment-match, 
+.plus-est2genome-alignment-match, 
+.minus-est2genome-alignment-match {
+    position: absolute;
+    height: 16px;
+    margin-top: 0px;
+    z-index: 6;
+    min-width: 1px;
+    cursor: pointer;
+}
+
+.est2genome-alignment-render  {
+    position: absolute;
+    height: 4px;
+    margin-top: 6px;
+    margin-bottom: 6px;  /* don't think this actually is needed */
+    background-color: gray;
+    /* annotline div may be added to annot div _after_ child feature divs, so 
+       if want child divs in front of annotline, make sure has lower 
+       z-index than child divs */
+    z-index: 2;  
+    min-width: 1px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.est2genome-alignment-part, 
+.plus-est2genome-alignment-part, 
+.minus-est2genome-alignment-part  {
+    position: absolute;
+    height: 8px; 
+    margin-top: 4px;
+    background-color: rgb(100,100,210);
+    z-index: 8;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+div.est2genome-alignment-match-hist {
+    background-color: rgb(100,100,210);
+    border-color: gray;
+}
+
+/***************************************************************
+*  protein2genome alignment styling
+****************************************************************/
+.protein2genome-alignment-match, 
+.plus-protein2genome-alignment-match, 
+.minus-protein2genome-alignment-match {
+    position: absolute;
+    height: 16px;
+    margin-top: 0px;
+    z-index: 6;
+    min-width: 1px;
+    cursor: pointer;
+}
+
+.protein2genome-alignment-render  {
+    position: absolute;
+    height: 4px;
+    margin-top: 6px;
+    margin-bottom: 6px;  /* don't think this actually is needed */
+    background-color: gray;
+    /* annotline div may be added to annot div _after_ child feature divs, so 
+       if want child divs in front of annotline, make sure has lower 
+       z-index than child divs */
+    z-index: 2;  
+    min-width: 1px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.protein2genome-alignment-part, 
+.plus-protein2genome-alignment-part, 
+.minus-protein2genome-alignment-part  {
+    position: absolute;
+    height: 8px; 
+    margin-top: 4px;
+    background-color: rgb(117,150,255);
+    z-index: 8;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+div.protein2genome-alignment-match-hist {
+    background-color: rgb(117,150,255);
+    border-color: gray;
+}
+
+/***************************************************************
+*  repeatmasker alignment styling
+****************************************************************/
+.repeatmasker-alignment-match, 
+.plus-repeatmasker-alignment-match, 
+.minus-repeatmasker-alignment-match {
+    position: absolute;
+    height: 16px;
+    margin-top: 0px;
+    z-index: 6;
+    min-width: 1px;
+    cursor: pointer;
+}
+
+.repeatmasker-alignment-render  {
+    position: absolute;
+    height: 4px;
+    margin-top: 6px;
+    margin-bottom: 6px;  /* don't think this actually is needed */
+    background-color: gray;
+    /* annotline div may be added to annot div _after_ child feature divs, so 
+       if want child divs in front of annotline, make sure has lower 
+       z-index than child divs */
+    z-index: 2;  
+    min-width: 1px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.repeatmasker-alignment-part, 
+.plus-repeatmasker-alignment-part, 
+.minus-repeatmasker-alignment-part  {
+    position: absolute;
+    height: 8px; 
+    margin-top: 4px;
+    background-color: red;
+    z-index: 8;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+div.repeatmasker-alignment-match-hist {
+    background-color: red;
+    border-color: gray;
+}
+
+/***************************************************************
+*  repeatrunner alignment styling
+****************************************************************/
+.repeatrunner-alignment-match, 
+.plus-repeatrunner-alignment-match, 
+.minus-repeatrunner-alignment-match {
+    position: absolute;
+    height: 16px;
+    margin-top: 0px;
+    z-index: 6;
+    min-width: 1px;
+    cursor: pointer;
+}
+
+.repeatrunner-alignment-render  {
+    position: absolute;
+    height: 4px;
+    margin-top: 6px;
+    margin-bottom: 6px;  /* don't think this actually is needed */
+    background-color: gray;
+    /* annotline div may be added to annot div _after_ child feature divs, so 
+       if want child divs in front of annotline, make sure has lower 
+       z-index than child divs */
+    z-index: 2;  
+    min-width: 1px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.repeatrunner-alignment-part, 
+.plus-repeatrunner-alignment-part, 
+.minus-repeatrunner-alignment-part  {
+    position: absolute;
+    height: 8px; 
+    margin-top: 4px;
+    background-color: rgb(255,152,255);
+    z-index: 8;
+    min-width: 1px;
+    cursor: pointer;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+}
+
+div.repeatrunner-alignment-match-hist {
+    background-color: rgb(255,152,255);
+    border-color: gray;
+}

@@ -25,13 +25,29 @@ BamPseudoListStore.prototype = new SeqFeatureStore();
 BamPseudoListStore.prototype.load = function() {
     console.log("called BamFeatureTrack.load()");  
     var trackMeta = this.config;
-    var bamurl = Util.resolveUrl(trackMeta.sourceUrl, trackMeta.data_url);
-    var baiurl = Util.resolveUrl(trackMeta.sourceUrl, trackMeta.index_url);
-    console.log("bam file " + bamurl);
-    console.log("bai file " + baiurl);
-    var bamfetch = new URLFetchable(bamurl);
-    var baifetch = new URLFetchable(baiurl);
-    console.log("built bam and bai URLFetchables");
+    var bamfetch, baifetch;
+    if (trackMeta.data_url && trackMeta.index_url)  {
+	var bamurl = Util.resolveUrl(trackMeta.sourceUrl, trackMeta.data_url);
+	var baiurl = Util.resolveUrl(trackMeta.sourceUrl, trackMeta.index_url);
+	console.log("bam url " + bamurl);
+	console.log("bai url " + baiurl);
+	bamfetch = new URLFetchable(bamurl);
+	baifetch = new URLFetchable(baiurl);
+	console.log("built bam and bai URLFetchables");
+    }
+    else if (trackMeta.data_file && trackMeta.index_file) {
+	console.log("bam file " + trackMeta.data_file);
+	console.log("bai file " + trackMeta.index_file);
+	bamfetch = new BlobFetchable(trackMeta.data_file);
+	baifetch = new BlobFetchable(trackMeta.index_file);
+	console.log("built bam and bai BlobFetchables");
+    }
+
+    else  {
+	console.log("ERROR: track does not have URL or file info for bam and bai" );
+	return;
+    }
+
     // var curTrack = this;
     var bamstore = this;
     makeBam(bamfetch, baifetch, function(bamfile) {    // makeBam in global namespace, from dalliance/js/bam.js

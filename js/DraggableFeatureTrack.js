@@ -64,7 +64,7 @@ DraggableFeatureTrack.prototype.loadSuccess = function(trackInfo) {
 	this.initFeatureDialog();
     }
     FeatureTrack.prototype.loadSuccess.call(this, trackInfo);
-}
+};
 
 DraggableFeatureTrack.prototype.setSelectionManager = function(selman)  {
     if (this.selectionManager)  {
@@ -180,6 +180,9 @@ DraggableFeatureTrack.prototype.setViewInfo = function(genomeView, numBlocks,
 	    event.stopPropagation();
 	}
     } );
+
+    this.initTrackLabelContextMenu();
+    this.tracklabel_context_menu.bindDomNode(labelDiv);
 
 };
 
@@ -331,6 +334,9 @@ DraggableFeatureTrack.prototype.handleSubFeatures = function(feature, featDiv,
     if (strand === -1 || strand === '-') {
 	reverse = true;
     }
+    /* WARNING: currently assuming children are ordered by ascending min 
+     * (so if on minus strand then need to calc frame starting with the last exon)
+     */
     for (i = 0; i < slength; i++) {
 	if (reverse) {
 	    subfeat = subfeats[slength-i-1];
@@ -350,7 +356,11 @@ DraggableFeatureTrack.prototype.handleSubFeatures = function(feature, featDiv,
         var subDiv = this.renderSubfeature(feature, featDiv, subfeat, displayStart, displayEnd, block);
 	// if subfeat is of type "exon", add CDS/UTR rendering
 	// if (subDiv && wholeCDS && (subtype === "exon")) {  
-	if (wholeCDS && (subtype === "exon")) {   // pass even if subDiv is null (not drawn), in order to correctly calc downstream CDS frame 
+	// if (wholeCDS && (subtype === "exon")) {   // pass even if subDiv is null (not drawn), in order to correctly calc downstream CDS frame 
+
+	// CHANGED to call renderExonSegments even if no wholeCDS -- 
+	//     non wholeCDS means undefined cdsMin, which will trigger creation of UTR div for entire exon
+	if (subtype === "exon") {   // pass even if subDiv is null (not drawn), in order to correctly calc downstream CDS frame 
 	    priorCdsLength = this.renderExonSegments(subfeat, subDiv, cdsMin, cdsMax, displayStart, displayEnd, priorCdsLength, reverse);
 	}
 	if (this.verbose_render)  { 
@@ -415,26 +425,35 @@ DraggableFeatureTrack.prototype.renderExonSegments = function(subfeature, subDiv
 	    subDiv.appendChild(segDiv);
 	}
     }
+
+/*
+ Frame is calculated as (3 - ((length-frame) mod 3)) mod 3.
+    (length-frame) is the length of the previous feature starting at the first whole codon (and thus the frame subtracted out).
+    (length-frame) mod 3 is the number of bases on the 3' end beyond the last whole codon of the previous feature.
+    3-((length-frame) mod 3) is the number of bases left in the codon after removing those that are represented at the 3' end of the feature.
+    (3-((length-frame) mod 3)) mod 3 changes a 3 to a 0, since three bases makes a whole codon, and 1 and 2 are left unchanged. 
+*/
     // whole exon is translated
     else if (cdsMin <= subStart && cdsMax >= subEnd) {
-	var overhang = priorCdsLength % 3;  // number of bases overhanging
-	// var cdsAbsoluteFrame = (subStart + cdsRelativeFrame) % 3;
-	//	var cdsAbsoluteFrame = (cdsRelativeFrame + (subStart % 3)) % 3;
-	//var cdsFrame = (subStart + ((3 - (priorCdsLength % 3)) % 3)) % 3;
-        //	var cdsFrame = (3 - (priorCdsLength % 3)) % 3;
+	var overhang = priorCdsLength % 3;  // number of bases overhanging from previous CDS 
 	var relFrame = (3 - (priorCdsLength % 3)) % 3;
-	var cdsFrame;
-	if (reverse)  { cdsFrame = ((subEnd-1) + ((3 - (priorCdsLength % 3)) % 3)) % 3;
-			//console.log("subEnd: " + subEnd);
-		      }
-	else  { cdsFrame = (subStart + ((3 - (priorCdsLength % 3)) % 3)) % 3; 
-		// console.log("subStart: " + subStart);
-	      }
-
-	if (debugFrame)  { console.log("whole exon: " + subStart + ", initFrame: " + (cdsMin % 3) + 
-				       ", overhang: " + overhang + ", relFrame: " + relFrame + ", subFrame: " + (subStart % 3) + 
-				       ", cdsFrame: " + cdsFrame); }
-	
+	var absFrame, cdsFrame, initFrame;
+	if (reverse)  { 
+	    initFrame = (cdsMax - 1) % 3;
+	    absFrame = (subEnd - 1) % 3;
+	    cdsFrame = (3 + absFrame - relFrame) % 3;
+	}
+	else  { 
+	    initFrame = cdsMin % 3;
+	    absFrame = (subStart % 3);
+	    cdsFrame = (absFrame + relFrame) % 3;
+	}
+	if (debugFrame)  { 
+		console.log("whole exon: " + subStart + " -- ", subEnd, " initFrame: ", initFrame, 
+				       ", overhang: " + overhang + ", relFrame: ", relFrame, ", absFrame: ", absFrame, 
+				       ", cdsFrame: " + cdsFrame);
+	}
+			   	
 	if (render)  {
 	    segDiv = document.createElement("div");
 	    // not worrying about appending "plus-"/"minus-" based on strand yet
@@ -444,7 +463,9 @@ DraggableFeatureTrack.prototype.renderExonSegments = function(subfeature, subDiv
 		"left: " + (100 * ((subStart - subStart) / subLength)) + "%;"
 		+ "top: 0px;"
 		+ "width: " + (100 * ((subEnd - subStart) / subLength)) + "%;";
-	    $(segDiv).addClass("cds-frame" + cdsFrame);
+            if (this.config.style.colorCdsFrame) {
+		$(segDiv).addClass("cds-frame" + cdsFrame);
+	    }
 	    subDiv.appendChild(segDiv);
 	}
 	priorCdsLength += subLength;
@@ -455,18 +476,26 @@ DraggableFeatureTrack.prototype.renderExonSegments = function(subfeature, subDiv
 	var cdsSegStart = Math.max(cdsMin, subStart);
 	var cdsSegEnd = Math.min(cdsMax, subEnd);
 	var overhang = priorCdsLength % 3;  // number of bases overhanging
-	var cdsFrame = 0;
+	var absFrame, cdsFrame, initFrame;
 	if (priorCdsLength > 0)  {
 	    var relFrame = (3 - (priorCdsLength % 3)) % 3;
-	    if (reverse)  { cdsFrame = ((subEnd-1) + ((3 - (priorCdsLength % 3)) % 3)) % 3; }
-	    else  { cdsFrame = (subStart + ((3 - (priorCdsLength % 3)) % 3)) % 3; }
-
-//	    var cdsFrame
+	    if (reverse)  { 
+		//	cdsFrame = ((subEnd-1) + ((3 - (priorCdsLength % 3)) % 3)) % 3; }
+		initFrame = (cdsMax - 1) % 3;
+		absFrame = (subEnd - 1) % 3;
+		cdsFrame = (3 + absFrame - relFrame) % 3;
+	    }
+	    else  { 
+		// cdsFrame = (subStart + ((3 - (priorCdsLength % 3)) % 3)) % 3; 
+		initFrame = cdsMin % 3;
+		absFrame = (subStart % 3);
+		cdsFrame = (absFrame + relFrame) % 3;
+	    }
 	    if (debugFrame)  { console.log("partial exon: " + subStart + ", initFrame: " + (cdsMin % 3) + 
 					   ", overhang: " + overhang + ", relFrame: " + relFrame + ", subFrame: " + (subStart % 3) + 
 					   ", cdsFrame: " + cdsFrame); }
 	}
-	else  {
+	else  {  // actually shouldn't need this? -- if priorCdsLength = 0, then above conditional collapses down to same calc...
 	    if (reverse) {
 		cdsFrame = (cdsMax-1) % 3; // console.log("rendering reverse frame");
 	    }
@@ -503,8 +532,9 @@ DraggableFeatureTrack.prototype.renderExonSegments = function(subfeature, subDiv
 		"left: " + (100 * ((cdsSegStart - subStart) / subLength)) + "%;"
 		+ "top: 0px;"
 		+ "width: " + (100 * ((cdsSegEnd - cdsSegStart) / subLength)) + "%;";
-	    
-	    $(segDiv).addClass("cds-frame" + cdsFrame);
+	    if (this.config.style.colorCdsFrame) {
+		$(segDiv).addClass("cds-frame" + cdsFrame);
+	    }
 	    subDiv.appendChild(segDiv);
 	}
 	priorCdsLength += (cdsSegEnd - cdsSegStart);
@@ -826,6 +856,50 @@ DraggableFeatureTrack.prototype.endZoom = function(destScale, destBlockBases) {
     // this.scale = destScale;
 };
 
+DraggableFeatureTrack.prototype.initTrackLabelContextMenu = function()  {
+    var track = this;
+    this.tracklabel_context_menu = new dijit.Menu({});
+    var initState = (track.config.style.showFeatureName == undefined) ? true : track.config.style.showFeatureName;
+    // console.log("track: " + track.config.label + ", show label: " + initState);
+
+    this.tracklabel_context_menu.addChild(new dijit.MenuItem({ label: "Track Configuration", disabled: true }) );
+    
+    var feature_label_toggle = new dijit.CheckedMenuItem();
+    feature_label_toggle.set("label", "Show Label");
+    feature_label_toggle.set("checked", initState);
+    feature_label_toggle.set("onClick", function(event) {
+        track.config.style.showFeatureName = feature_label_toggle.checked;
+        track.hideAll();
+        track.changed();
+     } );
+    this.tracklabel_context_menu.addChild(feature_label_toggle);
+
+    var cds_frame_toggle = new dijit.CheckedMenuItem();
+    cds_frame_toggle.set("label", "Color By CDS Frame");
+    cds_frame_toggle.set("checked", false);
+    cds_frame_toggle.set("onClick", function(event) {
+        track.config.style.colorCdsFrame = cds_frame_toggle.checked;
+        if (track.config.style.colorCdsFrame) {
+	    track.gview.cds_frame_trackcount++;
+	}
+	else  {
+	    track.gview.cds_frame_trackcount--;
+	}
+        var strack = track.getSequenceTrack();
+        if (strack) {
+	    strack.hideAll();
+	    strack.changed();
+	}
+        track.hideAll();
+        track.changed();
+     } );
+    this.tracklabel_context_menu.addChild(cds_frame_toggle);
+
+    this.tracklabel_context_menu.addChild(new dijit.MenuItem( {
+							label: "..."
+						    } ));
+    this.tracklabel_context_menu.startup();
+};
 
 DraggableFeatureTrack.prototype.initFeatureContextMenu = function() {
     var thisObj = this;
@@ -883,7 +957,28 @@ DraggableFeatureTrack.prototype.openFeatureDialog = function(title, data) {
 };
 
 
-
+/** 
+ *  get the GenomeView's sequence track -- maybe move this to GenomeView?  
+ *  WebApollo assumes there is only one SequenceTrack
+ *     if there are multiple SequenceTracks, getSequenceTrack returns first one found
+ *         iterating through tracks list
+ */
+DraggableFeatureTrack.prototype.getSequenceTrack = function()  {
+    if (this.seqTrack)  {
+	 return this.seqTrack;
+    }
+    else  {
+	var tracks = this.gview.tracks;
+	for (var i = 0; i < tracks.length; i++)  {
+	    if (tracks[i] instanceof SequenceTrack)  {
+		this.seqTrack = tracks[i];
+		tracks[i].setAnnotTrack(this);
+		break;
+	    }
+	}
+	return this.seqTrack;
+    }
+}
 
 
 /*

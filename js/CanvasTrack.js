@@ -2,10 +2,10 @@
 console.log("browser supports HTML5 canvas: " + !!Modernizr.canvas);
 
 // Check for the various File API support.
-console.log("browser supports HTML5 window.File: " + !!window.File);
-console.log("browser supports HTML5 window.FileReader: " + !!window.FileReader);
-console.log("browser supports HTML5 window.FileList: " + !!window.FileList);
-console.log("browser supports HTML5 window.Blob: " + !!window.Blob);
+// console.log("browser supports HTML5 window.File: " + !!window.File);
+// console.log("browser supports HTML5 window.FileReader: " + !!window.FileReader);
+// console.log("browser supports HTML5 window.FileList: " + !!window.FileList);
+// console.log("browser supports HTML5 window.Blob: " + !!window.Blob);
 
 // CanvasTrack.renderers = [ "AvgBar_MaxBar", "AvgBar_MinPoint_MaxPoint", "AvgLine_MinMaxRange", "Heatmap1"];
 // CanvasTrack.styleNames = [ "AvgBar + MaxBar", "AvgBar + MinPoint + MaxPoint", "AvgLine + MinMaxRange", "hmm...Heatmap1"];

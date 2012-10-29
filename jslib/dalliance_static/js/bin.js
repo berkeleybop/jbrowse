@@ -14,9 +14,19 @@ function BlobFetchable(b) {
 BlobFetchable.prototype.slice = function(start, length) {
     var b;
     if (length) {
-        b = this.blob.webkitSlice(start, start + length);
+        if (this.blob.slice)  { b = this.blob.slice(start, start + length); }
+        else if (this.blob.webkitSlice)  { b = this.blob.webkitSlice(start, start + length); }
+        else if (this.blob.mozSlize)  { b = this.blob.mozSlice(start, start + length); }
+        else  { b = this.blob.slice(start, start + length); } // should throw error here!
+        //  else  { throw new Error("Couldn't find blob slice method!");
+        // b = this.blob.webkitSlice(start, start + length);
     } else {
-        b = this.blob.webkitSlice(start);
+        if (this.blob.slice)  { b = this.blob.slice(start); }
+        else if (this.blob.webkitSlice)  { b = this.blob.webkitSlice(start); }
+        else if (this.blob.mozSlize)  { b = this.blob.mozSlice(start); }
+        else  { b = this.blob.slice(start); }
+        //  else  { throw new Error("Couldn't find blob slice method!");
+        // b = this.blob.webkitSlice(start);
     }
     return new BlobFetchable(b);
 }

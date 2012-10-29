@@ -143,7 +143,7 @@ Browser.prototype.initSequence = function() {
     // #1) URL "loc" query param
     if (this.config.location) {
 	loc = Util.parseLocString(this.config.location);
-	if (loc) { seqname = loc.ref; }
+	if (loc && loc.ref) { seqname = loc.ref; }
 	else  { seqname = this.config.location; }
 	seq = Util.matchRefSeqName(seqname, this.allRefs);
     }
@@ -226,6 +226,7 @@ Browser.prototype.initView = function() {
     this.view = this.viewElem.view =
         new GenomeView(this.viewElem, 250, this.refSeq, 1/200,
                        this.config.browserRoot);
+    this.view.setBrowser(this);
     dojo.connect( this.view, "onFineMove",   this, "onFineMove"   );
     dojo.connect( this.view, "onCoarseMove", this, "onCoarseMove" );
 
@@ -497,6 +498,8 @@ Browser.prototype.onFineMove = function(startbp, endbp) {
     this.locationTrap.style.cssText = locationTrapStyle;
 };
 
+
+
 /**
  * @private
  */
@@ -521,8 +524,18 @@ Browser.prototype.createTrackList = function( /**Element*/ parent ) {
     trackListDiv.className = "container handles";
     trackListDiv.style.cssText =
         "width: 100%; height: 100%; overflow-x: hidden; overflow-y: auto;";
-    trackListDiv.innerHTML = "<h2>Available Tracks</h2>";
+    trackListDiv.innerHTML = "<div id=\"tracklist_header\" style=\"text-align:center;\"><h2>Available Tracks</h2></div>";
     leftPane.appendChild(trackListDiv);
+
+    var fileLoader = null;
+    if (!!window.File && !!window.FileReader && !!window.FileList && !!window.Blob) {
+	console.log("browser supports HTML5 File API, local file loading enabled");
+	fileLoader = new FileLoader(trackListDiv, this);
+    }
+    else  {
+	console.log("browser does not support HTML5 File API, local file loading disabled");
+    }
+
     if (this.DEBUG_SPLITTER)  {
 	dojo.connect(leftPane, "mousedown", function(e)  { console.log("leftPane mouseDown: "); console.log(e); } );
 	dojo.connect(leftWidget, "mousedown", function(e)  { console.log("leftWidget mouseDown: "); console.log(e); } );
@@ -575,6 +588,8 @@ Browser.prototype.createTrackList = function( /**Element*/ parent ) {
 
     var trackCreate = /**@inner*/ function( trackConfig, hint) {
         var node;
+	// console.log("trackConfig:");
+	// console.log(trackConfig);
         if ("avatar" == hint) {
             return trackListCreate( trackConfig, hint);
         } else {
