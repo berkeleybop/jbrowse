@@ -392,15 +392,56 @@ JSONUtils.convertToTrack = function(feat, source_track, target_track)  {
 
 JSONUtils.prototype.convertParsedGFF3JsonToFeatureArray = function(jsonFeature) {
     var featureArray = new Array();
-    featureArray[0] = 0;
+    // set to zero because we want jbrowse/webapollo to look at the first entry in attr array to 
+    // look up what each of the following fields in featureArray mean
+    featureArray[0] = 0; 
 
     // figure out how many levels we are dealing with here, b/c we need to return 
     // only the data for the lowest contained in the next lowest level, since Webapollo 
     // can only deal with two-level features. 
+    var gff3Depth = JSONUtils.determineParsedGff3Depth(jsonFeature);
 
-    // recursive search of this feature to see how many levels there are
+    // okay, we know the depth, go down to gff3Depth - 1, and pull the first feature at this
+    // depth and its children. We're going to assume there is only one feature at this depth
+    // and ignore any subsequent features.
+
+    //		expectedFeatureArrayOutput = [0, "245454", "247006", "+", "maker", ".", "mRNA", ".", "1:gnomon_566853_mRNA", "gnomon_566853_mRNA", 
+    //    [ [ 1, 0, "245454", "245533", "+", "maker", ".", "exon", ".", "1:gnomon_566853_mRNA:exon:5976", null],
+    //      [ 1, 0, "245702", "245879", "+", "maker", ".", "exon", ".", "1:gnomon_566853_mRNA:exon:5977", null] ] ];
+
+    // get parent in jsonFeature.parsedData, which is at depth - 1
+    var thisParent = JSONUtils.getFeatureAtGivenDepth(jsonFeature, gff3Depth - 1);
+
+    // now set parent info
+    featureArray[1] = parseInt(thisParent.data[3]); // set start
+    featureArray[2] = parseInt(thisParent.data[4]); // set end
+    featureArray[3] = thisParent.data[6]; // set strand
+    featureArray[4] = thisParent.data[1]; // set source
+    featureArray[5] = thisParent.data[7]; // set phase
+    featureArray[6] = thisParent.data[2]; // set type
+    featureArray[7] = thisParent.data[5]; // set score
+    featureArray[8] = thisParent.ID; // set id
+
+    // parse info in 9th field to get name
+    var ninthFieldArray = thisParent.data[8].split(";");
+    var parsedNinthField = new Object; 
+    for ( i = 0; i < ninthFieldArray.length; i++){
+	var keyVal = ninthFieldArray[i].split("=");
+	parsedNinthField[ keyVal[0] ] = keyVal[1];
+    }
+    
+    if ( !!parsedNinthField["Name"] ){
+	featureArray[9] = parsedNinthField["Name"];
+    }
+
+    return featureArray;
+};
+
+// recursive search of this feature to see how many levels there are,
+// helper for convertParsedGFF3JsonToFeatureArray
+JSONUtils.determineParsedGff3Depth = function(jsonFeature) {
     var recursion_level = 0;
-    var maximum_recursion_level = 10; 
+    var maximum_recursion_level = 10; // paranoid about infinite recursion
     var determineNumLevels = function(thisJsonFeature) {
 	recursion_level++;
 	if ( recursion_level > maximum_recursion_level ){
@@ -414,12 +455,30 @@ JSONUtils.prototype.convertParsedGFF3JsonToFeatureArray = function(jsonFeature) 
 	}
 	return false;
     }
-
     determineNumLevels( jsonFeature.parsedData );
-    var numLevelsInJsonFeature = recursion_level;
+    return recursion_level;
+}
 
-    var foobar = 1;
-    var foobaz = 2;
-
-    return featureArray;
-};
+// helper feature for convertParsedGFF3JsonToFeatureArray
+// that returns the feature at a given depth
+JSONUtils.getFeatureAtGivenDepth = function(jsonFeature, depth) {
+    var recursion_level = 0;
+    var maximum_recursion_level = 10; // paranoid about infinite recursion
+    var getFeature = function(thisJsonFeature, thisDepth) {
+	recursion_level++;
+	if ( recursion_level > maximum_recursion_level ){
+	    return null;
+	}
+	// are we at the right depth?
+	if ( recursion_level == thisDepth ){
+	    return thisJsonFeature;
+	}
+	else if ( thisJsonFeature.children != null && thisJsonFeature.children.length > 0 ){
+	    var returnedFeature;
+ 	    if ( returnedFeature = getFeature(thisJsonFeature.children[0], depth) ){
+ 		return returnedFeature;
+ 	    }
+	}
+    }
+    return getFeature( jsonFeature.parsedData, depth );
+}
