@@ -405,10 +405,6 @@ JSONUtils.prototype.convertParsedGFF3JsonToFeatureArray = function(jsonFeature) 
     // depth and its children. We're going to assume there is only one feature at this depth
     // and ignore any subsequent features.
 
-    //		expectedFeatureArrayOutput = [0, "245454", "247006", "+", "maker", ".", "mRNA", ".", "1:gnomon_566853_mRNA", "gnomon_566853_mRNA", 
-    //    [ [ 1, 0, "245454", "245533", "+", "maker", ".", "exon", ".", "1:gnomon_566853_mRNA:exon:5976", null],
-    //      [ 1, 0, "245702", "245879", "+", "maker", ".", "exon", ".", "1:gnomon_566853_mRNA:exon:5977", null] ] ];
-
     // get parent in jsonFeature.parsedData, which is at depth - 1
     var thisParent = JSONUtils.getFeatureAtGivenDepth(jsonFeature, gff3Depth - 1);
 
@@ -424,14 +420,7 @@ JSONUtils.prototype.convertParsedGFF3JsonToFeatureArray = function(jsonFeature) 
     featureArray[7] = thisParent.data[5]; // set score
     featureArray[8] = thisParent.ID; // set id
 
-    // parse info in 9th field to get name
-    var ninthFieldArray = thisParent.data[8].split(";");
-    var parsedNinthField = new Object; 
-    for ( i = 0; i < ninthFieldArray.length; i++){
-	var keyVal = ninthFieldArray[i].split("=");
-	parsedNinthField[ keyVal[0] ] = keyVal[1];
-    }
-    
+    var parsedNinthField = JSONUtils.parsedNinthGff3Field(thisParent.data[8]);  
     if ( !!parsedNinthField["Name"] ){
 	featureArray[9] = parsedNinthField["Name"];
     }
@@ -451,8 +440,14 @@ JSONUtils.prototype.convertParsedGFF3JsonToFeatureArray = function(jsonFeature) 
  	    childrenArray[i][5] = thisParent.children[i].data[7]; // phase
  	    childrenArray[i][6] = thisParent.children[i].data[2]; // type
  	    childrenArray[i][7] = thisParent.children[i].data[5]; // score
- 	    // childrenArray[i][8] = thisParent.children[i].data[6]; // id
- 	    // childrenArray[i][9] = thisParent.children[i].data[6]; // name 
+
+ 	    var childNinthField = JSONUtils.parsedNinthGff3Field( thisParent.children[i].data[8] );
+ 	    if ( !!childNinthField["ID"] ){
+		childrenArray[i][8] = childNinthField["ID"];
+	    }
+ 	    if ( !!childNinthField["Name"] ){
+		childrenArray[i][9] = childNinthField["Name"];
+	    }
  	}
      }
      featureArray[10] = childrenArray; // load up children
@@ -504,4 +499,17 @@ JSONUtils.getFeatureAtGivenDepth = function(jsonFeature, depth) {
 	}
     }
     return getFeature( jsonFeature.parsedData, depth );
+}
+
+// helper feature for convertParsedGFF3JsonToFeatureArray
+// that parsed ninth field of gff3 file
+JSONUtils.parsedNinthGff3Field = function(ninthField) {
+    // parse info in 9th field to get name
+    var ninthFieldArray = ninthField.split(";");
+    var parsedNinthField = new Object; 
+    for ( j = 0; j < ninthFieldArray.length; j++){
+	var keyVal = ninthFieldArray[j].split("=");
+	parsedNinthField[ keyVal[0] ] = keyVal[1];
+    }
+    return parsedNinthField;
 }
