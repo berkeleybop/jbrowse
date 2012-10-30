@@ -58,5 +58,33 @@ describe("JSONUtils", function() {
 		expect(featureArrayOutput[9]).toEqual("gnomon_566853_mRNA"); //Name
 	    });
 
+	it("should correctly first child's Start/End/Strand/Source/Phase/Type/Score/Id/Name", function() {
+		// first child
+		expect(featureArrayOutput[10][0][0]).toEqual(1); // ?
+		expect(featureArrayOutput[10][0][1]).toEqual(245454); // Start
+		expect(featureArrayOutput[10][0][2]).toEqual(245533); //End
+		expect(featureArrayOutput[10][0][3]).toEqual("+"); //Strand
+		expect(featureArrayOutput[10][0][4]).toEqual("maker"); //Source
+		expect(featureArrayOutput[10][0][5]).toEqual("."); //Phase
+		expect(featureArrayOutput[10][0][6]).toEqual("exon"); //Type
+		expect(featureArrayOutput[10][0][7]).toEqual("."); //Score
+		expect(featureArrayOutput[10][0][8]).toEqual("1:gnomon_566853_mRNA:exon:5976"); //Id
+		expect(featureArrayOutput[10][0][9]).toEqual(null); //Name
+	    });
+
+	it("should correctly second child's Start/End/Strand/Source/Phase/Type/Score/Id/Name", function() {
+		// second child
+		expect(featureArrayOutput[10][1][0]).toEqual(1); // ?
+		expect(featureArrayOutput[10][1][1]).toEqual(245702); // Start
+		expect(featureArrayOutput[10][1][2]).toEqual(245879); //End
+		expect(featureArrayOutput[10][1][3]).toEqual("+"); //Strand
+		expect(featureArrayOutput[10][1][4]).toEqual("maker"); //Source
+		expect(featureArrayOutput[10][1][5]).toEqual("."); //Phase
+		expect(featureArrayOutput[10][1][6]).toEqual("exon"); //Type
+		expect(featureArrayOutput[10][1][7]).toEqual("."); //Score
+		expect(featureArrayOutput[10][1][8]).toEqual("1:gnomon_566853_mRNA:exon:5977"); //Id
+		expect(featureArrayOutput[10][1][9]).toEqual(null); //Name
+	    });
+
     });
 
