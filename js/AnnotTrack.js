@@ -1464,6 +1464,7 @@ AnnotTrack.prototype.editCommentsForSelectedFeatures = function(annots) {
 };
 
 AnnotTrack.prototype.createEditCommentsPanelForFeature = function(uniqueName, trackName) {
+    var track = this;
 	var content = dojo.create("div");
 	var header = dojo.create("div", { class: "comment_header" }, content);
 	var table = dojo.create("table", { class: "comments" }, content);
@@ -1723,6 +1724,7 @@ AnnotTrack.prototype.editDbxrefsForSelectedFeatures = function(annots) {
 };
 
 AnnotTrack.prototype.createEditDbxrefsPanelForFeature = function(uniqueName, trackName) {
+    var track = this;
 	var content = dojo.create("div");
 	var header = dojo.create("div", { class: "dbxref_header" }, content);
 	var tableHeader = dojo.create("div", { class: "dbxref_header", innerHTML: "<span class='dbxref_table_header_field'>Database</span><span class='dbxref_table_header_field'>Accession</span>" }, content);
