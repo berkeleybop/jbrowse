@@ -106,3 +106,16 @@ SeqFeatureStore.NCList.prototype._add_getters = function(getter,feature) {
     dojo.forEach( feature.get('subfeatures'), function(f) { that._add_getters( getter, f ); } );
 };
 
+// JR made the following method for GFF3 client side upload processing. Basically
+// this method is just like loadNCList except we are calling NCList.fill() instead
+// of importExisting. 
+SeqFeatureStore.NCList.prototype.loadFlatList = function( trackInfo, featureArray, url ) {
+    this.attrs = new ArrayRepr(trackInfo.intervals.classes);
+    this.nclist.fill( 
+		     featureArray,
+		     this.attrs,
+		     url,
+		     trackInfo.intervals.urlTemplate,
+		     trackInfo.intervals.lazyClass
+		      );
+};

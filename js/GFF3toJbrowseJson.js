@@ -16,12 +16,13 @@ function GFF3toJbrowseJson() {
 };
 
 GFF3toJbrowseJson.prototype.gff3toJbrowseJson = function(parsedGFF3)  {
-    var returnJson = {};
-    returnJson["intervals"] = {};
 
-    returnJson["histograms"] = {"stats" : [ {"basesPerBin" : "1000000","max" : 1,"mean" : 1} ],"meta" : [ { "basesPerBin" : "1000000", "arrayParams" : { "length" : 1, "chunkSize" : 10000, "urlTemplate" : "hist-1000000-{Chunk}.json"}}]};
+    var trackInfo = {};
+    trackInfo["intervals"] = {};
 
-    returnJson["intervals"]["classes"] = 
+    trackInfo["histograms"] = {"stats" : [ {"basesPerBin" : "1000000","max" : 1,"mean" : 1} ],"meta" : [ { "basesPerBin" : "1000000", "arrayParams" : { "length" : 1, "chunkSize" : 10000, "urlTemplate" : "hist-1000000-{Chunk}.json"}}]};
+
+    trackInfo["intervals"]["classes"] = 
 		   [ {
 				    "isArrayAttr" : {
 					"Subfeatures" : 1
@@ -38,33 +39,38 @@ GFF3toJbrowseJson.prototype.gff3toJbrowseJson = function(parsedGFF3)  {
 				    "attributes" : [ "Start", "End", "Chunk" ]
 		       } ];
 
-    returnJson["intervals"]["lazyClass"] = 2;
-    returnJson["intervals"]["urlTemplate"] = "lf-{Chunk}.json";
-    returnJson["formatVersion"] = 1;
-   
-    var jsonUtilObj = new JSONUtils;
+    trackInfo["intervals"]["lazyClass"] = 2;
+    trackInfo["intervals"]["urlTemplate"] = "lf-{Chunk}.json";
+    trackInfo["formatVersion"] = 1;
+
     var featureCount = 0;
 
     // first check if we have only one feature, in which case parsedData is an object not an array 
     if ( typeof(parsedGFF3.parsedData.length) == 'undefined' ){
-	returnJson["featureCount"] = 1;
+	trackInfo["featureCount"] = 1;
     }
     else {
-	returnJson["featureCount"] = twoFeatParsedGFF3.parsedData.length
+	trackInfo["featureCount"] = twoFeatParsedGFF3.parsedData.length
     }
 
     // loop through each top level feature in parsedGFF3 and make array of featureArrays
     // jsonUtilObj.convertParsedGFF3JsonToFeatureArray( parsedGFF3 );
+    var allGff3Features = new Array; // this is an array of featureArrays containing info for all features in parsedGFF3
+    var jsonUtilObj = new JSONUtils;
+  
+    // see if there's only one feature, in which case parsedData is an object, not an array with one object (strangely)
+    if ( !parsedGFF3.parsedData.length ){
+	allGff3Features.push( jsonUtilObj.convertParsedGFF3JsonToFeatureArray( parsedGFF3 ) );
+    } else { // >1 feature in parsedData, loop through and push each onto allGff3Features
+	for( k = 0; k < parsedGFF3.parsedData.length; k++ ){ 
+	    allGff3Features.push( jsonUtilObj.convertParsedGFF3JsonToFeatureArray( parsedGFF3.parsedData[k] ) );
+	}
+    }
 
-    return returnJson;
+    var args = {"foo": "bar"};
+    var sfnclist = new SeqFeatureStore.NCList( args );
+    sfnclist.loadFlatList( trackInfo, allGff3Features, "foo");
+
+    return sfnclist;
 };
 
-GFF3toJbrowseJson.addItemToNCList = function(parsedGFF3)  {    
-}
-
-//
-// del
-//
-// var parser = new GFF3toJson;
-//  makerGff3String = "Group1.33	maker	gene	245454	247006	.	+	.	ID=this_parent_id_12345;Name=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;\nGroup1.33	maker	mRNA	245454	247006	.	+	.	ID=1:gnomon_566853_mRNA;Parent=this_parent_id_12345;Name=gnomon_566853_mRNA;_AED=0.45;_eAED=0.45;_QI=138|1|1|1|1|1|4|191|259;\nGroup1.33	maker	exon	245454	245533	.	+	.	ID=1:gnomon_566853_mRNA:exon:5976;Parent=1:gnomon_566853_mRNA;\nGroup1.33	maker	exon	245702	245879	.	+	.	ID=1:gnomon_566853_mRNA:exon:5977;Parent=1:gnomon_566853_mRNA;\nGroup1.33	maker	exon	246046	246278	.	+	.	ID=1:gnomon_566853_mRNA:exon:5978;Parent=1:gnomon_566853_mRNA;\nGroup1.33	maker	exon	246389	247006	.	+	.	ID=1:gnomon_566853_mRNA:exon:5979;Parent=1:gnomon_566853_mRNA;\nGroup1.33	maker	five_prime_UTR	245454	245533	.	+	.	ID=1:gnomon_566853_mRNA:five_prime_utr;Parent=1:gnomon_566853_mRNA;\nGroup1.33	maker	five_prime_UTR	245702	245759	.	+	.	ID=1:gnomon_566853_mRNA:five_prime_utr;Parent=1:gnomon_566853_mRNA;\nGroup1.33	maker	CDS	245760	245879	.	+	0	ID=1:gnomon_566853_mRNA:cds;Parent=1:gnomon_566853_mRNA;\nGroup1.33	maker	CDS	246046	246278	.	+	0	ID=1:gnomon_566853_mRNA:cds;Parent=1:gnomon_566853_mRNA;\nGroup1.33	maker	CDS	246389	246815	.	+	1	ID=1:gnomon_566853_mRNA:cds;Parent=1:gnomon_566853_mRNA;\nGroup1.33	maker	three_prime_UTR	246816	247006	.	+	.	ID=1:gnomon_566853_mRNA:three_prime_utr;Parent=1:gnomon_566853_mRNA;\nGroup1.33	maker	gene	245454	247006	.	+	.	ID=XXXthis_parent_id_12345;Name=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;\nGroup1.33	maker	mRNA	245454	247006	.	+	.	ID=XXX1:gnomon_566853_mRNA;Parent=XXXthis_parent_id_12345;Name=gnomon_566853_mRNA;_AED=0.45;_eAED=0.45;_QI=138|1|1|1|1|1|4|191|259;\nGroup1.33	maker	exon	245454	245533	.	+	.	ID=XXX1:gnomon_566853_mRNA:exon:5976;Parent=XXX1:gnomon_566853_mRNA;\nGroup1.33	maker	exon	245702	245879	.	+	.	ID=XXX1:gnomon_566853_mRNA:exon:5977;Parent=XXX1:gnomon_566853_mRNA;\nGroup1.33	maker	exon	246046	246278	.	+	.	ID=XXX1:gnomon_566853_mRNA:exon:5978;Parent=XXX1:gnomon_566853_mRNA;\nGroup1.33	maker	exon	246389	247006	.	+	.	ID=XXX1:gnomon_566853_mRNA:exon:5979;Parent=XXX1:gnomon_566853_mRNA;\nGroup1.33	maker	five_prime_UTR	245454	245533	.	+	.	ID=XXX1:gnomon_566853_mRNA:five_prime_utr;Parent=XXX1:gnomon_566853_mRNA;\nGroup1.33	maker	five_prime_UTR	245702	245759	.	+	.	ID=XXX1:gnomon_566853_mRNA:five_prime_utr;Parent=XXX1:gnomon_566853_mRNA;\nGroup1.33	maker	CDS	245760	245879	.	+	0	ID=XXX1:gnomon_566853_mRNA:cds;Parent=XXX1:gnomon_566853_mRNA;\nGroup1.33	maker	CDS	246046	246278	.	+	0	ID=XXX1:gnomon_566853_mRNA:cds;Parent=XXX1:gnomon_566853_mRNA;\nGroup1.33	maker	CDS	246389	246815	.	+	1	ID=XXX1:gnomon_566853_mRNA:cds;Parent=XXX1:gnomon_566853_mRNA;\nGroup1.33	maker	three_prime_UTR	246816	247006	.	+	.	ID=XXX1:gnomon_566853_mRNA:three_prime_utr;Parent=XXX1:gnomon_566853_mRNA;";
-//  var twoFeat = parser.parse( makerGff3String );
