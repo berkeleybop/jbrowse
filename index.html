@@ -4,7 +4,7 @@
 
 <!-- <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"lang="en"> -->
 <html lang="en">
-<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
 
   <head>
     <title>WebApollo</title>
@@ -126,6 +126,8 @@
     <script type="text/javascript" src="js/Permission.js"></script>
 
     <!-- for testing file loading -->
+   <script type="text/javascript" src="js/GFF3Parser.js"></script>
+   <script type="text/javascript" src="js/GFF3toJbrowseJson.js"></script> 
    <script type="text/javascript" src="js/FileLoader.js"></script> 
 
     <!-- for testing direct BAM access -->
@@ -197,11 +199,10 @@
                                        dataRoot + "/annotation_trackList.json",
                                        dataRoot + "/trackList.json"
                                      // dataRoot + "/bam_trackList.json", 
-                                     // dataRoot + "/annotation_trackList.json"
-                                 ],
-                                  // nameUrl: dataRoot + "/names/root.json",
-                                   defaultTracks: "DNA,Annotations,RefSeq",
-                                   // defaultTracks: "DNA", 
+                                ],
+                                  nameUrl: dataRoot + "/names/root.json",
+                                  // defaultTracks: "DNA,Annotations,RefSeq",
+                                  defaultTracks: "DNA, Annotations", 
                                   queryParams: queryParams,
                                    location: queryParams.loc,
                                    // tracks: queryParams.tracks,
