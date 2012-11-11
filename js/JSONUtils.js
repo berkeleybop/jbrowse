@@ -267,7 +267,8 @@ JSONUtils.createApolloFeature = function(arep, jfeature, specified_type)   {
     if (typename)  {
 	afeature.type = {
 	    "cv": {
-		"name": "SO"
+//		"name": "SO"
+		"name": "sequence"
 	    }
 	};
 	afeature.type.name = typename;
@@ -390,7 +391,8 @@ JSONUtils.convertToTrack = function(feat, source_track, target_track)  {
 *  it would return a two-level feature array for the mRNA and all of it's exons. 
 */
 
-JSONUtils.prototype.convertParsedGFF3JsonToFeatureArray = function(jsonFeature) {
+// JSONUtils.prototype.convertParsedGFF3JsonToFeatureArray = function(jsonFeature) {
+JSONUtils.convertParsedGFF3JsonToFeatureArray = function(jsonFeature) {
     var featureArray = new Array();
     // set to zero because we want jbrowse/webapollo to look at the first entry in attr array to 
     // look up what each of the following fields in featureArray mean
@@ -400,6 +402,8 @@ JSONUtils.prototype.convertParsedGFF3JsonToFeatureArray = function(jsonFeature) 
     // only the data for the lowest contained in the next lowest level, since Webapollo 
     // can only deal with two-level features. 
     var gff3Depth = JSONUtils.determineParsedGff3Depth(jsonFeature);
+    
+    console.log("parsed depth: ", gff3Depth);
 
     // okay, we know the depth, go down to gff3Depth - 1, and pull the first feature at this
     // depth and its children. We're going to assume there is only one feature at this depth
@@ -472,14 +476,12 @@ JSONUtils.determineParsedGff3Depth = function(jsonFeature) {
 	    }
 	}
 	return false;
-    }
-    determineNumLevels( jsonFeature.parsedData );
+    };
+    determineNumLevels( jsonFeature );
     return recursion_level;
-}
+};
 
-// helper feature for convertParsedGFF3JsonToFeatureArray
-// that returns the feature at a given depth
-JSONUtils.getFeatureAtGivenDepth = function(jsonFeature, depth) {
+/*JSONUtils.getFeaturesAtGivenDepth = function(jsonFeature, depth) {
     var recursion_level = 0;
     var maximum_recursion_level = 10; // paranoid about infinite recursion
     var getFeature = function(thisJsonFeature, thisDepth) {
@@ -497,9 +499,36 @@ JSONUtils.getFeatureAtGivenDepth = function(jsonFeature, depth) {
  		return returnedFeature;
  	    }
 	}
-    }
-    return getFeature( jsonFeature.parsedData, depth );
-}
+    };
+    return getFeature( jsonFeature, depth );
+};
+*/
+
+
+// helper feature for convertParsedGFF3JsonToFeatureArray
+// that returns the feature at a given depth
+JSONUtils.getFeatureAtGivenDepth = function(jsonFeature, depth) {
+    var recursion_level = 0;
+    var maximum_recursion_level = 10; // paranoid about infinite recursion
+    var getFeature = function(thisJsonFeature, thisDepth) {
+	recursion_level++;
+	if ( recursion_level > maximum_recursion_level ){
+	    return null;
+	}
+	// are we at the right depth?
+	if ( recursion_level == thisDepth ){
+	    return thisJsonFeature;
+	}
+	else if ( thisJsonFeature.children != null && thisJsonFeature.children.length > 0 ){
+	    return getFeatureAtGivenDepth(thisJsonFeature.children[0], depth);
+//	    var returnedFeature;
+// 	    if ( returnedFeature = getFeature(thisJsonFeature.children[0], depth) ){
+// 		return returnedFeature;
+// 	    }
+	}
+    };
+    return getFeature( jsonFeature, depth );
+};
 
 // helper feature for convertParsedGFF3JsonToFeatureArray
 // that parsed ninth field of gff3 file
