@@ -330,7 +330,7 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 			       var transProtein = track.renderTranslation( extendedEndResidues, i, blockLength);
 			       // if coloring CDS in feature tracks by frame, use same "cds-frame" styling, 
 			       //    otherwise use more muted "frame" styling
-			       if (track.gview.cds_frame_trackcount > 0) {  
+			       if (track.gview.colorCdsByFrame) {  
 				   $(transProtein).addClass("cds-frame" + frame);
 			       }
 			       else  {
@@ -438,7 +438,7 @@ SequenceTrack.prototype.fillBlock = function(blockIndex, block,
 			       // frame = (frame + (3 - (track.refSeq.length % 3))) % 3;
 			       frame = (Math.abs(frame - 2) + (track.refSeq.length % 3)) % 3;
 			       var transProtein = track.renderTranslation( extendedStartResidues, i, blockLength, true);
-			       if (track.gview.cds_frame_trackcount > 0) {  
+			       if (track.gview.colorCdsByFrame) {  
 				   $(transProtein).addClass("cds-frame" + frame);
 			       }
 			       else  {
@@ -1018,7 +1018,7 @@ SequenceTrack.prototype.createAddSequenceAlterationPanel = function(type, gcoord
 	    		alert("Cannot create overlapping sequence alterations");
 	    	}
 	    	else {
-	    		var feature = '"location": { "fmin": ' + fmin + ', "fmax": ' + fmax + ', "strand": 1 }, "type": {"name": "' + type + '", "cv": { "name":"SO" } }';
+	    		var feature = '"location": { "fmin": ' + fmin + ', "fmax": ' + fmax + ', "strand": 1 }, "type": {"name": "' + type + '", "cv": { "name":"sequence" } }';
 	    		if (type != "deletion") {
 	    			feature += ', "residues": "' + input + '"';
 	    		}
