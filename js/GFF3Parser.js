@@ -69,7 +69,7 @@ GFF3toJson.prototype.parse = function(gff3String) {
 
     // search for a given ID in children, grandchildren, great-grandchildren, etc.
     var recursion_level = 0;
-    var maximum_recursion_level = 10; 
+    var maximum_recursion_level = 100; 
     var recursiveChildSearch = function(thisLine, featureArrayToSearch) {
 	recursion_level++;
 	var thisParentId = thisLine["attributes"]["Parent"];
@@ -98,7 +98,7 @@ GFF3toJson.prototype.parse = function(gff3String) {
 	"parseErrors": [],
 	"parseWarnings": [],
     }; // parsed GFF3 in JSON format, to be returned
-
+    
     var lines = gff3String.match(/^.*((\r\n|\n|\r)|$)/gm); // this is wasteful, maybe try to avoid storing split lines separately later
     var hasParent = {}; // child (or grandchild, or whatever) features
     var noParent = {}; // toplevel features without parents
@@ -172,15 +172,16 @@ GFF3toJson.prototype.parse = function(gff3String) {
     }
 
     // put things with no parent in parsedData straight away
-    for (var i = 0; i < noParentIDs.length; i++) {
-	var thisID = noParentIDs[i];
+    for (var j = 0; j < noParentIDs.length; j++) {
+	var thisID = noParentIDs[j];
 	var thisLine = noParent[thisID];
 	parsedData["parsedData"].push( thisLine );
     }
 
     // now put children (and grandchildren, and so on) in data struct
-    for (var i = 0; i < hasParentIDs.length; i++) {
-	var thisID = hasParentIDs[i];
+    for (var k = 0; k < hasParentIDs.length; k++) {
+	// console.log("k: " + k);
+	var thisID = hasParentIDs[k];
 	var thisLine = hasParent[thisID];
 	var thisParentID = thisLine["attributes"]["Parent"];
 
