@@ -69,7 +69,7 @@ GFF3toJson.prototype.parse = function(gff3String) {
 
     // search for a given ID in children, grandchildren, great-grandchildren, etc.
     var recursion_level = 0;
-    var maximum_recursion_level = 100; 
+    var maximum_recursion_level = 200; 
     var recursiveChildSearch = function(thisLine, featureArrayToSearch) {
 	recursion_level++;
 	var thisParentId = thisLine["attributes"]["Parent"];
