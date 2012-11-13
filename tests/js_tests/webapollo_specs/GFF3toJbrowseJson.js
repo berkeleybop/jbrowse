@@ -72,6 +72,7 @@ describe("GFF3toJbrowseJson", function() {
 		expect(nclistGen.gff3toJbrowseJson).toBeDefined();
 	    });
 
+	/* 
 	it("should correctly set histograms/stats/meta in jbrowse json", function() {
 		expect(actualJbrowseJsonOutput["histograms"]).toEqual({"stats" : [ {"basesPerBin" : "1000000","max" : 1,"mean" : 1} ],"meta" : [ { "basesPerBin" : "1000000", "arrayParams" : { "length" : 1, "chunkSize" : 10000, "urlTemplate" : "hist-1000000-{Chunk}.json"}}]});
 	    });
@@ -130,6 +131,7 @@ describe("GFF3toJbrowseJson", function() {
 	it("should correctly set formatVersion in jbrowse json", function() {
 		expect(actualJbrowseJsonOutput["formatVersion"]).toEqual(1);
 	    });
+	*/
 
     });
 
