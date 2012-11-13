@@ -50,7 +50,7 @@ GFF3toJbrowseJson.prototype.gff3toJbrowseJson = function(parsedGFF3)  {
 	trackInfo["featureCount"] = 1;
     }
     else {
-	trackInfo["featureCount"] = twoFeatParsedGFF3.parsedData.length
+	trackInfo["featureCount"] = parsedGFF3.parsedData.length;
     }
 
     // loop through each top level feature in parsedGFF3 and make array of featureArrays
