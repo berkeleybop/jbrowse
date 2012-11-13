@@ -473,7 +473,7 @@ JSONUtils.determineParsedGff3Depth = function(jsonFeature) {
 	}
 	return false;
     }
-    determineNumLevels( jsonFeature.parsedData );
+    determineNumLevels( jsonFeature );
     return recursion_level;
 }
 
@@ -498,7 +498,7 @@ JSONUtils.getFeatureAtGivenDepth = function(jsonFeature, depth) {
  	    }
 	}
     }
-    return getFeature( jsonFeature.parsedData, depth );
+    return getFeature( jsonFeature, depth );
 }
 
 // helper feature for convertParsedGFF3JsonToFeatureArray
