@@ -4,7 +4,7 @@
 
 <!-- <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"lang="en"> -->
 <html lang="en">
-<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
 
   <head>
     <title>WebApollo</title>
@@ -12,10 +12,10 @@
     <link rel="stylesheet" type="text/css" href="jslib/dojo/resources/dojo.css"></link>
 
     <!-- load JQuery theme CSS remotely from Google CDN: -->
-  <link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/themes/base/jquery-ui.css"/>  
+<!--  <link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/themes/base/jquery-ui.css"></link> -->
 
    <!-- load JQuery theme CSS from WebApollo server -->
-    <!-- <link rel="stylesheet" type="text/css" href="jslib/jquery-ui.css"/>  -->
+    <link rel="stylesheet" type="text/css" href="jslib/jquery-ui.css"></link>
 
     <style type="text/css">
       html, body { height: 100%; width: 100%; padding: 0; border: 0; }
@@ -23,16 +23,11 @@
     <link rel="stylesheet" type="text/css" title="genome_styles" href="genome.css"></link>
 
     <!--  Load JQuery, JQuery-UI, Dojo remotely from Google CDN: -->
-
-<!-- <script type="text/javascript" src="jslib/jquery-1.5/jquery-1.5.mod.js" ></script>	 -->
-<!--
-<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script>  
-
--->
-<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.js"></script> 
+<!-- <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.js"></script> -->
 <!-- <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.10/jquery-ui.js"></script> -->
+<!--
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.js"></script> 
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.js"></script> 
-
  <script src="http://www.google.com/jsapi" type="text/javascript"></script>
    <script type="text/javascript"> 
       // google.load("jquery", "1.7"); 
@@ -40,13 +35,13 @@
       // google.load("jqueryui", "1.8.10");
       google.load("dojo", "1.5");
     </script>
-
-   <!--  Load JQuery, JQuery-ui, Dojo from WebApollo server: -->
-<!--
-   <script type="text/javascript" src="jslib/jquery-1.5/jquery-1.5.min.js" ></script> 
-    <script type="text/javascript" src="jslib/jquery-ui-1.8.9.custom/js/jquery-ui-1.8.9.custom.min.js"></script> 
-   <script type="text/javascript" src="jslib/dojo-1.5.0/dojo/dojo.js"></script>
 -->
+   <!--  Load JQuery, JQuery-ui, Dojo from WebApollo server: -->
+   <!--   <script type="text/javascript" src="jslib/jquery-1.5/jquery-1.5.min.js" ></script>  -->
+   <!-- <script type="text/javascript"src="jslib/jquery-ui-1.8.9.custom/js/jquery-ui-1.8.9.custom.min.js"></script> -->
+   <script type="text/javascript" src="jslib/jquery-1.8.2/jquery-1.8.2.min.js" ></script>  -->
+   <script type="text/javascript" src="jslib/jquery-ui-1.9.1/js/jquery-ui-1.9.1.min.js"></script> 
+   <script type="text/javascript" src="jslib/dojo-1.5.0/dojo/dojo.js"></script>
 
     <!-- using modernizr for easy testing of browser support for HTML5 / CSS3 / etc. features -->
     <script type="text/javascript" src="jslib/modernizr-2.0.6.js"></script>
@@ -173,8 +168,6 @@
  <link rel="stylesheet" href="styles/edit_dbxrefs.css" type="text/css" />
  <link rel="stylesheet" href="styles/add_sequence_alteration.css" type="text/css" />
  <link rel="stylesheet" href="styles/search_sequence.css" type="text/css" />
- <link rel="stylesheet" href="styles/get_history.css" type="text/css" />
- <link rel="stylesheet" href="styles/export.css" type="text/css" />
 
 
     <script type="text/javascript">
@@ -197,14 +190,15 @@
                                    // trackData: trackInfo,
                                  refSeqs: dataRoot + "/seq/refSeqs.json",
                                    include: [
-                                      // dataRoot + "/debug_trackList.json"
-                                       dataRoot + "/annotation_trackList.json",
-                                       dataRoot + "/trackList.json"
-                                     // dataRoot + "/bam_trackList.json", 
+                                      dataRoot + "/annotation_trackList.json"
+                                      , dataRoot + "/trackList.json"
+                                      //, dataRoot + "/debug_trackList.json"
+                                      //, "http://localhost:8080/trellis/A.mellifera/types?format=jbrowse-trackList"
+                                     // , dataRoot + "/bam_trackList.json"
                                 ],
                                   nameUrl: dataRoot + "/names/root.json",
-                                  // defaultTracks: "DNA,Annotations,RefSeq",
-                                  defaultTracks: "DNA, Annotations", 
+                                   defaultTracks: "DNA,Annotations,RefSeq",
+                                   // defaultTracks: "DNA", 
                                   queryParams: queryParams,
                                    location: queryParams.loc,
                                    // tracks: queryParams.tracks,
@@ -223,6 +217,7 @@
   </head>
   
   <body>
+
 <div id="GenomeBrowser" style="height: 100%; width: 100%; padding: 0; border: 0;"></div>
 </body>
 </html>

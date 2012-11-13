@@ -463,7 +463,7 @@ DraggableFeatureTrack.prototype.renderExonSegments = function(subfeature, subDiv
 		"left: " + (100 * ((subStart - subStart) / subLength)) + "%;"
 		+ "top: 0px;"
 		+ "width: " + (100 * ((subEnd - subStart) / subLength)) + "%;";
-            if (this.config.style.colorCdsFrame) {
+            if (this.config.style.colorCdsFrame || this.gview.colorCdsByFrame) {
 		$(segDiv).addClass("cds-frame" + cdsFrame);
 	    }
 	    subDiv.appendChild(segDiv);
@@ -532,7 +532,7 @@ DraggableFeatureTrack.prototype.renderExonSegments = function(subfeature, subDiv
 		"left: " + (100 * ((cdsSegStart - subStart) / subLength)) + "%;"
 		+ "top: 0px;"
 		+ "width: " + (100 * ((cdsSegEnd - cdsSegStart) / subLength)) + "%;";
-	    if (this.config.style.colorCdsFrame) {
+            if (this.config.style.colorCdsFrame || this.gview.colorCdsByFrame) {
 		$(segDiv).addClass("cds-frame" + cdsFrame);
 	    }
 	    subDiv.appendChild(segDiv);
@@ -862,7 +862,7 @@ DraggableFeatureTrack.prototype.initTrackLabelContextMenu = function()  {
     var initState = (track.config.style.showFeatureName == undefined) ? true : track.config.style.showFeatureName;
     // console.log("track: " + track.config.label + ", show label: " + initState);
 
-    this.tracklabel_context_menu.addChild(new dijit.MenuItem({ label: "Track Configuration", disabled: true }) );
+    this.tracklabel_context_menu.addChild(new dijit.MenuItem({ label: "Configure Single Track", disabled: true }) );
     
     var feature_label_toggle = new dijit.CheckedMenuItem();
     feature_label_toggle.set("label", "Show Label");
@@ -874,10 +874,11 @@ DraggableFeatureTrack.prototype.initTrackLabelContextMenu = function()  {
      } );
     this.tracklabel_context_menu.addChild(feature_label_toggle);
 
+    this.tracklabel_context_menu.addChild(new dijit.MenuItem({ label: "Configure All Tracks", disabled: true }) );
     var cds_frame_toggle = new dijit.CheckedMenuItem();
     cds_frame_toggle.set("label", "Color By CDS Frame");
     cds_frame_toggle.set("checked", false);
-    cds_frame_toggle.set("onClick", function(event) {
+ /*   cds_frame_toggle.set("onClick", function(event) {
         track.config.style.colorCdsFrame = cds_frame_toggle.checked;
         if (track.config.style.colorCdsFrame) {
 	    track.gview.cds_frame_trackcount++;
@@ -893,11 +894,20 @@ DraggableFeatureTrack.prototype.initTrackLabelContextMenu = function()  {
         track.hideAll();
         track.changed();
      } );
+*/
+    cds_frame_toggle.set("onClick", function(event) {
+        track.gview.colorCdsByFrame = cds_frame_toggle.checked;
+        track.gview.trackIterate(function(trk)  {
+			        trk.hideAll();
+			   });
+        track.gview.showVisibleBlocks(true);
+     } );
     this.tracklabel_context_menu.addChild(cds_frame_toggle);
 
-    this.tracklabel_context_menu.addChild(new dijit.MenuItem( {
+/*    this.tracklabel_context_menu.addChild(new dijit.MenuItem( {
 							label: "..."
 						    } ));
+*/
     this.tracklabel_context_menu.startup();
 };
 

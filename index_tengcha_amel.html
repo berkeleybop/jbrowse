@@ -123,7 +123,7 @@
     <script type="text/javascript" src="js/Permission.js"></script>
 
     <!-- for testing file loading -->
-   <!-- <script type="text/javascript" src="js/FileLoader.js"></script> -->
+    <script type="text/javascript" src="js/FileLoader.js"></script>
 
     <!-- for testing direct BAM access -->
     <script type="text/javascript" src="js/BamFeatureTrack.js"></script>
@@ -188,12 +188,13 @@
                                    // trackData: trackInfo,
                                  refSeqs: dataRoot + "/seq/refSeqs.json",
                                    include: [
-                                      dataRoot + "/trackList.json"
+				      dataRoot + "/annotation_trackList.json"
+                                      , dataRoot + "/trackList.json"
                                      , "http://localhost:8080/jbrowse/trellis/A.mellifera/types?format=jbrowse-trackList" 
                                  ],
                                   // nameUrl: dataRoot + "/names/root.json",
-                                   defaultTracks: "DNA,Annotations,RefSeq",
-                                   // defaultTracks: "DNA", 
+                                   // defaultTracks: "DNA,Annotations,RefSeq",
+                                  defaultTracks: "DNA,RefSeq",
                                   queryParams: queryParams,
                                    location: queryParams.loc,
                                    // tracks: queryParams.tracks,
@@ -213,9 +214,5 @@
   
   <body>
     <div id="GenomeBrowser" style="height: 100%; width: 100%; padding: 0; border: 0;"></div>
-<!--
-    Graph Load: 
-    <input type="file" id="files1" name="files1[]" multiple > </input>
- -->
- </body>
+</body>
 </html>

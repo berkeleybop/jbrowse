@@ -526,6 +526,13 @@ Browser.prototype.createTrackList = function( /**Element*/ parent ) {
         "width: 100%; height: 100%; overflow-x: hidden; overflow-y: auto;";
     trackListDiv.innerHTML = "<div id=\"tracklist_header\" style=\"text-align:center;\"><h2>Available Tracks</h2></div>";
     leftPane.appendChild(trackListDiv);
+    var tracklist_header = $("#tracklist_header").get(0);
+/*
+    console.log("tracklist_header: ");
+    console.log(tracklist_header);
+    this.initGlobalTracksContextMenu();
+    this.global_tracks_context_menu.bindDomNode(tracklist_header);
+*/
 
     var fileLoader = null;
     if (!!window.File && !!window.FileReader && !!window.FileList && !!window.Blob) {
@@ -1214,6 +1221,33 @@ Browser.prototype.createNavBox = function( parent, locLength ) {
 
     return navbox;
 };
+
+
+/*
+ Browser.prototype.initGlobalTracksContextMenu = function()  {
+    this.global_tracks_context_menu = new dijit.Menu({});
+    var gview = this.view;
+    var initState = gview.colorCdsByFrame;
+
+    this.global_tracks_context_menu.addChild(new dijit.MenuItem({ label: "Global Track Config", disabled: true }) );
+
+    var cds_frame_toggle = new dijit.CheckedMenuItem();
+    cds_frame_toggle.set("label", "Color By CDS Frame");
+    cds_frame_toggle.set("checked", initState);
+    cds_frame_toggle.set("onClick", function(event) {
+        gview.colorCdsByFrame = cds_frame_toggle.checked;
+        gview.trackIterate(function(track)  {
+			        track.hideAll();
+			   });
+        gview.showVisibleBlocks(true);
+     } );
+    this.global_tracks_context_menu.addChild(cds_frame_toggle);
+    this.global_tracks_context_menu.addChild(new dijit.MenuItem( {
+							label: "..."
+						    } ));
+    this.global_tracks_context_menu.startup();
+};
+*/
 
 /*
 

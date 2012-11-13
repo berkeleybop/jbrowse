@@ -1464,11 +1464,12 @@ AnnotTrack.prototype.editCommentsForSelectedFeatures = function(annots) {
 };
 
 AnnotTrack.prototype.createEditCommentsPanelForFeature = function(uniqueName, trackName) {
+    var track = this;
 	var content = dojo.create("div");
-	var header = dojo.create("div", { class: "comment_header" }, content);
-	var table = dojo.create("table", { class: "comments" }, content);
-	var addButtonDiv = dojo.create("div", { class: "comment_add_button_div" }, content);
-	var addButton = dojo.create("button", { class: "comment_button", innerHTML: "Add comment" }, addButtonDiv);
+	var header = dojo.create("div", { className: "comment_header" }, content);
+	var table = dojo.create("table", { className: "comments" }, content);
+	var addButtonDiv = dojo.create("div", { className: "comment_add_button_div" }, content);
+	var addButton = dojo.create("button", { className: "comment_button", innerHTML: "Add comment" }, addButtonDiv);
 	var cannedCommentsDiv = dojo.create("div", { }, content);
 	var cannedCommentsComboBox = dojo.create("select", { }, cannedCommentsDiv);
 	var comments;
@@ -1573,7 +1574,7 @@ AnnotTrack.prototype.createEditCommentsPanelForFeature = function(uniqueName, tr
 		for (var i = 0; i < comments.length; ++i) {
 			var row = dojo.create("tr", { }, table);
 			var col1 = dojo.create("td", { }, row);
-			var comment = dojo.create("textarea", { rows: 1, innerHTML: comments[i], readonly: true, class: "comment_area" }, col1);
+			var comment = dojo.create("textarea", { rows: 1, innerHTML: comments[i], readonly: true, className: "comment_area" }, col1);
 			commentTextFields.push(comment);
 			dojo.connect(comment, "onclick", comment, function() {
 				if (!showCannedComments) {
@@ -1608,7 +1609,7 @@ AnnotTrack.prototype.createEditCommentsPanelForFeature = function(uniqueName, tr
 				}
 			});
 			var col2 = dojo.create("td", { }, row);
-			var delButton = dojo.create("button", { class: "comment_button", innerHTML: "Delete" /* "<img class='table_icon' src='img/trash.png' />" */}, col2);
+			var delButton = dojo.create("button", { className: "comment_button", innerHTML: "Delete" /* "<img class='table_icon' src='img/trash.png' />" */}, col2);
 			dojo.connect(delButton, "onfocus", delButton, function() {
 				showCannedComments = false;
 				dojo.style(cannedCommentsDiv, { display: "none" } );
@@ -1624,7 +1625,7 @@ AnnotTrack.prototype.createEditCommentsPanelForFeature = function(uniqueName, tr
 				};
 			}(i));
 			var col3 = dojo.create("td", { }, row);
-			var editButton = dojo.create("button", { class: "comment_button", innerHTML: "Edit" /*"<img class='table_icon' src='img/pencil.png' />*/}, col3);
+			var editButton = dojo.create("button", { className: "comment_button", innerHTML: "Edit" /*"<img class='table_icon' src='img/pencil.png' />*/}, col3);
 			dojo.connect(editButton, "onfocus", editButton, function() {
 				showCannedComments = false;
 				dojo.style(cannedCommentsDiv, { display: "none" } );
@@ -1723,12 +1724,13 @@ AnnotTrack.prototype.editDbxrefsForSelectedFeatures = function(annots) {
 };
 
 AnnotTrack.prototype.createEditDbxrefsPanelForFeature = function(uniqueName, trackName) {
+    var track = this;
 	var content = dojo.create("div");
-	var header = dojo.create("div", { class: "dbxref_header" }, content);
-	var tableHeader = dojo.create("div", { class: "dbxref_header", innerHTML: "<span class='dbxref_table_header_field'>Database</span><span class='dbxref_table_header_field'>Accession</span>" }, content);
-	var table = dojo.create("div", { class: "dbxrefs" }, content);
-	var addButtonDiv = dojo.create("div", { class: "dbxref_add_button_div" }, content);
-	var addButton = dojo.create("button", { class: "dbxref_button", innerHTML: "Add DBXref" }, addButtonDiv);
+	var header = dojo.create("div", { className: "dbxref_header" }, content);
+	var tableHeader = dojo.create("div", { className: "dbxref_header", innerHTML: "<span class='dbxref_table_header_field'>Database</span><span class='dbxref_table_header_field'>Accession</span>" }, content);
+	var table = dojo.create("div", { className: "dbxrefs" }, content);
+	var addButtonDiv = dojo.create("div", { className: "dbxref_add_button_div" }, content);
+	var addButton = dojo.create("button", { className: "dbxref_button", innerHTML: "Add DBXref" }, addButtonDiv);
 	var dbxrefs;
 	var dbxrefTextFields;
 	
@@ -1849,9 +1851,9 @@ AnnotTrack.prototype.createEditDbxrefsPanelForFeature = function(uniqueName, tra
 			var dbxref = dbxrefs[i];
 			var row = dojo.create("div", { }, table);
 			var col1 = dojo.create("span", { }, row);
-			var db = dojo.create("input", { type: "text", rows: 1, value: dbxref.db, readonly: true, class: "dbxref_field" }, col1);
+			var db = dojo.create("input", { type: "text", rows: 1, value: dbxref.db, readonly: true, className: "dbxref_field" }, col1);
 			var col2 = dojo.create("span", { }, row);
-			var accession = dojo.create("input", { type: "text", rows: 1, value: dbxref.accession, readonly: true, class: "dbxref_field" }, col2);
+			var accession = dojo.create("input", { type: "text", rows: 1, value: dbxref.accession, readonly: true, className: "dbxref_field" }, col2);
 			dbxrefTextFields.push([db, accession]);
 			dojo.connect(db, "onblur", db, function(index) {
 				return function() {
@@ -1864,7 +1866,7 @@ AnnotTrack.prototype.createEditDbxrefsPanelForFeature = function(uniqueName, tra
 				};
 			}(i));
 			var col3 = dojo.create("span", { }, row);
-			var delButton = dojo.create("button", { class: "dbxref_button", innerHTML: "Delete" }, col3);
+			var delButton = dojo.create("button", { className: "dbxref_button", innerHTML: "Delete" }, col3);
 			dojo.connect(delButton, "onclick", delButton, function(index) {
 				return function() {
 					var oldDbxref = dbxrefs[index];
@@ -1874,7 +1876,7 @@ AnnotTrack.prototype.createEditDbxrefsPanelForFeature = function(uniqueName, tra
 				};
 			}(i));
 			var col4 = dojo.create("span", { }, row);
-			var editButton = dojo.create("button", { class: "dbxref_button", innerHTML: "Edit" }, col4);
+			var editButton = dojo.create("button", { className: "dbxref_button", innerHTML: "Edit" }, col4);
 			dojo.connect(editButton, "onclick", editButton, function(index) {
 				return function() {
 					dojo.attr(dbxrefTextFields[index][0], "readonly", false);
@@ -2225,25 +2227,25 @@ AnnotTrack.prototype.getSequenceForSelectedFeatures = function(annots) {
 	var track = this;
 
 	var content = dojo.create("div");
-	var textArea = dojo.create("textarea", { class: "sequence_area", readonly: true }, content);
+	var textArea = dojo.create("textarea", { className: "sequence_area", readonly: true }, content);
 	var form = dojo.create("form", { }, content);
-	var peptideButtonDiv = dojo.create("div", { class: "first_button_div" }, form);
+	var peptideButtonDiv = dojo.create("div", { className: "first_button_div" }, form);
 	var peptideButton = dojo.create("input", { type: "radio", name: "type", checked: true }, peptideButtonDiv);
-	var peptideButtonLabel = dojo.create("label", { innerHTML: "Peptide sequence", class: "button_label" }, peptideButtonDiv);
-	var cdnaButtonDiv = dojo.create("div", { class: "button_div" }, form);
+	var peptideButtonLabel = dojo.create("label", { innerHTML: "Peptide sequence", className: "button_label" }, peptideButtonDiv);
+	var cdnaButtonDiv = dojo.create("div", { className: "button_div" }, form);
 	var cdnaButton = dojo.create("input", { type: "radio", name: "type" }, cdnaButtonDiv);
-	var cdnaButtonLabel = dojo.create("label", { innerHTML: "cDNA sequence", class: "button_label" }, cdnaButtonDiv);
-	var cdsButtonDiv = dojo.create("div", { class: "button_div" }, form);
+	var cdnaButtonLabel = dojo.create("label", { innerHTML: "cDNA sequence", className: "button_label" }, cdnaButtonDiv);
+	var cdsButtonDiv = dojo.create("div", { className: "button_div" }, form);
 	var cdsButton = dojo.create("input", { type: "radio", name: "type" }, cdsButtonDiv);
-	var cdsButtonLabel = dojo.create("label", { innerHTML: "CDS sequence", class: "button_label" }, cdsButtonDiv);
-	var genomicButtonDiv = dojo.create("div", { class: "button_div" }, form);
+	var cdsButtonLabel = dojo.create("label", { innerHTML: "CDS sequence", className: "button_label" }, cdsButtonDiv);
+	var genomicButtonDiv = dojo.create("div", { className: "button_div" }, form);
 	var genomicButton = dojo.create("input", { type: "radio", name: "type" }, genomicButtonDiv);
-	var genomicButtonLabel = dojo.create("label", { innerHTML: "Genomic sequence", class: "button_label" }, genomicButtonDiv);
-	var genomicWithFlankButtonDiv = dojo.create("div", { class: "button_div" }, form);
+	var genomicButtonLabel = dojo.create("label", { innerHTML: "Genomic sequence", className: "button_label" }, genomicButtonDiv);
+	var genomicWithFlankButtonDiv = dojo.create("div", { className: "button_div" }, form);
 	var genomicWithFlankButton = dojo.create("input", { type: "radio", name: "type" }, genomicWithFlankButtonDiv);
-	var genomicWithFlankButtonLabel = dojo.create("label", { innerHTML: "Genomic sequence +/-", class: "button_label" }, genomicWithFlankButtonDiv);
-	var genomicWithFlankField = dojo.create("input", { type: "text", size: 5, class: "button_field", value: "500" }, genomicWithFlankButtonDiv);
-	var genomicWithFlankFieldLabel = dojo.create("label", { innerHTML: "bases", class: "button_label" }, genomicWithFlankButtonDiv);
+	var genomicWithFlankButtonLabel = dojo.create("label", { innerHTML: "Genomic sequence +/-", className: "button_label" }, genomicWithFlankButtonDiv);
+	var genomicWithFlankField = dojo.create("input", { type: "text", size: 5, className: "button_field", value: "500" }, genomicWithFlankButtonDiv);
+	var genomicWithFlankFieldLabel = dojo.create("label", { innerHTML: "bases", className: "button_label" }, genomicWithFlankButtonDiv);
 
 	var fetchSequence = function(type) {
 	    var features = '"features": [';
@@ -2360,26 +2362,26 @@ AnnotTrack.prototype.searchSequence = function() {
     var trackName = track.getUniqueTrackName();
 
     var content = dojo.create("div");
-    var sequenceToolsDiv = dojo.create("div", { class: "search_sequence_tools" }, content);
-    var sequenceToolsSelect = dojo.create("select", { class: "search_sequence_tools_select" }, sequenceToolsDiv);
-    var sequenceDiv = dojo.create("div", { class: "search_sequence_area" }, content);
-    var sequenceLabel = dojo.create("div", { class: "search_sequence_label", innerHTML: "Enter sequence" }, sequenceDiv);
+    var sequenceToolsDiv = dojo.create("div", { className: "search_sequence_tools" }, content);
+    var sequenceToolsSelect = dojo.create("select", { className: "search_sequence_tools_select" }, sequenceToolsDiv);
+    var sequenceDiv = dojo.create("div", { className: "search_sequence_area" }, content);
+    var sequenceLabel = dojo.create("div", { className: "search_sequence_label", innerHTML: "Enter sequence" }, sequenceDiv);
     var sequenceFieldDiv = dojo.create("div", { }, sequenceDiv);
-    var sequenceField = dojo.create("textarea", { class: "search_sequence_input" }, sequenceFieldDiv);
-    var searchAllRefSeqsDiv = dojo.create("div", { class: "search_all_ref_seqs_area" }, sequenceDiv);
-    var searchAllRefSeqsCheckbox = dojo.create("input", { class: "search_all_ref_seqs_checkbox", type: "checkbox" }, searchAllRefSeqsDiv);
-    var searchAllRefSeqsLabel = dojo.create("span", { class: "search_all_ref_seqs_label", innerHTML: "Search all genomic sequences" }, searchAllRefSeqsDiv);
+    var sequenceField = dojo.create("textarea", { className: "search_sequence_input" }, sequenceFieldDiv);
+    var searchAllRefSeqsDiv = dojo.create("div", { className: "search_all_ref_seqs_area" }, sequenceDiv);
+    var searchAllRefSeqsCheckbox = dojo.create("input", { className: "search_all_ref_seqs_checkbox", type: "checkbox" }, searchAllRefSeqsDiv);
+    var searchAllRefSeqsLabel = dojo.create("span", { className: "search_all_ref_seqs_label", innerHTML: "Search all genomic sequences" }, searchAllRefSeqsDiv);
     var sequenceButtonDiv = dojo.create("div", { }, sequenceDiv);
     var sequenceButton = dojo.create("button", { innerHTML: "Search" }, sequenceButtonDiv);
-    var messageDiv = dojo.create("div", { class: "search_sequence_message", innerHTML: "No matches found" }, content);
-    var headerDiv = dojo.create("div", { class: "search_sequence_matches_header" }, content);
-    dojo.create("span", { innerHTML: "ID", class: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
-    dojo.create("span", { innerHTML: "Start", class: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
-    dojo.create("span", { innerHTML: "End", class: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
-    dojo.create("span", { innerHTML: "Score", class: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
-    dojo.create("span", { innerHTML: "Significance", class: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
-    dojo.create("span", { innerHTML: "Identity", class: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
-    var matchDiv = dojo.create("div", { class: "search_sequence_matches" }, content);
+    var messageDiv = dojo.create("div", { className: "search_sequence_message", innerHTML: "No matches found" }, content);
+    var headerDiv = dojo.create("div", { className: "search_sequence_matches_header" }, content);
+    dojo.create("span", { innerHTML: "ID", className: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
+    dojo.create("span", { innerHTML: "Start", className: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
+    dojo.create("span", { innerHTML: "End", className: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
+    dojo.create("span", { innerHTML: "Score", className: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
+    dojo.create("span", { innerHTML: "Significance", className: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
+    dojo.create("span", { innerHTML: "Identity", className: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
+    var matchDiv = dojo.create("div", { className: "search_sequence_matches" }, content);
     var matches = dojo.create("div", { }, matchDiv);
 
     dojo.style(messageDiv, { display: "none" });
@@ -2468,13 +2470,13 @@ AnnotTrack.prototype.searchSequence = function() {
     						var rawscore = match.rawscore;
     						var significance = match.significance;
     						var identity = match.identity;
-    						var row = dojo.create("div", { class: "search_sequence_matches_row" + (dojo.isFF ? " search_sequence_matches_row-firefox" : "") }, matches);
-    						var subjectIdColumn = dojo.create("span", { innerHTML: subject.feature.uniquename, class: "search_sequence_matches_field search_sequence_matches_generic_field", title: subject.feature.uniquename }, row);
-    						var subjectStartColumn = dojo.create("span", { innerHTML: subjectStart, class: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
-    						var subjectEndColumn = dojo.create("span", { innerHTML: subjectEnd, class: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
-    						var scoreColumn = dojo.create("span", { innerHTML: match.rawscore, class: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
-    						var significanceColumn = dojo.create("span", { innerHTML: match.significance, class: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
-    						var identityColumn = dojo.create("span", { innerHTML : match.identity, class: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
+    						var row = dojo.create("div", { className: "search_sequence_matches_row" + (dojo.isFF ? " search_sequence_matches_row-firefox" : "") }, matches);
+    						var subjectIdColumn = dojo.create("span", { innerHTML: subject.feature.uniquename, className: "search_sequence_matches_field search_sequence_matches_generic_field", title: subject.feature.uniquename }, row);
+    						var subjectStartColumn = dojo.create("span", { innerHTML: subjectStart, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
+    						var subjectEndColumn = dojo.create("span", { innerHTML: subjectEnd, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
+    						var scoreColumn = dojo.create("span", { innerHTML: match.rawscore, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
+    						var significanceColumn = dojo.create("span", { innerHTML: match.significance, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
+    						var identityColumn = dojo.create("span", { innerHTML : match.identity, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
     						dojo.connect(row, "onclick", function(id, fmin, fmax) {
     							return function() {
     								var loc = id + ":" + fmin + "-" + fmax;
