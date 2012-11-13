@@ -50,22 +50,20 @@ GFF3toJbrowseJson.prototype.gff3toJbrowseJson = function(parsedGFF3)  {
 	trackInfo["featureCount"] = 1;
     }
     else {
-	trackInfo["featureCount"] = parsedGFF3.parsedData.length; 
+	trackInfo["featureCount"] = twoFeatParsedGFF3.parsedData.length
     }
 
     // loop through each top level feature in parsedGFF3 and make array of featureArrays
     // jsonUtilObj.convertParsedGFF3JsonToFeatureArray( parsedGFF3 );
     var allGff3Features = new Array; // this is an array of featureArrays containing info for all features in parsedGFF3
-  //  var jsonUtilObj = new JSONUtils;
+    var jsonUtilObj = new JSONUtils;
   
     // see if there's only one feature, in which case parsedData is an object, not an array with one object (strangely)
     if ( !parsedGFF3.parsedData.length ){
-//	allGff3Features.push( jsonUtilObj.convertParsedGFF3JsonToFeatureArray( parsedGFF3 ) );
-	allGff3Features.push( JSONUtils.convertParsedGFF3JsonToFeatureArray( parsedGFF3 ) );
+	allGff3Features.push( jsonUtilObj.convertParsedGFF3JsonToFeatureArray( parsedGFF3 ) );
     } else { // >1 feature in parsedData, loop through and push each onto allGff3Features
-	for(var k = 0; k < parsedGFF3.parsedData.length; k++ ){ 
-	  //  allGff3Features.push( jsonUtilObj.convertParsedGFF3JsonToFeatureArray( parsedGFF3.parsedData[k] ) );
-	    allGff3Features.push( JSONUtils.convertParsedGFF3JsonToFeatureArray( parsedGFF3.parsedData[k] ) );
+	for( k = 0; k < parsedGFF3.parsedData.length; k++ ){ 
+	    allGff3Features.push( jsonUtilObj.convertParsedGFF3JsonToFeatureArray( parsedGFF3.parsedData[k] ) );
 	}
     }
 
