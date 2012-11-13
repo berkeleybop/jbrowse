@@ -1018,7 +1018,7 @@ SequenceTrack.prototype.createAddSequenceAlterationPanel = function(type, gcoord
 	    		alert("Cannot create overlapping sequence alterations");
 	    	}
 	    	else {
-	    		var feature = '"location": { "fmin": ' + fmin + ', "fmax": ' + fmax + ', "strand": 1 }, "type": {"name": "' + type + '", "cv": { "name":"SO" } }';
+	    		var feature = '"location": { "fmin": ' + fmin + ', "fmax": ' + fmax + ', "strand": 1 }, "type": {"name": "' + type + '", "cv": { "name":"sequence" } }';
 	    		if (type != "deletion") {
 	    			feature += ', "residues": "' + input + '"';
 	    		}
