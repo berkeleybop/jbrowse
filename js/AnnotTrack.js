@@ -2024,6 +2024,136 @@ AnnotTrack.prototype.redoSelectedFeatures = function(annots) {
     }
 };
 
+AnnotTrack.prototype.getHistory = function()  {
+    var selected = this.selectionManager.getSelection();
+    this.selectionManager.clearSelection();
+    this.getHistoryForSelectedFeatures(selected);
+};
+
+AnnotTrack.prototype.getHistoryForSelectedFeatures = function(annots) {
+	var track = this;
+	var content = dojo.create("div");
+	var historyDiv = dojo.create("div", { class: "history_div" }, content);
+	var historyTable = dojo.create("div", { class: "history_table" }, historyDiv);
+	var historyHeader = dojo.create("div", { class: "history_header", innerHTML: "<span class='history_header_column history_column'>Operation</span><span class='history_header_column history_column'>Editor</span><span class='history_header_column history_column'>Date</span>" }, historyTable);
+	var historyRows = dojo.create("div", { class: "history_rows" }, historyTable);
+	var historyPreviewDiv = dojo.create("div", { class: "history_preview" }, historyDiv);
+	var history;
+	var selectedIndex = 0;
+
+	var cleanupDiv = function(div) {
+		if (div.style.top) {
+			div.style.top = null;
+		}
+		annot_context_menu.unBindDomNode(div);
+		$(div).unbind();
+		for (var i = 0; i < div.childNodes.length; ++i) {
+			cleanupDiv(div.childNodes[i]);
+		}
+	};
+	
+	var displayPreview = function(index) {
+		var historyItem = history[index];
+		var afeature = historyItem.features[0];
+		var jfeature = JSONUtils.createJBrowseFeature(track.features.attrs, afeature);
+		var fmin = afeature.location.fmin;
+		var fmax = afeature.location.fmax;
+		var length = fmax - fmin;
+		track.featureStore._add_getters(track.attrs.accessors().get, jfeature);
+		historyPreviewDiv.featureLayout = new Layout(fmin, fmax);
+		historyPreviewDiv.featureNodes = new Array();
+		historyPreviewDiv.startBase = fmin - (length * 0.1);
+		historyPreviewDiv.endBase = fmax + (length * 0.1);
+		var coords = dojo.coords(historyPreviewDiv);
+		var featDiv = track.renderFeature(jfeature, jfeature.uid, historyPreviewDiv, coords.w / (fmax - fmin), fmin, fmax);
+		cleanupDiv(featDiv);
+		while (historyPreviewDiv.hasChildNodes()) {
+			historyPreviewDiv.removeChild(historyPreviewDiv.lastChild);
+		}
+		historyPreviewDiv.appendChild(featDiv);
+		dojo.attr(historyRows.childNodes.item(selectedIndex), "class", "history_row");
+		dojo.attr(historyRows.childNodes.item(index), "class", "history_row history_row_selected");
+		selectedIndex = index;
+	};
+	
+	var displayHistory = function() {
+		for (var i = 0; i < history.length; ++i) {
+			var historyItem = history[i];
+			var rowCssClass = "history_row";
+			var row = dojo.create("div", { class: rowCssClass }, historyRows);
+			var columnCssClass = "history_column";
+			dojo.create("span", { class: columnCssClass, innerHTML: historyItem.operation }, row);
+			dojo.create("span", { class: columnCssClass, innerHTML: historyItem.editor }, row);
+			dojo.create("span", { class: columnCssClass + " history_date_column", innerHTML: historyItem.date }, row);
+
+			if (historyItem.current) {
+				displayPreview(i);
+				var coords = dojo.coords(row);
+				historyRows.scrollTop = selectedIndex * coords.h;
+			}
+
+			dojo.connect(row, "onclick", row, function(index) {
+				return function() {
+					displayPreview(index);
+				};
+			}(i));
+		}
+	};
+	
+	var fetchHistory = function() {
+		var features = '"features": [';
+		for (var i in annots)  {
+			var annot = AnnotTrack.getTopLevelAnnotation(annots[i]);
+			var uniqueName = annot.uid;
+			// just checking to ensure that all features in selection are from this track
+			if (annot.track === track)  {
+				var trackdiv = track.div;
+				var trackName = track.getUniqueTrackName();
+
+				if (i > 0) {
+					features += ',';
+				}
+				features += ' { "uniquename": "' + uniqueName + '" } ';
+			}
+		}
+		features += ']';
+		var operation = "get_history_for_features";
+		var trackName = track.getUniqueTrackName();
+		if (AnnotTrack.USE_LOCAL_EDITS)  {
+			// TODO
+			track.hideAll();
+			track.changed();
+		}
+		else  {
+			dojo.xhrPost( {
+				postData: '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }',
+				url: context_path + "/AnnotationEditorService",
+				handleAs: "json",
+				timeout: 5000 * 1000, // Time in milliseconds
+				load: function(response, ioArgs) {
+					var features = response.features;
+//					for (var i = 0; i < features.length; ++i) {
+//						displayHistory(features[i].history);
+//					}
+					history = features[i].history;
+					displayHistory();
+				},
+				// The ERROR function will be called in an error case.
+				error: function(response, ioArgs) { // 
+					track.handleError(response);
+					return response; // 
+				}
+
+			});
+		}
+	};
+	
+	fetchHistory();
+	this.openDialog("History", content);
+//	this.popupDialog.hide();
+//	this.openDialog("History", content);
+};
+
 AnnotTrack.prototype.getAnnotationInformation = function()  {
     var selected = this.selectionManager.getSelection();
     this.getInformationForSelectedAnnotations(selected);
@@ -2399,6 +2529,30 @@ AnnotTrack.prototype.searchSequence = function() {
 
 };
 
+AnnotTrack.prototype.exportToGff = function() {
+	var track = this;
+	var adapter = "gff3";
+	var options = "output=file&format=gzip";
+	var content = dojo.create("div");
+	var waitingDiv = dojo.create("div", { innerHTML: "<img class='waiting_image' src='img/loading.gif' />" }, content);
+	var responseDiv = dojo.create("div", { class: "export_gff_response" }, content);
+	dojo.xhrGet( {
+		url: context_path + "/IOService?operation=write&adapter=" + adapter + "&track=" + track.getUniqueTrackName() + "&" + options,
+		handleAs: "text",
+		timeout: 5000 * 1000, // Time in milliseconds
+		load: function(response, ioArgs) {
+			dojo.style(waitingDiv, { display: "none" } );
+			response = response.replace("href='", "href='../");
+			responseDiv.innerHTML = response;
+		},
+		// The ERROR function will be called in an error case.
+		error: function(response, ioArgs) {
+			responseDiv.innerHTML = "Unable to export data";
+		}
+	});
+	track.openDialog("Export GFF3", content);
+};
+
 AnnotTrack.prototype.zoomToBaseLevel = function(event) {
 	var coordinate = this.gview.getGenomeCoord(event);
 	this.gview.zoomToBaseLevel(event, coordinate);
@@ -2551,6 +2705,13 @@ AnnotTrack.prototype.initAnnotContextMenu = function() {
 					}
 				} ));
 				contextMenuItems["redo"] = index++;
+				annot_context_menu.addChild(new dijit.MenuItem( {
+					label: "History",
+					onClick: function(event) {
+						thisObj.getHistory();
+					}
+				} ));
+				contextMenuItems["history"] = index++;
 				annot_context_menu.addChild(new dijit.MenuSeparator());
 				index++;
 			}
@@ -2619,6 +2780,13 @@ AnnotTrack.prototype.initNonAnnotContextMenu = function() {
 		}
 	} ));
 	non_annot_context_menu.bindDomNode(thisObj.div);
+	non_annot_context_menu.addChild(new dijit.MenuItem( {
+		label: "Export to GFF3",
+		onClick: function() {
+			thisObj.exportToGff();
+		}
+	} ));
+	non_annot_context_menu.bindDomNode(thisObj.div);
 	non_annot_context_menu.onOpen = function(event) {
 		dojo.forEach(this.getChildren(), function(item, idx, arr) {
 			if (item instanceof dijit.MenuItem) {
@@ -2675,6 +2843,7 @@ AnnotTrack.prototype.updateMenu = function() {
 	this.updateEditDbxrefsMenuItem();
 	this.updateUndoMenuItem();
 	this.updateRedoMenuItem();
+	this.updateHistoryMenuItem();
 	this.updateZoomToBaseLevelMenuItem();
 	this.updateDuplicateMenuItem();
 };
@@ -2785,6 +2954,16 @@ AnnotTrack.prototype.updateUndoMenuItem = function() {
 
 AnnotTrack.prototype.updateRedoMenuItem = function() {
 	var menuItem = this.getMenuItem("redo");
+    var selected = this.selectionManager.getSelection();
+    if (selected.length > 1) {
+    	menuItem.set("disabled", true);
+    	return;
+    }
+    menuItem.set("disabled", false);
+};
+
+AnnotTrack.prototype.updateHistoryMenuItem = function() {
+	var menuItem = this.getMenuItem("history");
     var selected = this.selectionManager.getSelection();
     if (selected.length > 1) {
     	menuItem.set("disabled", true);

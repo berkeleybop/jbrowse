@@ -267,7 +267,7 @@ JSONUtils.createApolloFeature = function(arep, jfeature, specified_type)   {
     if (typename)  {
 	afeature.type = {
 	    "cv": {
-		"name": "SO"
+		"name": "sequence"
 	    }
 	};
 	afeature.type.name = typename;
