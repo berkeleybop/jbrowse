@@ -11,29 +11,31 @@ Group1.33	maker	exon	245702	245879	.	+	.	ID=1:gnomon_566853_mRNA:exon:5977;Paren
 
 and returns a JSON data structure like this:
 {
-"parsedData": [
-  {
-  "ID": "maker-Group1%2E33-pred_gff_GNOMON-gene-4.137",
-  "data":["Group1.33","maker","gene","245454","247006",".","+",".","ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%252E33-pred_gff_GNOMON-gene-4.137"],
-  "children": [
-       {
+"parsedData": [ // parsed data is an array
+  [ // each feature is an array of one or more {} objects (needs to be an array b/c we support 'discontinuous features', i.e. features with multiple locations)
+    {
+    "ID": "maker-Group1%2E33-pred_gff_GNOMON-gene-4.137",
+    "data":["Group1.33","maker","gene","245454","247006",".","+",".","ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%252E33-pred_gff_GNOMON-gene-4.137"],
+    "children": [
+       [{
           "ID": "1:gnomon_566853_mRNA",
           "data": ["Group1.33","maker","mRNA","245454","247006",".","+",".","ID=1:gnomon_566853_mRNA;Parent=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=gnomon_566853_mRNA;_AED=0.45;_eAED=0.45;_QI=138|1|1|1|1|1|4|191|259"],
           "children": [
-            {
+            [{
             "ID": "1:gnomon_566853_mRNA:exon:5976",
             "data": ["Group1.33","maker","exon","245454","245533",".","+",".","ID=1:gnomon_566853_mRNA:exon:5976;Parent=1:gnomon_566853_mRNA"],
             "children": [],
-            },
-            {
+            }],
+            [{
 	    "ID": "1:gnomon_566853_mRNA:exon:5977",
             "data": ["Group1.33","maker","exon","245702","245879",".","+",".","ID=1:gnomon_566853_mRNA:exon:5977;Parent=1:gnomon_566853_mRNA"]
             "children": [],
-            }
+            }]
            ]
-        }
-     ]
-   }
+        }]
+       ]
+     }
+   ],
    ... next parent/child/descendants, e.g. gene/mRNA/exons or whatever ...
 ],
 "parseErrors" : [""]
@@ -50,8 +52,8 @@ GFF3Parser.prototype.parse = function(gff3String) {
     // file in string form. This sucks a bit because it means we'll have to 
     // have both the parsed and unparsed GFF3 data in memory which is 
     // a waste of memory and will affect performance when the GFF3 files 
-    // are big. We can refactor this later to accept a stream instead of 
-    // a string. 
+    // are big. Maybe we can refactor this later to accept a stream instead 
+    // of a string. 
 
     // Pseudocode for what I'm doing below: 
     // for each line in giant GFF3 string (slurped GFF3 file):
@@ -71,29 +73,29 @@ GFF3Parser.prototype.parse = function(gff3String) {
     var recursion_level = 0;
     var maximum_recursion_level = 200; 
     var recursiveChildSearch = function(thisLine, featureArrayToSearch) {
-	recursion_level++;
-	var thisParentId = thisLine["attributes"]["Parent"];
-	// first, search each item in featureArrayToSearch
-	for ( var j = 0; j < featureArrayToSearch.length; j++ ){ 
-	    if ( thisParentId == featureArrayToSearch[j]["ID"] ){
-		featureArrayToSearch[j]["children"].push( thisLine );
-		return true;
-	    }
-	    // a bit paranoid about infinite recursion
-	    if ( recursion_level > maximum_recursion_level ){
-		return false;
-	    }
-	    // recurse if there there are children
-	    if ( featureArrayToSearch[j]["children"].length > 0 ){
-		if ( recursiveChildSearch(thisLine, featureArrayToSearch[j]["children"] )){
-		    return true;
-		}
-	    }
-	}
-	return false;
+       recursion_level++;
+       var thisParentId = thisLine["attributes"]["Parent"];
+       // first, search each item in featureArrayToSearch
+       for ( var j = 0; j < featureArrayToSearch.length; j++ ){ 
+           if ( thisParentId == featureArrayToSearch[j]["ID"] ){
+               featureArrayToSearch[j]["children"].push( thisLine );
+               return true;
+           }
+           // a bit paranoid about infinite recursion
+           if ( recursion_level > maximum_recursion_level ){
+               return false;
+           }
+           // recurse if there there are children
+           if ( featureArrayToSearch[j]["children"].length > 0 ){
+               if ( recursiveChildSearch(thisLine, featureArrayToSearch[j]["children"] )){
+                   return true;
+               }
+           }
+       }
+       return false;
     }
 
-    var parsedData = {
+    var bigDataStruct = {
 	"parsedData" : [],
 	"parseErrors": [],
 	"parseWarnings": [],
@@ -175,7 +177,7 @@ GFF3Parser.prototype.parse = function(gff3String) {
     for (var j = 0; j < noParentIDs.length; j++) {
 	var thisID = noParentIDs[j];
 	var thisLine = noParent[thisID];
-	parsedData["parsedData"].push( thisLine );
+	bigDataStruct["parsedData"].push( thisLine );
     }
 
     // now put children (and grandchildren, and so on) in data struct
@@ -186,13 +188,13 @@ GFF3Parser.prototype.parse = function(gff3String) {
 	var thisParentID = thisLine["attributes"]["Parent"];
 
 	if ( isNaN(seenIDs[thisID]) || seenIDs[thisID] == undefined ){ // this is an orphan, shouldn't happen with proper GFF3 files
-	    parsedData["parsedData"].push( thisLine );
+	    bigDataStruct["parsedData"].push( thisLine );
 	}
 	else { 
 	    // put this child in the right children array, recursively
-	    recursiveChildSearch(thisLine, parsedData["parsedData"]);
+	    recursiveChildSearch(thisLine, bigDataStruct["parsedData"]);
 	}
 
     }
-    return parsedData;
+    return bigDataStruct;
 };
