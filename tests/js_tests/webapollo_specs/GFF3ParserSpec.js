@@ -1,9 +1,9 @@
 describe("GFF3Parser", function() { 
-	// GFF3toJson takes a GFF3 URL and converts it to an array of hash refs where each
+	// GFF3Parser takes a GFF3 URL and converts it to an array of hash refs where each
 	// hash has a "parent" key/value pair and zero or more "children" key/value pairs, 
 	// and the children in turn can have more parent/children. 
 
-	// Some legal GFF3 features not supported by this code yet:
+	// Some legal GFF3 features I'm working on supporting now (11/2012):
 	// - features with multiple parents
 	// - features with identical IDs on multiple lines ("discontinuous features"):
 	//      http://gmod.org/wiki/GFF#Discontinuous_Features
@@ -43,7 +43,7 @@ describe("GFF3Parser", function() {
 		jsonOutput6 = gff3Parser.parse( gff3String6 );
 
 		// test for proper handling of children shared with different parents
-		gff3String7 = "Group1.33	maker	mRNA	245454	247006	.	+	.	ID=mrna_1;\nGroup1.33	maker	mRNA	245454	247006	.	+	.	ID=mrna_2;\nGroup1.33	maker	exon	245454	245533	.	+	.	ID=exon_1;Parent=mrna_1;Parent=mrna_2;";
+		gff3String7 = "Group1.33	maker	mRNA	245454	247006	.	+	.	ID=mrna_1;\nGroup1.33	maker	mRNA	245454	247006	.	+	.	ID=mrna_2;\nGroup1.33	maker	exon	245454	245533	.	+	.	ID=exon_1;Parent=mrna_1,mrna_2;";
 		jsonOutput7 = gff3Parser.parse( gff3String7 );
 
 		// test for proper handling of features split on multiple lines with same id ("discontinuous features")
