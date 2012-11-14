@@ -44,9 +44,11 @@ describe("GFF3Parser", function() {
 
 		// test for proper handling of children shared with different parents
 		gff3String7 = "Group1.33	maker	mRNA	245454	247006	.	+	.	ID=mrna_1;\nGroup1.33	maker	mRNA	245454	247006	.	+	.	ID=mrna_2;\nGroup1.33	maker	exon	245454	245533	.	+	.	ID=exon_1;Parent=mrna_1;Parent=mrna_2;";
+		jsonOutput7 = gff3Parser.parse( gff3String7 );
 
 		// test for proper handling of features split on multiple lines with same id ("discontinuous features")
-		makerGFF3String8 = "ctg123 example match 26122 26126 . + . ID=match001;\nctg123 example match 26497 26869 . + . ID=match001;\nctg123 example match 27201 27325 . + . ID=match001;\nctg123 example match 27372 27433 . + . ID=match001;\nctg123 example match 27565 27565 . + . ID=match001;";
+		gff3String8 = "ctg123 example match 26122 26126 . + . ID=match001;\nctg123 example match 26497 26869 . + . ID=match001;\nctg123 example match 27201 27325 . + . ID=match001;\nctg123 example match 27372 27433 . + . ID=match001;\nctg123 example match 27565 27565 . + . ID=match001;";
+		jsonOutput8 = gff3Parser.parse( gff3String8 );
 		
 	    });
 
