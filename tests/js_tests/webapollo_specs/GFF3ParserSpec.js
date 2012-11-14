@@ -45,9 +45,9 @@ describe("GFF3Parser", function() {
 		// test for proper handling of children shared with different parents
 		gff3String7 = "Group1.33	maker	mRNA	245454	247006	.	+	.	ID=mrna_1;\nGroup1.33	maker	mRNA	245454	247006	.	+	.	ID=mrna_2;\nGroup1.33	maker	exon	245454	245533	.	+	.	ID=exon_1;Parent=mrna_1,mrna_2;";
 		jsonOutput7 = gff3Parser.parse( gff3String7 );
-
+		
 		// test for proper handling of features split on multiple lines with same id ("discontinuous features")
-		gff3String8 = "ctg123 example match 26122 26126 . + . ID=match001;\nctg123 example match 26497 26869 . + . ID=match001;\nctg123 example match 27201 27325 . + . ID=match001;\nctg123 example match 27372 27433 . + . ID=match001;\nctg123 example match 27565 27565 . + . ID=match001;";
+		gff3String8 = "ctg123	example	match	26122	26126	.	+	.	ID=match001;\nctg123	example	match	26497	26869	.	+	.	ID=match001;\nctg123	example	match	27201	27325	.	+	.	ID=match001;\nctg123	example	match	27372	27433	.	+	.	ID=match001;\nctg123	example	match	27565	27565	.	+	.	ID=match001;";
 		jsonOutput8 = gff3Parser.parse( gff3String8 );
 		
 	    });
@@ -73,72 +73,73 @@ describe("GFF3Parser", function() {
 	    });
 
 	it("should return a parent with the right ID in parsed JSON", function() {
-		expect(jsonOutput["parsedData"][0]["ID"]).toEqual("this_parent_id_12345");
+		expect(jsonOutput["parsedData"][0][0]["ID"]).toEqual("this_parent_id_12345");
 	    });
 
 	it("should data array of 9 element in parsed JSON", function() {
-		expect(jsonOutput["parsedData"][0]["data"]).toBeDefined();
-		expect(jsonOutput["parsedData"][0]["data"].length).toEqual(9);
+		expect(jsonOutput["parsedData"][0][0]["data"]).toBeDefined();
+		expect(jsonOutput["parsedData"][0][0]["data"].length).toEqual(9);
 	    });
 
 	it("should correctly parse first field of GFF3", function() {
-		expect(jsonOutput["parsedData"][0]["data"][0]).toEqual("Group1.33");
+		expect(jsonOutput["parsedData"][0][0]["data"][0]).toEqual("Group1.33");
 		    });
 	it("should correctly parse second field of GFF3", function() {
-		expect(jsonOutput["parsedData"][0]["data"][1]).toEqual("maker");
+		expect(jsonOutput["parsedData"][0][0]["data"][1]).toEqual("maker");
 		    });
 	it("should correctly parse third field of GFF3", function() {
-		expect(jsonOutput["parsedData"][0]["data"][2]).toEqual("gene");
+		expect(jsonOutput["parsedData"][0][0]["data"][2]).toEqual("gene");
 		    });
 	it("should correctly parse fourth field of GFF3", function() {
-		expect(jsonOutput["parsedData"][0]["data"][3]).toEqual("245454");
+		expect(jsonOutput["parsedData"][0][0]["data"][3]).toEqual("245454");
 		    });
 	it("should correctly parse five field of GFF3", function() {
-		expect(jsonOutput["parsedData"][0]["data"][4]).toEqual("247006");
+		expect(jsonOutput["parsedData"][0][0]["data"][4]).toEqual("247006");
 		    });
 	it("should correctly parse sixth field of GFF3", function() {
-		expect(jsonOutput["parsedData"][0]["data"][5]).toEqual(".");
+		expect(jsonOutput["parsedData"][0][0]["data"][5]).toEqual(".");
 		    });
 	it("should correctly parse seventh field of GFF3", function() {
-		expect(jsonOutput["parsedData"][0]["data"][6]).toEqual("+");
+		expect(jsonOutput["parsedData"][0][0]["data"][6]).toEqual("+");
 		    });
 	it("should correctly parse eighth field of GFF3", function() {
-		expect(jsonOutput["parsedData"][0]["data"][7]).toEqual(".");
+		expect(jsonOutput["parsedData"][0][0]["data"][7]).toEqual(".");
 		    });
 	it("should correctly parse ninth field of GFF3", function() {
-		expect(jsonOutput["parsedData"][0]["data"][8]).toEqual('ID=this_parent_id_12345;Name=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;');
+		expect(jsonOutput["parsedData"][0][0]["data"][8]).toEqual('ID=this_parent_id_12345;Name=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;');
 	    });
 
 	it("should correctly parse attributes in ninth field without hex codes", function() {
-		expect(jsonOutput3["parsedData"][0]["attributes"]["ID"]).toEqual("1:gnomon_566853_mRNA");
+		expect(jsonOutput3["parsedData"][0][0]["attributes"]["ID"]).toEqual("1:gnomon_566853_mRNA");
 	    });
 
 	it("should correctly parse attributes in ninth field with hex codes", function() {
-		expect(jsonOutput3["parsedData"][0]["attributes"]["metacharacterzoo"]).toEqual(',=;|()[{}^$*+?.%&');
+		expect(jsonOutput3["parsedData"][0][0]["attributes"]["metacharacterzoo"]).toEqual(',=;|()[{}^$*+?.%&');
 	    });
 
 	it("should return children in parsed JSON", function() {
-		expect(jsonOutput["parsedData"][0]["children"]).toBeDefined();
+		expect(jsonOutput["parsedData"][0][0]["children"]).toBeDefined();
 	    });
 
 	it("should put child into 'children' array of parent (when parent is seen before child)", function() {
-		expect(jsonOutput["parsedData"][0]["children"][0]["ID"]).toEqual("1:gnomon_566853_mRNA");
+		expect(jsonOutput["parsedData"][0][0]["children"][0]).toBeDefined();
+		expect(jsonOutput["parsedData"][0][0]["children"][0][0]["ID"]).toEqual("1:gnomon_566853_mRNA");
 	    });
 
 	it("should put child into 'children' array of parent (when child is seen before parent)", function() {
-		expect(jsonOutput2["parsedData"][0]["children"][0]["ID"]).toEqual("1:gnomon_566853_mRNA");
+		expect(jsonOutput2["parsedData"][0][0]["children"][0][0]["ID"]).toEqual("1:gnomon_566853_mRNA");
 	    });
 	
 	it("should put grandchildren into 'children' array of 'children' array of grandparent", function() {
-		expect(jsonOutput["parsedData"][0]["children"][0]["children"][0]["ID"]).toEqual("1:gnomon_566853_mRNA:exon:5976");
+		expect(jsonOutput["parsedData"][0][0]["children"][0][0]["children"][0][0]["ID"]).toEqual("1:gnomon_566853_mRNA:exon:5976");
 	    });
 
 	it("should put great-grandchildren into 'children' array of 'children' array of 'children' array of great-grandparent", function() {
-		expect(jsonOutput6["parsedData"][0]["children"][0]["children"][0]["children"][0]["ID"]).toEqual("1:gnomon_566853_mRNA:three_prime_utr");
+		expect(jsonOutput6["parsedData"][0][0]["children"][0][0]["children"][0][0]["children"][0][0]["ID"]).toEqual("1:gnomon_566853_mRNA:three_prime_utr");
 	    });
 
 	it("should put great-great-grandchildren into 'children' array of 'children' array of 'children' array of 'children' array of great-great-grandparent", function() {
-		expect(jsonOutput6["parsedData"][0]["children"][0]["children"][0]["children"][0]["children"][0]["ID"]).toEqual("1:gnomon_566853_TFBS");
+		expect(jsonOutput6["parsedData"][0][0]["children"][0][0]["children"][0][0]["children"][0][0]["children"][0][0]["ID"]).toEqual("1:gnomon_566853_TFBS");
 	    });
 
 	it("should stop parsing at ##FASTA pragma", function() {

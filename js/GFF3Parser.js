@@ -12,7 +12,7 @@ Group1.33	maker	exon	245702	245879	.	+	.	ID=1:gnomon_566853_mRNA:exon:5977;Paren
 and returns a JSON data structure like this:
 {
 "parsedData": [ // parsed data is an array
-  [ // each feature is an array of one or more {} objects (needs to be an array b/c we support 'discontinuous features', i.e. features with multiple locations)
+  [ // each feature (and subfeature below) is an array of one or more {} objects (needs to be an array b/c we support 'discontinuous features', i.e. features with multiple locations)
     {
     "ID": "maker-Group1%2E33-pred_gff_GNOMON-gene-4.137",
     "data":["Group1.33","maker","gene","245454","247006",".","+",".","ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%252E33-pred_gff_GNOMON-gene-4.137"],
@@ -76,21 +76,23 @@ GFF3Parser.prototype.parse = function(gff3String) {
        recursion_level++;
        var thisParentId = thisLine["attributes"]["Parent"];
        // first, search each item in featureArrayToSearch
-       for ( var j = 0; j < featureArrayToSearch.length; j++ ){ 
-           if ( thisParentId == featureArrayToSearch[j]["ID"] ){
-               featureArrayToSearch[j]["children"].push( thisLine );
-               return true;
-           }
-           // a bit paranoid about infinite recursion
-           if ( recursion_level > maximum_recursion_level ){
-               return false;
-           }
-           // recurse if there there are children
-           if ( featureArrayToSearch[j]["children"].length > 0 ){
-               if ( recursiveChildSearch(thisLine, featureArrayToSearch[j]["children"] )){
-                   return true;
-               }
-           }
+       for ( var j = 0; j < featureArrayToSearch.length; j++ ){
+	   for ( var k = 0; k < featureArrayToSearch[j].length; k++ ){ 
+	       if ( thisParentId == featureArrayToSearch[j][k]["ID"] ){
+		   featureArrayToSearch[j][k]["children"].push( [thisLine] );
+		   return true;
+	       }
+	       // a bit paranoid about infinite recursion
+	       if ( recursion_level > maximum_recursion_level ){
+		   return false;
+	       }
+	       // recurse if there there are children
+	       if ( featureArrayToSearch[j][k]["children"].length > 0 ){
+		   if ( recursiveChildSearch(thisLine, featureArrayToSearch[j][k]["children"] )){
+		       return true;
+		   }
+	       }
+	   }
        }
        return false;
     }
@@ -177,7 +179,7 @@ GFF3Parser.prototype.parse = function(gff3String) {
     for (var j = 0; j < noParentIDs.length; j++) {
 	var thisID = noParentIDs[j];
 	var thisLine = noParent[thisID];
-	bigDataStruct["parsedData"].push( thisLine );
+	bigDataStruct["parsedData"].push( [thisLine] );
     }
 
     // now put children (and grandchildren, and so on) in data struct
