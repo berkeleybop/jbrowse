@@ -42,10 +42,10 @@ and returns a JSON data structure like this:
 
 */
 
-function GFF3toJson() {
+function GFF3Parser() {
 };
 
-GFF3toJson.prototype.parse = function(gff3String) {
+GFF3Parser.prototype.parse = function(gff3String) {
     // Right now this method assumes that gff3String is the entire GFF3
     // file in string form. This sucks a bit because it means we'll have to 
     // have both the parsed and unparsed GFF3 data in memory which is 
@@ -110,7 +110,7 @@ GFF3toJson.prototype.parse = function(gff3String) {
     for (var i = 0; i < lines.length; i++) {
 
 	// check for ##FASTA pragma
-	if( lines[i].match(/^##FASTA/) ){
+	if( lines[i].match(/^##FASTA/) || lines[i].match(/^>/) ){
 	    break;
 	}
 	// skip comment lines
