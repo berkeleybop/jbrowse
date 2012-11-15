@@ -431,18 +431,18 @@ JSONUtils.prototype.convertParsedGFF3JsonToFeatureArray = function(parsedGff3) {
     // 
     var childrenArray = new Array; // make array for all child features
      if ( !!thisParent[0]["children"] ){
-	 for ( i = 0; i < thisParent[0]["children"][0].length; i++ ){
+	 for ( i = 0; i < thisParent[0]["children"].length; i++ ){
  	    childrenArray[i] = new Array;
  	    childrenArray[i][0] = 1; // ? 
- 	    childrenArray[i][1] = parseInt(thisParent[0]["children"][0][i].data[3]); // start
- 	    childrenArray[i][2] = parseInt(thisParent[0]["children"][0][i].data[4]); // end
- 	    childrenArray[i][3] = thisParent[0]["children"][0][i].data[6]; // strand
- 	    childrenArray[i][4] = thisParent[0]["children"][0][i].data[1]; // source
- 	    childrenArray[i][5] = thisParent[0]["children"][0][i].data[7]; // phase
- 	    childrenArray[i][6] = thisParent[0]["children"][0][i].data[2]; // type
- 	    childrenArray[i][7] = thisParent[0]["children"][0][i].data[5]; // score
+ 	    childrenArray[i][1] = parseInt(thisParent[0]["children"][i][0].data[3]); // start
+ 	    childrenArray[i][2] = parseInt(thisParent[0]["children"][i][0].data[4]); // end
+ 	    childrenArray[i][3] = thisParent[0]["children"][i][0].data[6]; // strand
+ 	    childrenArray[i][4] = thisParent[0]["children"][i][0].data[1]; // source
+ 	    childrenArray[i][5] = thisParent[0]["children"][i][0].data[7]; // phase
+ 	    childrenArray[i][6] = thisParent[0]["children"][i][0].data[2]; // type
+ 	    childrenArray[i][7] = thisParent[0]["children"][i][0].data[5]; // score
 
- 	    var childNinthField = JSONUtils.parsedNinthGff3Field( thisParent[0]["children"][0][i].data[8] );
+ 	    var childNinthField = JSONUtils.parsedNinthGff3Field( thisParent[0]["children"][i][0].data[8] );
  	    if ( !!childNinthField["ID"] ){
 		childrenArray[i][8] = childNinthField["ID"];
 	    }
