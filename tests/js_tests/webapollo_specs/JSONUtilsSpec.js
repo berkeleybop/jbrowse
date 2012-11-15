@@ -65,22 +65,24 @@ describe("JSONUtils", function() {
 		expect(jsonUtil.getFeatureAtGivenDepth).toBeDefined();
 	});
 
-	xit("should properly getFeatureAtGivenDepth of gene/mRNA/exon parsedGFF3 struct", function() {
-		expect(jsonUtil.getFeatureAtGivenDepth(parsedGFF3StringInput, 3) ).toEqual( "foo" );
+	it("should properly getFeatureAtGivenDepth of gene/mRNA/exon parsedGFF3 struct", function() {
+		expect(jsonUtil.getFeatureAtGivenDepth(parsedGFF3StringInput, 2) ).toEqual( 
+											   [ { "ID" : '1:gnomon_566853_mRNA', "data" : [ 'Group1.33', 'maker', 'mRNA', '245454', '247006', '.', '+', '.', 'ID=1:gnomon_566853_mRNA;Parent=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=gnomon_566853_mRNA;_AED=0.45;_eAED=0.45;_QI=138|1|1|1|1|1|4|191|259' ], children : [ [ { "ID" : '1:gnomon_566853_mRNA:exon:5976', "data" : [ 'Group1.33', 'maker', 'exon', '245454', '245533', '.', '+', '.', 'ID=1:gnomon_566853_mRNA:exon:5976;Parent=1:gnomon_566853_mRNA' ], children : [ ] } ], [ { "ID" : '1:gnomon_566853_mRNA:exon:5977', "data" : [ 'Group1.33', 'maker', 'exon', '245702', '245879', '.', '+', '.', 'ID=1:gnomon_566853_mRNA:exon:5977;Parent=1:gnomon_566853_mRNA' ], children : [ ] } ] ] } ]
+											    );
 	});
 
-	xit("should return an array", function() {
+	it("should return an array", function() {
 		featureArrayOutput = jsonUtil.convertParsedGFF3JsonToFeatureArray( parsedGFF3StringInput );
 		expect(featureArrayOutput).toBeDefined();
 	});
 
 	// test parent (mRNA in this case)
-	xit("should set first field feature array to 0", function() {
+	it("should set first field feature array to 0", function() {
 		featureArrayOutput = jsonUtil.convertParsedGFF3JsonToFeatureArray( parsedGFF3StringInput );
 		expect(featureArrayOutput[0]).toEqual(0);
 	});
 
-	xit("should correctly set parent's Start/End/Strand/Source/Phase/Type/Score/Id/Name", function() {
+	it("should correctly set parent's Start/End/Strand/Source/Phase/Type/Score/Id/Name", function() {
 		featureArrayOutput = jsonUtil.convertParsedGFF3JsonToFeatureArray( parsedGFF3StringInput );
 		expect(featureArrayOutput[1]).toEqual(245454); // Start
 		expect(featureArrayOutput[2]).toEqual(247006); //End
@@ -93,7 +95,7 @@ describe("JSONUtils", function() {
 		expect(featureArrayOutput[9]).toEqual("gnomon_566853_mRNA"); //Name
 	    });
 
-	xit("should correctly first child's Start/End/Strand/Source/Phase/Type/Score/Id/Name", function() {
+	it("should correctly first child's Start/End/Strand/Source/Phase/Type/Score/Id/Name", function() {
 		// first child
 		featureArrayOutput = jsonUtil.convertParsedGFF3JsonToFeatureArray( parsedGFF3StringInput );
 		expect(featureArrayOutput[10][0][0]).toEqual(1); // ?
