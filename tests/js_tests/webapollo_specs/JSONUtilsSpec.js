@@ -114,6 +114,7 @@ describe("JSONUtils", function() {
 		// second child
 		featureArrayOutput = jsonUtil.convertParsedGFF3JsonToFeatureArray( parsedGFF3StringInput );
 		expect(featureArrayOutput[10].length).toEqual(2); // should actually be a second child
+		expect(featureArrayOutput[10][1][0]).toEqual(1); // ?
 		expect(featureArrayOutput[10][1][1]).toEqual(245702); // Start
 		expect(featureArrayOutput[10][1][2]).toEqual(245879); //End
 		expect(featureArrayOutput[10][1][3]).toEqual("+"); //Strand
