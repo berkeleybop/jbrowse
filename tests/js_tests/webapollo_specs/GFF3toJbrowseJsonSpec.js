@@ -68,20 +68,19 @@ describe("GFF3toJbrowseJson", function() {
 
 	    });
 	
-	it("should respond to gff3toJbrowseJson", function() {
+	xit("should respond to gff3toJbrowseJson", function() {
 		expect(nclistGen.gff3toJbrowseJson).toBeDefined();
 	    });
 
-	/* 
-	it("should correctly set histograms/stats/meta in jbrowse json", function() {
+	xit("should correctly set histograms/stats/meta in jbrowse json", function() {
 		expect(actualJbrowseJsonOutput["histograms"]).toEqual({"stats" : [ {"basesPerBin" : "1000000","max" : 1,"mean" : 1} ],"meta" : [ { "basesPerBin" : "1000000", "arrayParams" : { "length" : 1, "chunkSize" : 10000, "urlTemplate" : "hist-1000000-{Chunk}.json"}}]});
 	    });
 
-	it("should correctly set featureCount in jbrowse json", function() {
+	xit("should correctly set featureCount in jbrowse json", function() {
 		expect(actualJbrowseJsonOutput["featureCount"]).toEqual(1);
 	    });
 	
-        it("should correctly set ['intervals']['nclist'] in jbrowse json", function() {
+        xit("should correctly set ['intervals']['nclist'] in jbrowse json", function() {
 		expect(actualJbrowseJsonOutput["intervals"]["nclist"]).toEqual(
 			       [0, 245454, 247006, "+", "maker", ".", "mRNA", ".", "1:gnomon_566853_mRNA", "gnomon_566853_mRNA", 
 				[ [ 1, 0, 245454, 245533, "+", "maker", ".", "exon", ".", "1:gnomon_566853_mRNA:exon:5976", null],
@@ -89,7 +88,7 @@ describe("GFF3toJbrowseJson", function() {
 									       );
 	    });
 
-	it("should correctly set ['intervals']['classes'] in jbrowse json", function() {
+	xit("should correctly set ['intervals']['classes'] in jbrowse json", function() {
 		expect(actualJbrowseJsonOutput["intervals"]["classes"]).toEqual(
 		   [ {
 				    "isArrayAttr" : {
@@ -109,29 +108,28 @@ describe("GFF3toJbrowseJson", function() {
 
 	    });
 
-	it("should correctly set ['intervals']['maxEnd'] in jbrowse json", function() {
+	xit("should correctly set ['intervals']['maxEnd'] in jbrowse json", function() {
 		expect(actualJbrowseJsonOutput["intervals"]["maxEnd"]).toEqual( 245879 );
 	    });
-	it("should correctly set ['intervals']['count'] in jbrowse json", function() {
+	xit("should correctly set ['intervals']['count'] in jbrowse json", function() {
 		expect(actualJbrowseJsonOutput["intervals"]["count"]).toEqual( 1 )
     	    });
 
-	it("should correctly set ['intervals']['lazyClass'] in jbrowse json", function() {
+	xit("should correctly set ['intervals']['lazyClass'] in jbrowse json", function() {
 		expect(actualJbrowseJsonOutput["intervals"]["lazyClass"]).toEqual(2)
 		    });
 	
-	it("should correctly set ['intervals']['urlTemplate'] in jbrowse json", function() {
+	xit("should correctly set ['intervals']['urlTemplate'] in jbrowse json", function() {
 		expect(actualJbrowseJsonOutput["intervals"]["urlTemplate"]).toEqual("lf-{Chunk}.json");
 	    });
 	
-	it("should correctly set ['intervals']['minStart'] in jbrowse json", function() {
+	xit("should correctly set ['intervals']['minStart'] in jbrowse json", function() {
 		expect(actualJbrowseJsonOutput["intervals"]["minStart"]).toEqual( 245454 );
 	    });
 	
-	it("should correctly set formatVersion in jbrowse json", function() {
+	xit("should correctly set formatVersion in jbrowse json", function() {
 		expect(actualJbrowseJsonOutput["formatVersion"]).toEqual(1);
 	    });
-	*/
 
     });
 
