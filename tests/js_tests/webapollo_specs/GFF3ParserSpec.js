@@ -73,7 +73,7 @@ describe("GFF3Parser", function() {
 	    });
 
 	it("should return a parent with the right ID in parsed JSON", function() {
-		expect(jsonOutput["parsedData"][0][0]["ID"]).toEqual("this_parent_id_12345");
+		expect(jsonOutput["parsedData"][0][0]["ID"][0]).toEqual("this_parent_id_12345");
 	    });
 
 	it("should data array of 9 element in parsed JSON", function() {
