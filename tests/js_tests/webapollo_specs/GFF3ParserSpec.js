@@ -110,11 +110,11 @@ describe("GFF3Parser", function() {
 	    });
 
 	it("should correctly parse attributes in ninth field without hex codes", function() {
-		expect(jsonOutput3["parsedData"][0][0]["attributes"]["ID"]).toEqual("1:gnomon_566853_mRNA");
+		expect(jsonOutput3["parsedData"][0][0]["attributes"]["ID"][0]).toEqual("1:gnomon_566853_mRNA");
 	    });
 
 	it("should correctly parse attributes in ninth field with hex codes", function() {
-		expect(jsonOutput3["parsedData"][0][0]["attributes"]["metacharacterzoo"]).toEqual(',=;|()[{}^$*+?.%&');
+		expect(jsonOutput3["parsedData"][0][0]["attributes"]["metacharacterzoo"][0]).toEqual(',=;|()[{}^$*+?.%&');
 	    });
 
 	it("should return children in parsed JSON", function() {
