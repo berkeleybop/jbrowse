@@ -147,11 +147,37 @@ GFF3Parser.prototype.parse = function(gff3String) {
 	if(typeof(fields[8]) != undefined && fields[8] != null) {
 	    var ninthFieldSplit = fields[8].split(/;/);
 	    for ( var j = 0; j < ninthFieldSplit.length; j++){
+		/* 
+		   Multiple attributes of the same type are indicated by separating the
+		   values with the comma "," character, as in:
+		   Parent=AF2312,AB2812,abc-3
+		*/
 		var theseKeyVals = ninthFieldSplit[j].split(/\=/);
-		theseKeyVals[0] = unescape(theseKeyVals[0]);
-		theseKeyVals[1] = unescape(theseKeyVals[1]);
 		if ( theseKeyVals.length >= 2 ){
-		    attributesKeyVal[theseKeyVals[0]] = theseKeyVals[1];
+		    var key = unescape(theseKeyVals[0]);
+		    var valArray = new Array;
+
+		    // see if we have multiple values
+		    if ( theseKeyVals[1].match(/\,/) ){ // multiple values
+			  if ( !! theseKeyVals[1] && theseKeyVals.length != undefined ){
+			      // value can be >1 thing separated by comma, for example for multiple parents
+			      valArray = theseKeyVals[1].split(/\,/); 
+			      console.log("valArray length " + valArray.length);
+			      if ( !! valArray && valArray.length != undefined ){
+				  for ( k = 0; k < valArray.length; k++){
+				      console.log("k: " + k);
+				      valArray[k] = unescape(valArray[k]);
+				  }
+				  
+			      }
+			      valArray[0] = unescape(valArray[0]);
+			      valArray[1] = unescape(valArray[1]);
+			  }
+		    }
+		    else {  // just one value
+			valArray[0] = unescape(theseKeyVals[1]);
+		    }
+		    attributesKeyVal[key] = valArray;
 		}
 	    }
 	}
