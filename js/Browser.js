@@ -835,7 +835,7 @@ Browser.prototype.showTracks = function(trackNameList) {
         return;
     }
 
-    var trackNames = trackNameList.split(",");
+    var trackNames = trackNameList.split(/,\s*/);
     var removeFromList = [];
     var brwsr = this;
     for (var n = 0; n < trackNames.length; n++) {

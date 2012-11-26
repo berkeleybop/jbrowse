@@ -72,7 +72,7 @@
 }
 
 .search_sequence_matches {
-	height: 25em;
+	max-height: 25em;
 	overflow: auto;
 }
 
@@ -85,4 +85,9 @@
 
 .search_sequence_message {
 	font-size: 1.6em;
+}
+
+.search_sequence {
+	font-family: "Arial";
+	font-size: 12px;
 }

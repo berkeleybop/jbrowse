@@ -105,6 +105,7 @@ AnnotTrack.creation_count = 0;
 dojo.require("dijit.Menu");
 dojo.require("dijit.MenuItem");
 dojo.require("dijit.MenuSeparator");
+dojo.require("dijit.PopupMenuItem");
 dojo.require("dijit.Dialog");
 var annot_context_menu;
 var contextMenuItems;
@@ -129,6 +130,7 @@ AnnotTrack.prototype.loadSuccess = function(trackInfo) {
     this.features = this.featureStore.nclist;
     var features = this.features;
     
+    this.getPermission();
     this.initAnnotContextMenu();
     this.initNonAnnotContextMenu();
     this.initPopupDialog();
@@ -193,12 +195,6 @@ AnnotTrack.prototype.createAnnotationChangeListener = function() {
     var track = this;
     var features = this.features;
     
-    if (AnnotTrack.listeners[track.getUniqueTrackName()]) {
-    	if (AnnotTrack.listeners[track.getUniqueTrackName()].fired == -1) {
-    		AnnotTrack.listeners[track.getUniqueTrackName()].cancel();
-    	}
-    }
-    
     var listener = dojo.xhrGet( {
 	url: context_path + "/AnnotationChangeNotificationService",
 	content: {
@@ -206,14 +202,11 @@ AnnotTrack.prototype.createAnnotationChangeListener = function() {
 	},
 	handleAs: "json",
 //	timeout: 1000 * 1000, // Time in milliseconds
-	timeout: 0,
+	timeout: 5 * 60 * 1000,
 	// The LOAD function will be called on a successful response.
 	load: function(response, ioArgs) {
 		if (response == null) {
 			track.createAnnotationChangeListener();
-		}
-		else if (response.error) {
-			track.handleError({ responseText: JSON.stringify(response) });
 		}
 		else {
 			for (var i in response) {
@@ -262,19 +255,38 @@ AnnotTrack.prototype.createAnnotationChangeListener = function() {
 	},
 	// The ERROR function will be called in an error case.
 	error: function(response, ioArgs) { //
+		// client cancel
 		if (response.dojoType == "cancel") {
 			return;
 		}
-//		track.handleError(response);
+		// client timeout
+		if (response.dojoType == "timeout") {
+			track.createAnnotationChangeListener();
+			return;
+		}
+		// server killed
+		if (ioArgs.xhr.status == 0) {
+			track.handleError({responseText: '{ error: "Server connection error" }'});
+			return;
+		}
+		// server timeout
+		else if (ioArgs.xhr.status == 504){
+			track.createAnnotationChangeListener();
+			return;
+		}
+		// actual error
 		if (response.responseText) {
 			track.handleError(response);
+		    track.comet_working = false;
+		    console.error("HTTP status code: ", ioArgs.xhr.status); //
+		    return response;
 		}
+		// everything else
 		else {
 			track.handleError({responseText: '{ error: "Server connection error" }'});
+			return;
 		}
-	    console.error("HTTP status code: ", ioArgs.xhr.status); //
-	    track.comet_working = false;
-	    return response;
+		
 	},
 	failOk: true
     });
@@ -2357,185 +2369,40 @@ AnnotTrack.prototype.getSequenceForSelectedFeatures = function(annots) {
 };
 
 AnnotTrack.prototype.searchSequence = function() {
-    var track = this;
-    var operation = "search_sequence";
-    var trackName = track.getUniqueTrackName();
-
-    var content = dojo.create("div");
-    var sequenceToolsDiv = dojo.create("div", { className: "search_sequence_tools" }, content);
-    var sequenceToolsSelect = dojo.create("select", { className: "search_sequence_tools_select" }, sequenceToolsDiv);
-    var sequenceDiv = dojo.create("div", { className: "search_sequence_area" }, content);
-    var sequenceLabel = dojo.create("div", { className: "search_sequence_label", innerHTML: "Enter sequence" }, sequenceDiv);
-    var sequenceFieldDiv = dojo.create("div", { }, sequenceDiv);
-    var sequenceField = dojo.create("textarea", { className: "search_sequence_input" }, sequenceFieldDiv);
-    var searchAllRefSeqsDiv = dojo.create("div", { className: "search_all_ref_seqs_area" }, sequenceDiv);
-    var searchAllRefSeqsCheckbox = dojo.create("input", { className: "search_all_ref_seqs_checkbox", type: "checkbox" }, searchAllRefSeqsDiv);
-    var searchAllRefSeqsLabel = dojo.create("span", { className: "search_all_ref_seqs_label", innerHTML: "Search all genomic sequences" }, searchAllRefSeqsDiv);
-    var sequenceButtonDiv = dojo.create("div", { }, sequenceDiv);
-    var sequenceButton = dojo.create("button", { innerHTML: "Search" }, sequenceButtonDiv);
-    var messageDiv = dojo.create("div", { className: "search_sequence_message", innerHTML: "No matches found" }, content);
-    var headerDiv = dojo.create("div", { className: "search_sequence_matches_header" }, content);
-    dojo.create("span", { innerHTML: "ID", className: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
-    dojo.create("span", { innerHTML: "Start", className: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
-    dojo.create("span", { innerHTML: "End", className: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
-    dojo.create("span", { innerHTML: "Score", className: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
-    dojo.create("span", { innerHTML: "Significance", className: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
-    dojo.create("span", { innerHTML: "Identity", className: "search_sequence_matches_header_field search_sequence_matches_generic_field" }, headerDiv);
-    var matchDiv = dojo.create("div", { className: "search_sequence_matches" }, content);
-    var matches = dojo.create("div", { }, matchDiv);
-
-    dojo.style(messageDiv, { display: "none" });
-    dojo.style(matchDiv, { display: "none" });
-    dojo.style(headerDiv, { display: "none" });
-
-    var getSequenceSearchTools = function() {
-    	var ok = false;
-    	var operation = "get_sequence_search_tools";
-    	dojo.xhrPost( {
-    		postData: '{ "track": "' + trackName + '", "operation": "' + operation + '" }', 
-    		url: context_path + "/AnnotationEditorService",
-    		sync: true,
-    		handleAs: "json",
-    		timeout: 5000 * 1000, // Time in milliseconds
-    		load: function(response, ioArgs) {
-    			if (response.sequence_search_tools.length == 0) {
-    				ok = false;
-    				return;
-    			}
-    			for (var i = 0; i < response.sequence_search_tools.length; ++i) {
-    				dojo.create("option", { innerHTML: response.sequence_search_tools[i] }, sequenceToolsSelect);
-    			}
-    			ok = true;
-    		},
-    		error: function(response, ioArgs) {
-				track.handleError(response);
-				console.error("HTTP status code: ", ioArgs.xhr.status); 
-				return response;
-    		}
-    	});
-    	return ok;
-    };
-    
-    var search = function() {
-    	var residues = dojo.attr(sequenceField, "value").toUpperCase();
-    	var ok = true;
-    	if (residues.length == 0) {
-    		alert("No sequence entered");
-    		ok = false;
-    	}
-    	else if (residues.match(/[^ACDEFGHIKLMNPQRSTVWXY\n]/)) {
-    		alert("The sequence should only contain non redundant IUPAC nucleotide or amino acid codes (except for N/X)");
-    		ok = false;
-    	}
-    	var searchAllRefSeqs = dojo.attr(searchAllRefSeqsCheckbox, "checked");
-    	if (ok) {
-    		if (AnnotTrack.USE_LOCAL_EDITS)  {
-    			// TODO
-    			track.hideAll();
-    			track.changed();
-    		}
-    		else  {
-    			dojo.xhrPost( {
-    				postData: '{ "track": "' + trackName + '", "search": { "key": "' + sequenceToolsSelect.value + '", "residues": "' + residues + (!searchAllRefSeqs ? '", "database_id": "' + track.refSeq.name : '') + '"}, "operation": "' + operation + '" }', 
-    				url: context_path + "/AnnotationEditorService",
-    				sync: true,
-    				handleAs: "json",
-    				timeout: 5000 * 1000, // Time in milliseconds
-    				load: function(response, ioArgs) {
-    					while (matches.hasChildNodes()) {
-    						matches.removeChild(matches.lastChild);
-    					}
-    					if (response.matches.length == 0) {
-    					    dojo.style(messageDiv, { display: "block" });
-    					    dojo.style(matchDiv, { display: "none" });
-    					    dojo.style(headerDiv, { display: "none" });
-    						return;
-    					}
-					    dojo.style(messageDiv, { display: "none" });
-    					dojo.style(headerDiv, { display: "block"} );
-    					dojo.style(matchDiv, { display: "block"} );
-    					for (var i = 0; i < response.matches.length; ++i) {
-    						var match = response.matches[i];
-    						var query = match.query;
-    						var subject = match.subject;
-    						subject.location.fmin += track.refSeq.start;
-    						subject.location.fmax += track.refSeq.start;
-    						var subjectStart = subject.location.fmin + 1;
-    						var subjectEnd = subject.location.fmax + 1;
-    						if (subject.location.strand == -1) {
-    							var tmp = subjectStart;
-    							subjectStart = subjectEnd;
-    							subjectEnd = tmp;
-    						}
-    						var rawscore = match.rawscore;
-    						var significance = match.significance;
-    						var identity = match.identity;
-    						var row = dojo.create("div", { className: "search_sequence_matches_row" + (dojo.isFF ? " search_sequence_matches_row-firefox" : "") }, matches);
-    						var subjectIdColumn = dojo.create("span", { innerHTML: subject.feature.uniquename, className: "search_sequence_matches_field search_sequence_matches_generic_field", title: subject.feature.uniquename }, row);
-    						var subjectStartColumn = dojo.create("span", { innerHTML: subjectStart, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
-    						var subjectEndColumn = dojo.create("span", { innerHTML: subjectEnd, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
-    						var scoreColumn = dojo.create("span", { innerHTML: match.rawscore, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
-    						var significanceColumn = dojo.create("span", { innerHTML: match.significance, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
-    						var identityColumn = dojo.create("span", { innerHTML : match.identity, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
-    						dojo.connect(row, "onclick", function(id, fmin, fmax) {
-    							return function() {
-    								var loc = id + ":" + fmin + "-" + fmax;
-//    								AnnotTrack.listeners[track.getUniqueTrackName()].cancel();
-//    								track.gview.browser.navigateTo(loc);
-    								if (id == track.refSeq.name) {
-    									track.gview.browser.navigateTo(loc);
-    									track.popupDialog.hide();
-    								}
-    								else {
-    									var url = window.location.toString().replace(/loc=.+/, "loc=" + loc);
-    									window.location.replace(url);
-    								}
-    							}
-    						}(subject.feature.uniquename, subject.location.fmin, subject.location.fmax));
-    					}
-    				},
-    				// The ERROR function will be called in an error case.
-    				error: function(response, ioArgs) { // 
-    					track.handleError(response);
-    					console.log("Annotation server error--maybe you forgot to login to the server?");
-    					console.error("HTTP status code: ", ioArgs.xhr.status); 
-    					//
-    					//dojo.byId("replace").innerHTML = 'Loading the resource from the server did not work'; //  
-    					return response; // 
-    				}
-
-    			});
-    		}
-    	}
-    };
-    
-    dojo.connect(sequenceField, "onkeypress", function(event) {
-    	if (event.keyCode == dojo.keys.ENTER) {
-    		event.preventDefault();
-    		search();
-    	}
-    });
-    dojo.connect(sequenceButton, "onclick", search);
-    dojo.connect(searchAllRefSeqsLabel, "onclick", function() {
-    	dojo.attr(searchAllRefSeqsCheckbox, "checked", !searchAllRefSeqsCheckbox.checked);
-    });
-    
-    if (getSequenceSearchTools()) {
-    	this.openDialog("Search sequence", content);
-    }
-    else {
-    	alert("No search plugins setup");
-    }
-
+	var track = this;
+	var starts = new Object();
+	var browser = track.gview.browser;
+	for (i in browser.allRefs) {
+		var refSeq = browser.allRefs[i];
+		starts[refSeq.name] = refSeq.start;
+	}
+	var search = new SequenceSearch(context_path);
+	search.setRedirectCallback(function(id, fmin, fmax) {
+		var loc = id + ":" + fmin + "-" + fmax;
+		if (id == track.refSeq.name) {
+			track.gview.browser.navigateTo(loc);
+			track.popupDialog.hide();
+		}
+		else {
+			var url = window.location.toString().replace(/loc=.+/, "loc=" + loc);
+			window.location.replace(url);
+		}
+	});
+	search.setErrorCallback(function(response) {
+		track.handleError(response);
+	});
+	var content = search.searchSequence(track.getUniqueTrackName(), track.refSeq.name, starts);
+	if (content) {
+		this.openDialog("Search sequence", content);
+	}
 };
 
-AnnotTrack.prototype.exportToGff = function() {
+AnnotTrack.prototype.exportData = function(key, options) {
 	var track = this;
-	var adapter = "gff3";
-	var options = "output=file&format=gzip";
+	var adapter = key;
 	var content = dojo.create("div");
 	var waitingDiv = dojo.create("div", { innerHTML: "<img class='waiting_image' src='img/loading.gif' />" }, content);
-	var responseDiv = dojo.create("div", { class: "export_gff_response" }, content);
+	var responseDiv = dojo.create("div", { class: "export_response" }, content);
 	dojo.xhrGet( {
 		url: context_path + "/IOService?operation=write&adapter=" + adapter + "&track=" + track.getUniqueTrackName() + "&" + options,
 		handleAs: "text",
@@ -2550,7 +2417,7 @@ AnnotTrack.prototype.exportToGff = function() {
 			responseDiv.innerHTML = "Unable to export data";
 		}
 	});
-	track.openDialog("Export GFF3", content);
+	track.openDialog("Export " + key, content);
 };
 
 AnnotTrack.prototype.zoomToBaseLevel = function(event) {
@@ -2596,160 +2463,141 @@ AnnotTrack.prototype.handleConfirm = function(response) {
 
 AnnotTrack.prototype.initAnnotContextMenu = function() {
     var thisObj = this;
-    
     contextMenuItems = new Array();
     annot_context_menu = new dijit.Menu({});
-	dojo.xhrPost( {
-		sync: true,
-		postData: '{ "track": "' + thisObj.getUniqueTrackName() + '", "operation": "get_user_permission" }',
-		url: context_path + "/AnnotationEditorService",
-		handleAs: "json",
-		timeout: 5 * 1000, // Time in milliseconds
-		// The LOAD function will be called on a successful response.
-		load: function(response, ioArgs) { //
-			var permission = response.permission;
-			thisObj.permission = permission;
-			var index = 0;
-			if (permission & Permission.WRITE) {
-				annot_context_menu.addChild(new dijit.MenuItem( {
-					label: "Delete",
-					onClick: function() {
-						thisObj.deleteSelectedFeatures();
-					}
-				} ));
-				contextMenuItems["delete"] = index++;
-				annot_context_menu.addChild(new dijit.MenuItem( {
-					label: "Merge",
-					onClick: function() {
-						thisObj.mergeSelectedFeatures();
-					}
-				} ));
-				contextMenuItems["merge"] = index++;
-				annot_context_menu.addChild(new dijit.MenuItem( {
-					label: "Split",
-					onClick: function(event) {
-						// use annot_context_mousedown instead of current event, since want to split 
-						//    at mouse position of event that triggered annot_context_menu popup
-						thisObj.splitSelectedFeatures(thisObj.annot_context_mousedown);
-					}
-				} ));
-				contextMenuItems["split"] = index++;
-				annot_context_menu.addChild(new dijit.MenuItem( {
-					label: "Duplicate",
-					onClick: function(event) {
-						// use annot_context_mousedown instead of current event, since want to split 
-						//    at mouse position of event that triggered annot_context_menu popup
-						thisObj.duplicateSelectedFeatures(thisObj.annot_context_mousedown);
-					}
-				} ));
-				contextMenuItems["duplicate"] = index++;
-				annot_context_menu.addChild(new dijit.MenuItem( {
-					label: "Make intron",
-					// use annot_context_mousedown instead of current event, since want to split 
-					//    at mouse position of event that triggered annot_context_menu popup
-					onClick: function(event) {
-						thisObj.makeIntron(thisObj.annot_context_mousedown);
-					}
-				} ));
-				contextMenuItems["make_intron"] = index++;
-				annot_context_menu.addChild(new dijit.MenuItem( {
-					label: "Set translation start",
-					// use annot_context_mousedown instead of current event, since want to split 
-					//    at mouse position of event that triggered annot_context_menu popup
-					onClick: function(event) {
-						if (thisObj.getMenuItem("set_translation_start").get("label") == "Set translation start") {
-							thisObj.setTranslationStart(thisObj.annot_context_mousedown);
-						}
-						else {
-							thisObj.setLongestORF();
-						}
-					}
-				} ));
-				contextMenuItems["set_translation_start"] = index++;
-				annot_context_menu.addChild(new dijit.MenuItem( {
-					label: "Flip strand",
-					onClick: function(event) {
-						thisObj.flipStrand();
-					}
-				} ));
-				contextMenuItems["flip_strand"] = index++;
-				annot_context_menu.addChild(new dijit.MenuSeparator());
-				index++;
-				annot_context_menu.addChild(new dijit.MenuItem( {
-					label: "Comments",
-					onClick: function(event) {
-						thisObj.editComments();
-					}
-				} ));
-				contextMenuItems["edit_comments"] = index++;
-				annot_context_menu.addChild(new dijit.MenuItem( {
-					label: "DBXRefs",
-					onClick: function(event) {
-						thisObj.editDbxrefs();
-					}
-				} ));
-				contextMenuItems["edit_dbxrefs"] = index++;
-				annot_context_menu.addChild(new dijit.MenuSeparator());
-				index++;
-				annot_context_menu.addChild(new dijit.MenuItem( {
-					label: "Undo",
-					onClick: function(event) {
-						thisObj.undo();
-					}
-				} ));
-				contextMenuItems["undo"] = index++;
-				annot_context_menu.addChild(new dijit.MenuItem( {
-					label: "Redo",
-					onClick: function(event) {
-						thisObj.redo();
-					}
-				} ));
-				contextMenuItems["redo"] = index++;
-				annot_context_menu.addChild(new dijit.MenuItem( {
-					label: "History",
-					onClick: function(event) {
-						thisObj.getHistory();
-					}
-				} ));
-				contextMenuItems["history"] = index++;
-				annot_context_menu.addChild(new dijit.MenuSeparator());
-				index++;
-			}
-			annot_context_menu.addChild(new dijit.MenuItem( {
-				label: "Information",
-				onClick: function(event) {
-					thisObj.getAnnotationInformation();
-				}
-			} ));
-			contextMenuItems["information"] = index++;
-			annot_context_menu.addChild(new dijit.MenuItem( {
-				label: "Get sequence",
-				onClick: function(event) {
-					thisObj.getSequence();
-				}
-			} ));
-			contextMenuItems["get_sequence"] = index++;
-			annot_context_menu.addChild(new dijit.MenuItem( {
-				label: "Zoom to base level",
-				onClick: function(event) {
-					if (thisObj.getMenuItem("zoom_to_base_level").get("label") == "Zoom to base level") {
-						thisObj.zoomToBaseLevel(thisObj.annot_context_mousedown);
-					}
-					else {
-						thisObj.zoomBackOut(thisObj.annot_context_mousedown);
-					}
-				}
-			} ));
-			contextMenuItems["zoom_to_base_level"] = index++;
-			annot_context_menu.addChild(new dijit.MenuItem( {
-				label: "..."
-			} ));
-		},
-		// The ERROR function will be called in an error case.
-		error: function(response, ioArgs) { //
-//		    thisObj.handleError(response);
-		}
-	});
+    var permission = thisObj.permission;
+    var index = 0;
+    annot_context_menu.addChild(new dijit.MenuItem( {
+    	label: "Information",
+    	onClick: function(event) {
+    		thisObj.getAnnotationInformation();
+    	}
+    } ));
+    contextMenuItems["information"] = index++;
+    annot_context_menu.addChild(new dijit.MenuItem( {
+    	label: "Get sequence",
+    	onClick: function(event) {
+    		thisObj.getSequence();
+    	}
+    } ));
+    contextMenuItems["get_sequence"] = index++;
+    annot_context_menu.addChild(new dijit.MenuItem( {
+    	label: "Zoom to base level",
+    	onClick: function(event) {
+    		if (thisObj.getMenuItem("zoom_to_base_level").get("label") == "Zoom to base level") {
+    			thisObj.zoomToBaseLevel(thisObj.annot_context_mousedown);
+    		}
+    		else {
+    			thisObj.zoomBackOut(thisObj.annot_context_mousedown);
+    		}
+    	}
+    } ));
+    contextMenuItems["zoom_to_base_level"] = index++;
+    if (permission & Permission.WRITE) {
+    	annot_context_menu.addChild(new dijit.MenuSeparator());
+    	index++;
+    	annot_context_menu.addChild(new dijit.MenuItem( {
+    		label: "Delete",
+    		onClick: function() {
+    			thisObj.deleteSelectedFeatures();
+    		}
+    	} ));
+    	contextMenuItems["delete"] = index++;
+    	annot_context_menu.addChild(new dijit.MenuItem( {
+    		label: "Merge",
+    		onClick: function() {
+    			thisObj.mergeSelectedFeatures();
+    		}
+    	} ));
+    	contextMenuItems["merge"] = index++;
+    	annot_context_menu.addChild(new dijit.MenuItem( {
+    		label: "Split",
+    		onClick: function(event) {
+    			// use annot_context_mousedown instead of current event, since want to split 
+    			//    at mouse position of event that triggered annot_context_menu popup
+    			thisObj.splitSelectedFeatures(thisObj.annot_context_mousedown);
+    		}
+    	} ));
+    	contextMenuItems["split"] = index++;
+    	annot_context_menu.addChild(new dijit.MenuItem( {
+    		label: "Duplicate",
+    		onClick: function(event) {
+    			// use annot_context_mousedown instead of current event, since want to split 
+    			//    at mouse position of event that triggered annot_context_menu popup
+    			thisObj.duplicateSelectedFeatures(thisObj.annot_context_mousedown);
+    		}
+    	} ));
+    	contextMenuItems["duplicate"] = index++;
+    	annot_context_menu.addChild(new dijit.MenuItem( {
+    		label: "Make intron",
+    		// use annot_context_mousedown instead of current event, since want to split 
+    		//    at mouse position of event that triggered annot_context_menu popup
+    		onClick: function(event) {
+    			thisObj.makeIntron(thisObj.annot_context_mousedown);
+    		}
+    	} ));
+    	contextMenuItems["make_intron"] = index++;
+    	annot_context_menu.addChild(new dijit.MenuItem( {
+    		label: "Set translation start",
+    		// use annot_context_mousedown instead of current event, since want to split 
+    		//    at mouse position of event that triggered annot_context_menu popup
+    		onClick: function(event) {
+    			if (thisObj.getMenuItem("set_translation_start").get("label") == "Set translation start") {
+    				thisObj.setTranslationStart(thisObj.annot_context_mousedown);
+    			}
+    			else {
+    				thisObj.setLongestORF();
+    			}
+    		}
+    	} ));
+    	contextMenuItems["set_translation_start"] = index++;
+    	annot_context_menu.addChild(new dijit.MenuItem( {
+    		label: "Flip strand",
+    		onClick: function(event) {
+    			thisObj.flipStrand();
+    		}
+    	} ));
+    	contextMenuItems["flip_strand"] = index++;
+    	annot_context_menu.addChild(new dijit.MenuSeparator());
+    	index++;
+    	annot_context_menu.addChild(new dijit.MenuItem( {
+    		label: "Comments",
+    		onClick: function(event) {
+    			thisObj.editComments();
+    		}
+    	} ));
+    	contextMenuItems["edit_comments"] = index++;
+    	annot_context_menu.addChild(new dijit.MenuItem( {
+    		label: "DBXRefs",
+    		onClick: function(event) {
+    			thisObj.editDbxrefs();
+    		}
+    	} ));
+    	contextMenuItems["edit_dbxrefs"] = index++;
+    	annot_context_menu.addChild(new dijit.MenuSeparator());
+    	index++;
+    	annot_context_menu.addChild(new dijit.MenuItem( {
+    		label: "Undo",
+    		onClick: function(event) {
+    			thisObj.undo();
+    		}
+    	} ));
+    	contextMenuItems["undo"] = index++;
+    	annot_context_menu.addChild(new dijit.MenuItem( {
+    		label: "Redo",
+    		onClick: function(event) {
+    			thisObj.redo();
+    		}
+    	} ));
+    	contextMenuItems["redo"] = index++;
+    	annot_context_menu.addChild(new dijit.MenuItem( {
+    		label: "History",
+    		onClick: function(event) {
+    			thisObj.getHistory();
+    		}
+    	} ));
+    	contextMenuItems["history"] = index++;
+    }
 
 	annot_context_menu.onOpen = function(event) {
 		// keeping track of mousedown event that triggered annot_context_menu popup, 
@@ -2772,24 +2620,59 @@ AnnotTrack.prototype.initAnnotContextMenu = function() {
 AnnotTrack.prototype.initNonAnnotContextMenu = function() {
     var thisObj = this;
     
-    non_annot_context_menu = new dijit.Menu({});
+    non_annot_context_menu = new dijit.Menu({
+    });
+    
+    non_annot_context_menu.onItemHover = function(item){
+        this.focusChild(item);
+        if (this.focusedChild.popup && !this.focusedChild.disabled) {
+             this._openPopup();
+        }
+    };
+    
 	non_annot_context_menu.addChild(new dijit.MenuItem( {
 		label: "Search sequence",
 		onClick: function() {
 			thisObj.searchSequence();
 		}
 	} ));
-	non_annot_context_menu.bindDomNode(thisObj.div);
-	non_annot_context_menu.addChild(new dijit.MenuItem( {
-		label: "Export to GFF3",
-		onClick: function() {
-			thisObj.exportToGff();
+	var dataAdaptersMenu = new dijit.Menu();
+	dojo.xhrPost( {
+		sync: true,
+		postData: '{ "track": "' + thisObj.getUniqueTrackName() + '", "operation": "get_data_adapters" }',
+		url: context_path + "/AnnotationEditorService",
+		handleAs: "json",
+		timeout: 5 * 1000, // Time in milliseconds
+		// The LOAD function will be called on a successful response.
+		load: function(response, ioArgs) { //
+			var dataAdapters = response.data_adapters;
+			for (var i = 0; i < dataAdapters.length; ++i) {
+				var dataAdapter = dataAdapters[i];
+				if (thisObj.permission & dataAdapter.permission) {
+					dataAdaptersMenu.addChild(new dijit.MenuItem( {
+						label: dataAdapter.key,
+						onClick: function(key, options) {
+							return function() {
+								thisObj.exportData(key, options);
+							};
+						}(dataAdapter.key, dataAdapter.options)
+					}));
+				}
+			}
+		},
+		error: function(response, ioArgs) { //
+//		    thisObj.handleError(response);
 		}
-	} ));
+	});
+	non_annot_context_menu.addChild(new dijit.PopupMenuItem({
+		label: "Export",
+		popup: dataAdaptersMenu
+	}));
+	
 	non_annot_context_menu.bindDomNode(thisObj.div);
 	non_annot_context_menu.onOpen = function(event) {
 		dojo.forEach(this.getChildren(), function(item, idx, arr) {
-			if (item instanceof dijit.MenuItem) {
+			if (item instanceof dijit.MenuItem || item instanceof dijit.PopupMenuItem) {
 				item._setSelected(false);
 				item._onUnhover();
 			}
@@ -2797,6 +2680,26 @@ AnnotTrack.prototype.initNonAnnotContextMenu = function() {
 	};
 	
     non_annot_context_menu.startup();
+};
+
+AnnotTrack.prototype.getPermission = function() {
+	var thisObj = this;
+	dojo.xhrPost( {
+		sync: true,
+		postData: '{ "track": "' + thisObj.getUniqueTrackName() + '", "operation": "get_user_permission" }',
+		url: context_path + "/AnnotationEditorService",
+		handleAs: "json",
+		timeout: 5 * 1000, // Time in milliseconds
+		// The LOAD function will be called on a successful response.
+		load: function(response, ioArgs) { //
+			var permission = response.permission;
+			thisObj.permission = permission;
+		},
+		error: function(response, ioArgs) { //
+//		    thisObj.handleError(response);
+		}
+	});
+
 };
 
 AnnotTrack.prototype.initPopupDialog = function() {

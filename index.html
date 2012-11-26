@@ -13,6 +13,7 @@
 
     <!-- load JQuery theme CSS remotely from Google CDN: -->
   <link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/themes/base/jquery-ui.css"/>  
+  <!-- <link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/dojo/1.5.0/dijit/themes/tundra/tundra.css"/>  -->
 
    <!-- load JQuery theme CSS from WebApollo server -->
     <!-- <link rel="stylesheet" type="text/css" href="jslib/jquery-ui.css"/>  -->
@@ -135,6 +136,8 @@
     <script type="text/javascript" src="js/BamPseudoNCList.js"></script>
     <script type="text/javascript" src="js/BamUtils.js"></script>
 
+    <script type="text/javascript" src="js/SequenceSearch.js"></script>
+
 <!-- Dalliance code in berkeleybop/jbrowse repository -->
   <script language="javascript" src="jslib/dalliance_static/jszlib/js/inflate.js"></script>
   <script language="javascript" src="jslib/dalliance_static/js/utils.js"></script>
@@ -202,7 +205,7 @@
                                        dataRoot + "/trackList.json"
                                      // dataRoot + "/bam_trackList.json", 
                                 ],
-                                  nameUrl: dataRoot + "/names/root.json",
+                                  // nameUrl: dataRoot + "/names/root.json",
                                   // defaultTracks: "DNA,Annotations,RefSeq",
                                   defaultTracks: "DNA, Annotations", 
                                   queryParams: queryParams,
