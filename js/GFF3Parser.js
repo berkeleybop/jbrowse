@@ -2,7 +2,7 @@
 Created by Justin Reese 9/2012
 justaddcoffee@gmail.com
 
-This is a very simple GFF3 parser that takes a GFF3 file such as this:
+This is a simple GFF3 parser that takes a GFF3 file such as this:
 
 Group1.33	maker	gene	245454	247006	.	+	.	ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%252E33-pred_gff_GNOMON-gene-4.137;
 Group1.33	maker	mRNA	245454	247006	.	+	.	ID=1:gnomon_566853_mRNA;Parent=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=gnomon_566853_mRNA;_AED=0.45;_eAED=0.45;_QI=138|1|1|1|1|1|4|191|259;
@@ -91,7 +91,7 @@ GFF3Parser.prototype.parse = function(gff3String) {
     // search for a given ID in children, grandchildren, great-grandchildren, etc.
     var recursion_level = 0;
     var maximum_recursion_level = 200; 
-    var recursiveChildSearch = function(thisLine, featureArrayToSearch) {
+    var placeChildrenWithParent = function(thisLine, featureArrayToSearch) {
        recursion_level++;
        var thisParentId = thisLine["data"][0]["attributes"]["Parent"][0];
        // first, search each item in featureArrayToSearch
@@ -106,7 +106,7 @@ GFF3Parser.prototype.parse = function(gff3String) {
 	   }
 	   // recurse if there there are children
 	   if ( featureArrayToSearch[j]["children"].length > 0 ){
-	       if ( recursiveChildSearch(thisLine, featureArrayToSearch[j]["children"] )){
+	       if ( placeChildrenWithParent(thisLine, featureArrayToSearch[j]["children"] )){
 		   return true;
 	       }
 	   }
@@ -179,10 +179,8 @@ GFF3Parser.prototype.parse = function(gff3String) {
 			  if ( !! theseKeyVals[1] && theseKeyVals.length != undefined ){
 			      // value can be >1 thing separated by comma, for example for multiple parents
 			      valArray = theseKeyVals[1].split(/\,/); 
-			      console.log("valArray length " + valArray.length);
 			      if ( !! valArray && valArray.length != undefined ){
 				  for ( k = 0; k < valArray.length; k++){
-				      console.log("k: " + k);
 				      valArray[k] = unescape(valArray[k]);
 				  }
 				  
@@ -235,21 +233,31 @@ GFF3Parser.prototype.parse = function(gff3String) {
     for (var j = 0; j < noParentIDs.length; j++) {
 	var thisID = noParentIDs[j];
 	var thisLine = noParent[thisID];
-	bigDataStruct["parsedData"].push( thisLine );
+
+	// is this a discontiguous feature? 
+	if ( seenIDs[thisID] > 1 ){ // yes
+	    var foo = "bar";
+	}
+	else {
+	    bigDataStruct["parsedData"].push( thisLine );
+	}
     }
 
     // now put children (and grandchildren, and so on) in data struct
     for (var k = 0; k < hasParentIDs.length; k++) {
-	// console.log("k: " + k);
 	var thisID = hasParentIDs[k];
 	var thisLine = hasParent[thisID];
 
-	if ( isNaN(seenIDs[thisID]) || seenIDs[thisID] == undefined ){ // this is an orphan, shouldn't happen with proper GFF3 files
-	    bigDataStruct["parsedData"].push( thisLine );
+	if ( seenIDs[thisID] > 1 ){ // yes
+	    var foo = "bar";
 	}
-	else { 
-	    // put this child in the right children array, recursively
-	    recursiveChildSearch(thisLine, bigDataStruct["parsedData"]);
+
+	// put this child in the right children array, recursively
+	if ( placeChildrenWithParent(thisLine, bigDataStruct["parsedData"] ) ){
+	}
+	else {
+	    bigDataStruct["parsedData"].push( thisLine );
+	    bigDataStruct["parseWarnings"].push( thisID + "seems to be an orphan" );
 	}
 
     }
