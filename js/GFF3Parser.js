@@ -17,7 +17,7 @@ and returns a JSON data structure like this:
     "data":[ 
              {
 	      "rawdata" : ["Group1.33","maker","gene","245454","247006",".","+",".","ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%252E33-pred_gff_GNOMON-gene-4.137"],
-	      "attributes" :  {"ID" : "maker-Group1%2E33-pred_gff_GNOMON-gene-4.137", "Name" : "maker-Group1%252E33-pred_gff_GNOMON-gene-4.137"}
+	      "attributes" :  {"ID" : ["maker-Group1%2E33-pred_gff_GNOMON-gene-4.137"], "Name" : ["maker-Group1%252E33-pred_gff_GNOMON-gene-4.137"]}
 	     }
 	     ],
     "children": [
@@ -26,7 +26,7 @@ and returns a JSON data structure like this:
           "data": [
                      {
               	      "rawdata" : ["Group1.33","maker","mRNA","245454","247006",".","+",".","ID=1:gnomon_566853_mRNA;Parent=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=gnomon_566853_mRNA;_AED=0.45;_eAED=0.45;_QI=138|1|1|1|1|1|4|191|259"]
-        	      "attributes" :  { "ID" : "1:gnomon_566853_mRNA", "Parent" : "maker-Group1%2E33-pred_gff_GNOMON-gene-4.137", "Name" : "gnomon_566853_mRNA", "_AED" : "0.45", "_eAED" : "0.45","_QI" : "138|1|1|1|1|1|4|191|259" }
+        	      "attributes" :  { "ID" : ["1:gnomon_566853_mRNA"], "Parent" : ["maker-Group1%2E33-pred_gff_GNOMON-gene-4.137"], "Name" : ["gnomon_566853_mRNA"], "_AED" : ["0.45"], "_eAED" : ["0.45"],"_QI" : ["138|1|1|1|1|1|4|191|259"] }
 		      }
                   ],
           "children": [
@@ -35,7 +35,7 @@ and returns a JSON data structure like this:
             "data": [
                      {
               	      "rawdata" : ["Group1.33","maker","exon","245454","245533",".","+",".","ID=1:gnomon_566853_mRNA:exon:5976;Parent=1:gnomon_566853_mRNA"]
-        	      "attributes" :  {"ID" : "1:gnomon_566853_mRNA:exon:5976", "Parent" : "1:gnomon_566853_mRNA"}
+        	      "attributes" :  {"ID" : ["1:gnomon_566853_mRNA:exon:5976"], "Parent" : ["1:gnomon_566853_mRNA"]}
 		      }
 		      ],
             "children": [],
@@ -45,7 +45,7 @@ and returns a JSON data structure like this:
             "data": [ 
                      {
               	      "rawdata" : ["Group1.33","maker","exon","245702","245879",".","+",".","ID=1:gnomon_566853_mRNA:exon:5977;Parent=1:gnomon_566853_mRNA"]
-        	      "attributes" :  {"ID" : "1:gnomon_566853_mRNA:exon:5977", "Parent" : "1:gnomon_566853_mRNA"}
+        	      "attributes" :  {"ID" : ["1:gnomon_566853_mRNA:exon:5977"], "Parent" : ["1:gnomon_566853_mRNA"]}
 		      }
 		     ],
             "children": [],
@@ -93,23 +93,21 @@ GFF3Parser.prototype.parse = function(gff3String) {
     var maximum_recursion_level = 200; 
     var recursiveChildSearch = function(thisLine, featureArrayToSearch) {
        recursion_level++;
-       var thisParentId = thisLine["data"][0]["attributes"]["Parent"];
+       var thisParentId = thisLine["data"][0]["attributes"]["Parent"][0];
        // first, search each item in featureArrayToSearch
        for ( var j = 0; j < featureArrayToSearch.length; j++ ){
-	   for ( var k = 0; k < featureArrayToSearch[j].length; k++ ){ 
-	       if ( thisParentId == featureArrayToSearch[j][k]["ID"] ){
-		   featureArrayToSearch[j][k]["children"].push( [thisLine] );
+	   if ( thisParentId == featureArrayToSearch[j]["ID"] ){
+	       featureArrayToSearch[j]["children"].push( thisLine );
+	       return true;
+	   }
+	   // a bit paranoid about infinite recursion
+	   if ( recursion_level > maximum_recursion_level ){
+	       return false;
+	   }
+	   // recurse if there there are children
+	   if ( featureArrayToSearch[j]["children"].length > 0 ){
+	       if ( recursiveChildSearch(thisLine, featureArrayToSearch[j]["children"] )){
 		   return true;
-	       }
-	       // a bit paranoid about infinite recursion
-	       if ( recursion_level > maximum_recursion_level ){
-		   return false;
-	       }
-	       // recurse if there there are children
-	       if ( featureArrayToSearch[j][k]["children"].length > 0 ){
-		   if ( recursiveChildSearch(thisLine, featureArrayToSearch[j][k]["children"] )){
-		       return true;
-		   }
 	       }
 	   }
        }
@@ -126,7 +124,7 @@ GFF3Parser.prototype.parse = function(gff3String) {
     var hasParent = {}; // child (or grandchild, or whatever) features
     var noParent = {}; // toplevel features without parents
 
-    var seenIDs = [];
+    var seenIDs = {};
     var noParentIDs = [];
     var hasParentIDs = [];
 
@@ -210,20 +208,20 @@ GFF3Parser.prototype.parse = function(gff3String) {
 			"children": []
 	};
 	if ( attributesKeyVal["Parent"] != undefined ){
-	    hasParent[attributesKeyVal["ID"]] = thisLine;
-	    hasParentIDs.push( attributesKeyVal["ID"] );
+	    hasParent[attributesKeyVal["ID"][0]] = thisLine;
+	    hasParentIDs.push( attributesKeyVal["ID"][0] );
 	}
 	else {
-	    noParent[attributesKeyVal["ID"]] = thisLine;
-	    noParentIDs.push( attributesKeyVal["ID"] );
+	    noParent[attributesKeyVal["ID"][0]] = thisLine;
+	    noParentIDs.push( attributesKeyVal["ID"][0] );
 	}
 	
 	// keep track of what IDs we've seen
-	if ( isNaN(seenIDs[attributesKeyVal["ID"]]) ){
-	    seenIDs[attributesKeyVal["ID"]] = 1;
+	if ( isNaN(seenIDs[attributesKeyVal["ID"][0]]) ){
+	    seenIDs[attributesKeyVal["ID"][0]] = 1;
 	}
 	else {
-	    seenIDs[attributesKeyVal["ID"]]++;
+	    seenIDs[attributesKeyVal["ID"][0]]++;
 	}
     }
 
@@ -239,7 +237,6 @@ GFF3Parser.prototype.parse = function(gff3String) {
 	// console.log("k: " + k);
 	var thisID = hasParentIDs[k];
 	var thisLine = hasParent[thisID];
-	var thisParentID = thisLine["data"][0]["attributes"]["Parent"];
 
 	if ( isNaN(seenIDs[thisID]) || seenIDs[thisID] == undefined ){ // this is an orphan, shouldn't happen with proper GFF3 files
 	    bigDataStruct["parsedData"].push( thisLine );
