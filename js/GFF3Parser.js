@@ -199,6 +199,11 @@ GFF3Parser.prototype.parse = function(gff3String) {
 	    }
 	}
 
+	if ( ! attributesKeyVal["ID"] ){
+	    attributesKeyVal["ID"] = [];
+	    attributesKeyVal["ID"][0] = "parser_autogen_id_" + i;
+	}
+    
 	var thisLine = {"ID": attributesKeyVal["ID"][0],
 			"data": [ 
 	                                                        {"rawdata" : fields,
@@ -207,6 +212,7 @@ GFF3Parser.prototype.parse = function(gff3String) {
 								],
 			"children": []
 	};
+
 	if ( attributesKeyVal["Parent"] != undefined ){
 	    hasParent[attributesKeyVal["ID"][0]] = thisLine;
 	    hasParentIDs.push( attributesKeyVal["ID"][0] );
