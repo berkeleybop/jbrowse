@@ -154,6 +154,20 @@ describe("GFF3Parser", function() {
 		expect(jsonOutput5["parsedData"]).toEqual([]);
 	    });
 
+
+	it("should properly parse features split on multiple lines ('discontinuous features')", function() {
+		// ctg123	example	match	26122	26126	.	+	.	ID=match001;
+		// ctg123	example	match	26497	26869	.	+	.	ID=match001;
+		// ctg123	example	match	27201	27325	.	+	.	ID=match001;
+		// ctg123	example	match	27372	27433	.	+	.	ID=match001;
+		// ctg123	example	match	27565	27565	.	+	.	ID=match001;
+		expect(jsonOutput8["parsedData"][0]["data"][0]["rawdata"]).toBeDefined();
+		expect(jsonOutput8["parsedData"][0]["data"][1]["rawdata"]).toBeDefined();
+		expect(jsonOutput8["parsedData"][0]["data"][2]["rawdata"]).toBeDefined();
+		expect(jsonOutput8["parsedData"][0]["data"][3]["rawdata"]).toBeDefined();
+		expect(jsonOutput8["parsedData"][0]["data"][4]["rawdata"]).toBeDefined();
+	    });
+
 	it("should properly parse features with multiple parents", function() {
 		// gff3String7 = "Group1.33	maker	mRNA	245454	247006	.	+	.	ID=mrna_1;
 		// Group1.33	maker	mRNA	245454	247006	.	+	.	ID=mrna_2;
