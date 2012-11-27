@@ -201,7 +201,8 @@ GFF3Parser.prototype.parse = function(gff3String) {
 	    }
 	}
 
-	var thisLine = {"ID": attributesKeyVal["ID"], "data": [ 
+	var thisLine = {"ID": attributesKeyVal["ID"][0],
+			"data": [ 
 	                                                        {"rawdata" : fields,
 								 "attributes" :  attributesKeyVal
 								}
@@ -230,7 +231,7 @@ GFF3Parser.prototype.parse = function(gff3String) {
     for (var j = 0; j < noParentIDs.length; j++) {
 	var thisID = noParentIDs[j];
 	var thisLine = noParent[thisID];
-	bigDataStruct["parsedData"].push( [thisLine] );
+	bigDataStruct["parsedData"].push( thisLine );
     }
 
     // now put children (and grandchildren, and so on) in data struct
