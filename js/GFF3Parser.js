@@ -12,27 +12,46 @@ Group1.33	maker	exon	245702	245879	.	+	.	ID=1:gnomon_566853_mRNA:exon:5977;Paren
 and returns a JSON data structure like this:
 {
 "parsedData": [ // parsed data is an array
-  [ // each feature (and subfeature below) is an array of one or more {} objects (needs to be an array b/c we support 'discontinuous features', i.e. features with multiple locations)
     {
     "ID": "maker-Group1%2E33-pred_gff_GNOMON-gene-4.137",
-    "data":["Group1.33","maker","gene","245454","247006",".","+",".","ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%252E33-pred_gff_GNOMON-gene-4.137"],
+    "data":[ 
+             {
+	      "rawdata" : ["Group1.33","maker","gene","245454","247006",".","+",".","ID=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=maker-Group1%252E33-pred_gff_GNOMON-gene-4.137"],
+	      "attributes" :  {"ID" : "maker-Group1%2E33-pred_gff_GNOMON-gene-4.137", "Name" : "maker-Group1%252E33-pred_gff_GNOMON-gene-4.137"}
+	     }
+	     ],
     "children": [
-       [{
+       {
           "ID": "1:gnomon_566853_mRNA",
-          "data": ["Group1.33","maker","mRNA","245454","247006",".","+",".","ID=1:gnomon_566853_mRNA;Parent=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=gnomon_566853_mRNA;_AED=0.45;_eAED=0.45;_QI=138|1|1|1|1|1|4|191|259"],
+          "data": [
+                     {
+              	      "rawdata" : ["Group1.33","maker","mRNA","245454","247006",".","+",".","ID=1:gnomon_566853_mRNA;Parent=maker-Group1%2E33-pred_gff_GNOMON-gene-4.137;Name=gnomon_566853_mRNA;_AED=0.45;_eAED=0.45;_QI=138|1|1|1|1|1|4|191|259"]
+        	      "attributes" :  { "ID" : "1:gnomon_566853_mRNA", "Parent" : "maker-Group1%2E33-pred_gff_GNOMON-gene-4.137", "Name" : "gnomon_566853_mRNA", "_AED" : "0.45", "_eAED" : "0.45","_QI" : "138|1|1|1|1|1|4|191|259" }
+		      }
+                  ],
           "children": [
-            [{
+            {
             "ID": "1:gnomon_566853_mRNA:exon:5976",
-            "data": ["Group1.33","maker","exon","245454","245533",".","+",".","ID=1:gnomon_566853_mRNA:exon:5976;Parent=1:gnomon_566853_mRNA"],
+            "data": [
+                     {
+              	      "rawdata" : ["Group1.33","maker","exon","245454","245533",".","+",".","ID=1:gnomon_566853_mRNA:exon:5976;Parent=1:gnomon_566853_mRNA"]
+        	      "attributes" :  {"ID" : "1:gnomon_566853_mRNA:exon:5976", "Parent" : "1:gnomon_566853_mRNA"}
+		      }
+		      ],
             "children": [],
-            }],
-            [{
+            },
+            {
 	    "ID": "1:gnomon_566853_mRNA:exon:5977",
-            "data": ["Group1.33","maker","exon","245702","245879",".","+",".","ID=1:gnomon_566853_mRNA:exon:5977;Parent=1:gnomon_566853_mRNA"]
+            "data": [ 
+                     {
+              	      "rawdata" : ["Group1.33","maker","exon","245702","245879",".","+",".","ID=1:gnomon_566853_mRNA:exon:5977;Parent=1:gnomon_566853_mRNA"]
+        	      "attributes" :  {"ID" : "1:gnomon_566853_mRNA:exon:5977", "Parent" : "1:gnomon_566853_mRNA"}
+		      }
+		     ],
             "children": [],
-            }]
+            }
            ]
-        }]
+        }
        ]
      }
    ],
