@@ -93,7 +93,7 @@ GFF3Parser.prototype.parse = function(gff3String) {
     var maximum_recursion_level = 200; 
     var recursiveChildSearch = function(thisLine, featureArrayToSearch) {
        recursion_level++;
-       var thisParentId = thisLine["attributes"]["Parent"];
+       var thisParentId = thisLine["data"][0]["attributes"]["Parent"];
        // first, search each item in featureArrayToSearch
        for ( var j = 0; j < featureArrayToSearch.length; j++ ){
 	   for ( var k = 0; k < featureArrayToSearch[j].length; k++ ){ 
@@ -126,7 +126,7 @@ GFF3Parser.prototype.parse = function(gff3String) {
     var hasParent = {}; // child (or grandchild, or whatever) features
     var noParent = {}; // toplevel features without parents
 
-    var seenIDs = {};
+    var seenIDs = [];
     var noParentIDs = [];
     var hasParentIDs = [];
 
@@ -201,7 +201,13 @@ GFF3Parser.prototype.parse = function(gff3String) {
 	    }
 	}
 
-	var thisLine = {"ID": attributesKeyVal["ID"], "attributes" :  attributesKeyVal, "data": fields, "children": []};
+	var thisLine = {"ID": attributesKeyVal["ID"], "data": [ 
+	                                                        {"rawdata" : fields,
+								 "attributes" :  attributesKeyVal
+								}
+								],
+			"children": []
+	};
 	if ( attributesKeyVal["Parent"] != undefined ){
 	    hasParent[attributesKeyVal["ID"]] = thisLine;
 	    hasParentIDs.push( attributesKeyVal["ID"] );
@@ -232,7 +238,7 @@ GFF3Parser.prototype.parse = function(gff3String) {
 	// console.log("k: " + k);
 	var thisID = hasParentIDs[k];
 	var thisLine = hasParent[thisID];
-	var thisParentID = thisLine["attributes"]["Parent"];
+	var thisParentID = thisLine["data"][0]["attributes"]["Parent"];
 
 	if ( isNaN(seenIDs[thisID]) || seenIDs[thisID] == undefined ){ // this is an orphan, shouldn't happen with proper GFF3 files
 	    bigDataStruct["parsedData"].push( thisLine );
