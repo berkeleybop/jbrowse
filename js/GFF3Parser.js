@@ -91,14 +91,19 @@ GFF3Parser.prototype.parse = function(gff3String) {
     // search for a given ID in children, grandchildren, great-grandchildren, etc.
     var recursion_level = 0;
     var maximum_recursion_level = 200; 
+    var foundParents = 0;
     var placeChildrenWithParent = function(thisLine, featureArrayToSearch) {
        recursion_level++;
-       var thisParentId = thisLine["data"][0]["attributes"]["Parent"][0];
        // first, search each item in featureArrayToSearch
        for ( var j = 0; j < featureArrayToSearch.length; j++ ){
-	   if ( thisParentId == featureArrayToSearch[j]["ID"] ){
-	       featureArrayToSearch[j]["children"].push( thisLine );
-	       return true;
+
+	   // search all parents
+	   for ( var k = 0; k < thisLine["data"][0]["attributes"]["Parent"].length; k++ ) {
+	       var thisParentId = thisLine["data"][0]["attributes"]["Parent"][k];	       
+	       if ( thisParentId == featureArrayToSearch[j]["ID"] ){
+		   featureArrayToSearch[j]["children"].push( thisLine );
+		   foundParents++;
+	       }
 	   }
 	   // paranoid about infinite recursion
 	   if ( recursion_level > maximum_recursion_level ){
@@ -107,11 +112,16 @@ GFF3Parser.prototype.parse = function(gff3String) {
 	   // recurse if there there are children
 	   if ( featureArrayToSearch[j]["children"].length > 0 ){
 	       if ( placeChildrenWithParent(thisLine, featureArrayToSearch[j]["children"] )){
-		   return true;
+		   foundParents++;
 	       }
 	   }
        }
-       return false;
+       if ( foundParents > 0 ){
+	   return true;
+       }
+       else {
+	   return false;
+       }
     }
 
     // put feature in ["data"] for discontinuous features we've already "filed"
@@ -256,7 +266,7 @@ GFF3Parser.prototype.parse = function(gff3String) {
 	}
     }
 
-    var dealtWithIDs = {};
+    var dealtWithIDs = {}; // list of IDs that have been processed
 
     // put things with no parent in parsedData straight away
     for (var j = 0; j < noParentIDs.length; j++) {
@@ -291,7 +301,7 @@ GFF3Parser.prototype.parse = function(gff3String) {
 	    placeDiscontiguousFeature(thisLine, bigDataStruct["parsedData"] );
 	}
 	else {
-	    // put this child in the right children array, recursively, or mark it as an orphan
+	    // put this child in the right children array, recursively, or put it on top level and mark it as an orphan
 	    if ( ! placeChildrenWithParent(thisLine, bigDataStruct["parsedData"] ) ){
 		bigDataStruct["parsedData"].push( thisLine );
 		bigDataStruct["parseWarnings"].push( thisID + "seems to be an orphan" );

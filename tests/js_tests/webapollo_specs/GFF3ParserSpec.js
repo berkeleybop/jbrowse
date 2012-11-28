@@ -171,12 +171,12 @@ describe("GFF3Parser", function() {
 		// Group1.33	maker	mRNA	245454	247006	.	+	.	ID=mrna_2;
 		// Group1.33	maker	exon	245454	245533	.	+	.	ID=exon_1;Parent=mrna_1,mrna_2;";
 		// first parent should have child
-		expect(jsonOutput7["parsedData"][0]["children"][0].length).toEqual(1);
+		expect(jsonOutput7["parsedData"][0]["children"].length).toEqual(1);
 		// and it should be the right child
 		expect(jsonOutput7["parsedData"][0]["children"][0]["ID"]).toEqual("exon_1");
 
 		// second parent should have child
-		expect(jsonOutput7["parsedData"][1]["children"][0].length).toEqual(1);
+		expect(jsonOutput7["parsedData"][1]["children"].length).toEqual(1);
 		// and it should be the right child
 		expect(jsonOutput7["parsedData"][1]["children"][0]["ID"]).toEqual("exon_1");
 	    });
