@@ -100,13 +100,40 @@ GFF3Parser.prototype.parse = function(gff3String) {
 	       featureArrayToSearch[j]["children"].push( thisLine );
 	       return true;
 	   }
-	   // a bit paranoid about infinite recursion
+	   // paranoid about infinite recursion
 	   if ( recursion_level > maximum_recursion_level ){
 	       return false;
 	   }
 	   // recurse if there there are children
 	   if ( featureArrayToSearch[j]["children"].length > 0 ){
 	       if ( placeChildrenWithParent(thisLine, featureArrayToSearch[j]["children"] )){
+		   return true;
+	       }
+	   }
+       }
+       return false;
+    }
+
+    // put feature in ["data"] for discontiguous features we've already "filed"
+    var df_recursion_level = 0;
+    var df_maximum_df_recursion_level = 200; 
+    var placeDiscontiguousFeature = function(thisLine, featureArrayToSearch) {
+       df_recursion_level++;
+       var thisId = thisLine["data"][0]["attributes"]["ID"][0];
+       // first, search each item in featureArrayToSearch
+       for ( var j = 0; j < featureArrayToSearch.length; j++ ){
+	   if ( thisId == featureArrayToSearch[j]["ID"] ){
+	       featureArrayToSearch[j]["data"] = featureArrayToSearch[j]["data"].concat( thisLine["data"] );
+	       featureArrayToSearch[j]["children"] = featureArrayToSearch[j]["children"].concat( thisLine["children"] );
+	       return true;
+	   }
+	   // paranoid about infinite recursion
+	   if ( df_recursion_level > df_maximum_df_recursion_level ){
+	       return false;
+	   }
+	   // recurse if there there are children
+	   if ( featureArrayToSearch[j]["children"].length > 0 ){
+	       if ( placeDiscontiguousFeature(thisLine, featureArrayToSearch[j]["children"] )){
 		   return true;
 	       }
 	   }
@@ -229,18 +256,29 @@ GFF3Parser.prototype.parse = function(gff3String) {
 	}
     }
 
+    var dealtWithIDs = {};
+
     // put things with no parent in parsedData straight away
     for (var j = 0; j < noParentIDs.length; j++) {
 	var thisID = noParentIDs[j];
 	var thisLine = noParent[thisID];
 
-	// is this a discontiguous feature? 
-	if ( seenIDs[thisID] > 1 ){ // yes
-	    var foo = "bar";
+	// is this a discontiguous feature that's already been "filed"? 
+	if ( seenIDs[thisID] > 1 && dealtWithIDs[thisID] > 0 ){ // yes
+	    placeDiscontiguousFeature(thisLine, bigDataStruct["parsedData"] );
 	}
 	else {
 	    bigDataStruct["parsedData"].push( thisLine );
 	}
+
+	// keep track of what IDs we've dealt with
+	if ( isNaN( dealtWithIDs[thisID] ) ){
+	    dealtWithIDs[thisID] = 1
+	}
+	else {
+	    dealtWithIDs[thisID]++;
+	}
+
     }
 
     // now put children (and grandchildren, and so on) in data struct
@@ -248,16 +286,24 @@ GFF3Parser.prototype.parse = function(gff3String) {
 	var thisID = hasParentIDs[k];
 	var thisLine = hasParent[thisID];
 
-	if ( seenIDs[thisID] > 1 ){ // yes
-	    var foo = "bar";
-	}
-
-	// put this child in the right children array, recursively
-	if ( placeChildrenWithParent(thisLine, bigDataStruct["parsedData"] ) ){
+	// is this a discontiguous feature that's already been "filed"? 
+	if ( seenIDs[thisID] > 1 && dealtWithIDs[thisID] > 0 ){ // yes
+	    placeDiscontiguousFeature(thisLine, bigDataStruct["parsedData"] );
 	}
 	else {
-	    bigDataStruct["parsedData"].push( thisLine );
-	    bigDataStruct["parseWarnings"].push( thisID + "seems to be an orphan" );
+	    // put this child in the right children array, recursively, or mark it as an orphan
+	    if ( ! placeChildrenWithParent(thisLine, bigDataStruct["parsedData"] ) ){
+		bigDataStruct["parsedData"].push( thisLine );
+		bigDataStruct["parseWarnings"].push( thisID + "seems to be an orphan" );
+	    }
+	}
+
+	// keep track of what IDs we've dealt with
+	if ( isNaN( dealtWithIDs[thisID] ) ){
+	    dealtWithIDs[thisID] = 1
+	}
+	else {
+	    dealtWithIDs[thisID]++;
 	}
 
     }
