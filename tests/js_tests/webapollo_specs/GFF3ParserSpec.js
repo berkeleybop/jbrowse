@@ -5,8 +5,6 @@ describe("GFF3Parser", function() {
 
 	// Some legal GFF3 features I'm working on supporting now (11/2012):
 	// - features with multiple parents
-	// - features with identical IDs on multiple lines ("discontinuous features"):
-	//      http://gmod.org/wiki/GFF#Discontinuous_Features
 
 	// variables for holding fixtures and parsed output
 	var gff3Parser;

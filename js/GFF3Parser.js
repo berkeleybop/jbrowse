@@ -114,7 +114,7 @@ GFF3Parser.prototype.parse = function(gff3String) {
        return false;
     }
 
-    // put feature in ["data"] for discontiguous features we've already "filed"
+    // put feature in ["data"] for discontinuous features we've already "filed"
     var df_recursion_level = 0;
     var df_maximum_df_recursion_level = 200; 
     var placeDiscontiguousFeature = function(thisLine, featureArrayToSearch) {
