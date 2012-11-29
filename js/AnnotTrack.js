@@ -2403,6 +2403,7 @@ AnnotTrack.prototype.exportData = function(key, options) {
 	var content = dojo.create("div");
 	var waitingDiv = dojo.create("div", { innerHTML: "<img class='waiting_image' src='img/loading.gif' />" }, content);
 	var responseDiv = dojo.create("div", { class: "export_response" }, content);
+	var responseIFrame = dojo.create("iframe", { class: "export_response_iframe" }, responseDiv);
 	dojo.xhrGet( {
 		url: context_path + "/IOService?operation=write&adapter=" + adapter + "&track=" + track.getUniqueTrackName() + "&" + options,
 		handleAs: "text",
@@ -2410,10 +2411,15 @@ AnnotTrack.prototype.exportData = function(key, options) {
 		load: function(response, ioArgs) {
 			dojo.style(waitingDiv, { display: "none" } );
 			response = response.replace("href='", "href='../");
-			responseDiv.innerHTML = response;
+			var iframeDoc = responseIFrame.contentWindow.document;
+			iframeDoc.open();
+			iframeDoc.write(response);
+			iframeDoc.close();
+//			responseDiv.innerHTML = response;
 		},
 		// The ERROR function will be called in an error case.
 		error: function(response, ioArgs) {
+			dojo.style(waitingDiv, { display: "none" } );
 			responseDiv.innerHTML = "Unable to export data";
 		}
 	});
