@@ -64,10 +64,7 @@ var GenomeView = function( browser, elem, stripeWidth, refseq, zoomLevel ) {
 
     // WebApollo needs max zoom level to be sequence residues char width
     this.maxPxPerBp = this.charWidth;
-
-    console.log("charWidth: " + this.charWidth);
-    console.log("seqHeight: " + this.seqHeight);
-
+    
     //the reference sequence
     this.ref = refseq;
     //current scale, in pixels per bp
@@ -569,8 +566,6 @@ GenomeView.prototype.calculateSequenceCharacterSize = function( containerElement
     var widthText = "12345678901234567890123456789012345678901234567890";
     widthTest.appendChild(document.createTextNode(widthText));
     containerElement.appendChild(widthTest);
-    console.log("charWidth calc element: ");
-    console.log(widthTest);
 
     var result = {
         width:  widthTest.clientWidth / widthText.length,
