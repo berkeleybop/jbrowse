@@ -49,7 +49,6 @@
          "menuTemplate" : [
              {
                "label" : "Item with submenu",
-               # hello this is a comment
                "children" : [
                {
                  "label" : "Check gene on databases",
