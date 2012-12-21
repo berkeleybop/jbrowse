@@ -19,14 +19,9 @@ generate-names.pl - generate a global index of feature names
 
 Data directory to process.  Default 'data/'.
 
-=item --tracks <trackname>[,...]
-
-Comma-separated list of which tracks to include in the names index.  If
-not passed, all tracks are indexed.
-
 =item --thresh <threshold>
 
-Optional LazyPatricia chunking threshold, in bytes.  Default 100kb.  See
+Optional LazyPatricia chunking threshold.  Default 200.  See
 L<LazyPatricia> for details.
 
 =item --verbose
@@ -45,7 +40,7 @@ use strict;
 use warnings;
 
 use FindBin qw($Bin);
-use lib "$Bin/../src/perl5";
+use lib "$Bin/../lib";
 use JBlibs;
 
 use Fcntl ":flock";
@@ -60,26 +55,17 @@ use JSON 2;
 use LazyPatricia;
 use GenomeDB;
 
-use Data::Dumper;
-$Data::Dumper::Indent = 1;
-
 my %trackHash;
-my @includedTrackNames;
 my @tracksWithNames;
 
 my $outDir = "data";
-my $thresh = 100 * 2**10;
+my $thresh = 200;
 my $verbose = 0;
 my $help;
 GetOptions("dir|out=s" => \$outDir,
            "thresh=i" => \$thresh,
            "verbose+" => \$verbose,
-           'tracks=s' => \@includedTrackNames,
            "help|h|?" => \$help) or pod2usage();
-
-my %includedTrackNames = map { $_ => 1 }
-                         map { split ',', $_ }
-                         @includedTrackNames;
 
 pod2usage( -verbose => 2 ) if $help;
 
@@ -97,12 +83,7 @@ my $nameDir = catdir($outDir, "names");
 mkdir($nameDir) unless (-d $nameDir);
 
 my @refSeqs  = @{ $gdb->refSeqs   };
-my @tracks   = grep { !%includedTrackNames || $includedTrackNames{ $_->{label} } }
-               @{ $gdb->trackList };
-
-if( $verbose ) {
-    print STDERR "Tracks:\n".join('', map "    $_->{label}\n", @tracks );
-}
+my @tracks   = @{ $gdb->trackList };
 
 # open the root file; we lock this file while we're
 # reading the name lists, deleting all the old lazy-*
@@ -115,10 +96,7 @@ flock $root, LOCK_EX;
 # read the name list for each track that has one
 my %nameHash;
 my $trackNum = 0;
-my @namearray;
-
 foreach my $ref (@refSeqs) {
-    push @{$nameHash{lc $ref->{name}}}, [ @{$ref}{ qw/ name length name seqDir start end seqChunkSize/ }];
     foreach my $track (@tracks) {
         my $infile = catfile( $outDir,
                               "tracks",
@@ -141,8 +119,7 @@ foreach my $ref (@refSeqs) {
                     push @tracksWithNames, $track;
                 }
 
-                push @{$nameHash{lc $alias}}, [ $alias,
-                                                $trackHash{$track},
+                push @{$nameHash{lc $alias}}, [ $trackHash{$track},
                                                 @{$nameinfo}[2..$#{$nameinfo}]];
             }
         }
@@ -172,7 +149,7 @@ my ($total, $thisChunk) =
           if $verbose;
   });
 
-print STDERR "${total}b total size, with ${thisChunk}b in the root chunk\n"
+print STDERR "$total total names, with $thisChunk in the root chunk\n"
   if $verbose;
 
 # write the root

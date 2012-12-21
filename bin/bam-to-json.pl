@@ -8,8 +8,8 @@ bam-to-json.pl - format data from a BAM file for display by JBrowse
 
   bam-to-json.pl                               \
       --bam <bam file>                         \
-      --trackLabel <track identifier>          \
       [ --out <output directory> ]             \
+      [ --trackLabel <track identifier> ]      \
       [ --key <human-readable track name> ]    \
       [ --cssClass <class> ]                   \
       [ --clientConfig '{ JSON }' ]            \
@@ -64,7 +64,7 @@ use strict;
 use warnings;
 
 use FindBin qw($Bin);
-use lib "$Bin/../src/perl5";
+use lib "$Bin/../lib";
 use JBlibs;
 
 use Pod::Usage;
@@ -168,10 +168,7 @@ foreach my $seqInfo (@refSeqs) {
     my $sorter = NCLSorter->new( 1, 2, sub { $track->addSorted( $_[0]) } );
     #$sorter->addSorted( [ 0, 23, 345, 1 ] );
     $index->fetch( $bam, $tid, $start, $end,
-                   sub {
-                       my $a = align2array( $_[0] );
-                       $sorter->addSorted( $a ) if $a->[2] - $a->[1] > 1;
-                   }
+                   sub { $sorter->addSorted( align2array( $_[0] )) }
                   );
     $sorter->flush;
     $track->finishLoad;
@@ -186,13 +183,11 @@ exit;
 sub align2array {
     my $align = shift;
 
-    my $a = [ 0,
-              $align->pos,
-              $align->calend + 1,
-              $align->reversed ? -1 : 1
-              ];
-    $a->[2]--;
-    return $a;
+    return [ 0,
+             $align->pos,
+             $align->calend + 1,
+             $align->reversed ? -1 : 1
+           ];
 }
 
 sub slurp {

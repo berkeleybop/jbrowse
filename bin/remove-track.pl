@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 use FindBin '$RealBin';
-use lib "$RealBin/../src/perl5";
+use lib "$RealBin/../lib";
 use JBlibs;
 
 use Bio::JBrowse::Cmd::RemoveTrack;

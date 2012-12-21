@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use strict;
 use FindBin qw($RealBin);
-use lib "$RealBin/../src/perl5";
+use lib "$RealBin/../lib";
 use JBlibs;
 
 use Bio::JBrowse::Cmd::FlatFileToJson;
@@ -22,6 +22,7 @@ flatfile-to-json.pl - format data into JBrowse JSON format from an annotation fi
       [ --out <output directory> ]                                            \
       [ --key <human-readable track name> ]                                   \
       [ --className <CSS class name for displaying features> ]                \
+      [ --autocomplete <none|label|alias|all> ]                               \
       [ --getType ]                                                           \
       [ --getPhase ]                                                          \
       [ --getSubfeatures ]                                                    \
@@ -36,6 +37,8 @@ flatfile-to-json.pl - format data into JBrowse JSON format from an annotation fi
       [ --nclChunk <chunk size for generated NCLs> ]                          \
       [ --compress ]                                                          \
       [ --sortMem <memory in bytes to use for sorting> ]                      \
+      [ --webApollo ]                                                         \
+      [ --renderClassName <CSS class for rendering transcript> ]
 
 =head1 ARGUMENTS
 
@@ -76,6 +79,11 @@ Output directory to write to.  Defaults to "data/".
 =item --className <CSS class name for displaying features>
 
 CSS class for features.  Defaults to "feature".
+
+=item --autocomplete <none|label|alias|all>
+
+Make these features searchable by their C<label>, by their C<alias>es,
+both (C<all>), or C<none>.  Defaults to C<none>.
 
 =item --getType
 
@@ -121,9 +129,6 @@ whatever definition of "source" your data file might have.  For
 example, "mRNA:exonerate" will filter for only mRNA features that have
 a source of "exonerate".
 
-Multiple type names can be specified by separating the type names with
-commas, e.g. C<--type mRNA:exonerate,ncRNA>.
-
 =item --nclChunk <chunk size for generated NCLs>
 
 NCList chunk size; if you get "json text or perl structure exceeds
@@ -140,6 +145,14 @@ additional configuration to serve these correctly.
 
 Bytes of RAM to use for sorting features.  Default 512MB.
 
+=item --webApollo
+
+Write out JSON for use with WebApollo instead of Jbrowse. As of 8/2012 this entails 1) joining all CDS features into one big wholeCDS feature that spans from the start of the first CDS to the end of the last CDS and 2) merging UTRs into exon features. 
+
+=item --renderClassName <css class>
+
+CSS class for rendering transcripts.  Required with --webApollo flag.
+
 =back
 
 =head2 BED-specific
@@ -155,12 +168,5 @@ L<Bio::FeatureIO::bed>.  Do C<<perldoc Bio::FeatureIO::bed>> for
 details.
 
 =back
-
-=head1 MEMORY USAGE
-
-For efficient memory usage, it is very important that large GFF3 files
-have C<###> lines in them periodically.  For details of what C<###> is
-and how it is used, see the GFF3 specification at
-L<http://www.sequenceontology.org/gff3.shtml>.
 
 =cut
