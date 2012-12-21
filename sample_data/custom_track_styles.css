@@ -1,0 +1,16 @@
+.gold-90pct, 
+.plus-gold-90pct, 
+.minus-gold-90pct  {
+    background-color: gold;
+    height: 90%;
+    top: 5%;
+    border: 1px solid gray;
+}
+
+.dimgold-60pct, 
+.plus-dimgold-60pct, 
+.minus-dimgold-60pct  {
+    background-color: #B39700;
+    height: 60%;
+    top: 20%;
+}
