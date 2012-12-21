@@ -144,7 +144,7 @@ Browser.prototype._initialLocation = function() {
 };
 
 Browser.prototype.version = function() {
-    var BUILD_SYSTEM_JBROWSE_VERSION;
+    var BUILD_SYSTEM_JBROWSE_VERSION = "webapollo_1.0";
     return BUILD_SYSTEM_JBROWSE_VERSION || 'development';
 }.call();
 
