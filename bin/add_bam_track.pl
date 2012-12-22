@@ -17,7 +17,7 @@ my $out_file = "data/trackList.json";
 my $label;
 my $bam_url;
 my $key;
-my $classname = "bam";
+my $classname = "bam-read";
 my $mismatches = 0;
 my $coverage = 0;
 my $min_score = undef;
@@ -58,7 +58,7 @@ usage: $progname
 	[-k|--key <track_key>]
 	[-c|--classname <css_class>]
 	[-m|--mismatches]
-	[-C|--coverage]
+	[-C|--coverag e]
 	[-s|--min_score <min_score>]
 	[-S|--max_score <max_score>]
 	[-h|--help]
@@ -143,18 +143,8 @@ sub generate_new_bam_alignment_entry {
 		storeClass	=> $STORE_CLASS,
 		type		=> $ALIGNMENT_TYPE,
 		style	 	=> {
-			arrowheadClass 		=> JSON::null,
 			featureScale		=> 0.5,
 			labelScale		=> 100,
-			subfeatureClasses 	=> {
-				"M" => "cigarM",
-				"D" => "cigarD",
-				"N" => "cigarN",
-				"=" => "cigarEQ",
-				"E" => "cigarEQ",
-				"X" => "cigarX",
-				"I" => "cigarI"
-			}
 		}
 	};
 }
