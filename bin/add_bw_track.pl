@@ -8,12 +8,17 @@ use IO::File;
 use File::Basename;
 use JSON;
 
+my $STORE_CLASS = "JBrowse/Store/BigWig";
+my $HEATMAP_TYPE = "JBrowse/View/Track/Wiggle/Density";
+my $PLOT_TYPE =  "JBrowse/View/Track/Wiggle/XYPlot";
+
 my $in_file = "data/trackList.json";
 my $out_file = "data/trackList.json";
 my $label;
 my $bw_url;
 my $key;
-my $bicolor_pivot = "mean";
+my $plot = 0;
+my $bicolor_pivot = "zero";
 my $pos_color = undef;
 my $neg_color = undef;
 my $min_score = undef;
@@ -28,7 +33,8 @@ sub parse_options {
 		   "out|o=s"		=> \$out_file,
 		   "label|l=s"		=> \$label,
 		   "bw_url|u=s"		=> \$bw_url,
-		   "key|k=s"		=> \$key,
+		   "key|k=s"		=> \$key, 
+		   "plot|P"		=> \$plot,
 		   "bicolor_pivot|b=s"	=> \$bicolor_pivot,
 		   "pos_color|c=s"	=> \$pos_color,
 		   "neg_color|C=s"	=> \$neg_color,
@@ -50,6 +56,7 @@ usage: $progname
 	-l|--label <track_label>
 	-u|--bw_url <url_to_big_wig_file>
 	[-k|--key <track_key>]
+	[-P|--plot]
 	[-b|bicolor_pivot <pivot_for_changing_colors>]
 	[-c|pos_color <color_for_positive_side_of_pivot>]
 	[-C|neg_color <color_for_negative_side_of_pivot>]
@@ -63,6 +70,7 @@ usage: $progname
 	k: key (display name) for track [default: label value]
 	b: point where to set pivot for color changes - can be "mean", "zero",
 	   or a numeric value [default: mean]
+	P: display as plot instead of density heatmap
 	c: CSS color for positive side of pivot [default: blue]
 	C: CSS color for negative side of pivot [default: red]
 	s: mininum score to be graphed [default: autocalculated]
@@ -80,16 +88,45 @@ sub add_bw_track {
 	$in->close();
 	my $track_list = $json->decode($track_list_contents);
 	my $bw_entry;
-	foreach my $track (@{$track_list->{tracks}}) {
+
+	my $index;
+	my $tracks = $track_list->{tracks};
+	for ($index = 0; $index < scalar(@{$tracks}); ++$index) {
+		my $track = $tracks->[$index];
 		if ($track->{label} eq $label) {
 			$bw_entry = $track;
 			last;
 		}
 	}
+
+#	foreach my $track (@{$track_list->{tracks}}) {
+#		if ($track->{label} eq $label) {
+#			$bw_entry = $track;
+#			last;
+#		}
+#	}
 	if (!$bw_entry) {
-		$bw_entry = generate_new_bw_entry();
+		# $bw_entry = generate_new_bw_heatmap_entry();
+		$bw_entry = !$plot ? generate_new_bw_heatmap_entry() :
+				generate_new_bw_plot_entry();
+
 		push @{$track_list->{tracks}}, $bw_entry;
-	};
+	}
+	else {
+		if ($plot) {
+			if ($bw_entry->{type} eq $HEATMAP_TYPE) {
+				$bw_entry = generate_new_bw_plot_entry();
+				$tracks->[$index] = $bw_entry;
+			}
+		}
+		else {
+			if ($bw_entry->{type} eq $PLOT_TYPE) {
+				$bw_entry = generate_new_bw_heatmap_entry();
+				$tracks->[$index] = $bw_entry;
+			}
+		}
+	}
+
 	$bw_entry->{label} = $label;
 	$bw_entry->{urlTemplate} = $bw_url;
 	$bw_entry->{key} = $key;
@@ -126,9 +163,16 @@ sub add_bw_track {
 	$out->close();
 }
 
-sub generate_new_bw_entry {
+sub generate_new_bw_heatmap_entry {
 	return {
-		storeClass	=> "JBrowse/Store/BigWig",
-		type		=> "JBrowse/View/Track/Wiggle/Density",
+		storeClass	=> $STORE_CLASS, 
+		type		=> $HEATMAP_TYPE
+	};
+}
+
+sub generate_new_bw_plot_entry {
+	return {
+		storeClass	=> $STORE_CLASS, 
+		type		=> $PLOT_TYPE
 	};
 }
