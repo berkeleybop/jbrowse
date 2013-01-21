@@ -328,7 +328,7 @@ sub webApolloizeFeature {
     # 2) delete CDSs
     # 3) delete UTRs
     my @newChildren;
-    my @sortedCDScoords = sort map {$_->{start}, $_->{end}} @{getChildren( $feat, 'CDS' )};
+    my @sortedCDScoords = sort {$a <=> $b} map {$_->{start}, $_->{end}} @{getChildren( $feat, 'CDS' )};
     foreach my $thisChild ( @{getChildren( $feat )} ){
       if ($thisChild->{type} eq 'wholeCDS'){
 	$thisChild->{start} = $sortedCDScoords[0];

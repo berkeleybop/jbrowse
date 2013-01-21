@@ -1,7 +1,6 @@
 use strict;
 use warnings;
 
-
 use JBlibs;
 
 use Test::More;
@@ -20,9 +19,9 @@ sub run_with(@) {
     #system $^X, 'bin/flatfile-to-json.pl', @_;
     #ok( ! $?, 'flatfile-to-json.pl ran ok' );
     my @args = @_;
-    #warnings_are {
+    warnings_are {
       Bio::JBrowse::Cmd::FlatFileToJson->new( @args )->run;
-    #} [], 'ran without warnings';
+    } [], 'ran without warnings';
 }
 
 sub tempdir {
@@ -210,7 +209,7 @@ for my $testfile ( "tests/data/au9_scaffold_subset.gff3", "tests/data/au9_scaffo
     my $read_json = sub { slurp( $tempdir, @_ ) };
     my $cds_trackdata = $read_json->(qw( tracks au9_full1 Group1.33 trackData.json ));
     is( $cds_trackdata->{featureCount}, 28, 'got right feature count' ) or diag explain $cds_trackdata;
-    is( scalar @{$cds_trackdata->{intervals}{classes}}, 5, 'got the right number of classes' )
+    is( scalar @{$cds_trackdata->{intervals}{classes}}, 3, 'got the right number of classes' )
         or diag explain $cds_trackdata->{intervals}{classes};
 
     #system "find $tempdir";
@@ -237,41 +236,80 @@ for my $testfile ( "tests/data/au9_scaffold_subset.gff3", "tests/data/au9_scaffo
       ) or diag explain $trackdata;
 }
 
+{   #diag "running on Group1.33_Amel_4.5.maker.gff with --webApollo flag, test for webapollo friendly nclist attribute, CDS features combined into wholeCDS features, and UTR features merged into an exon features";
 
-{
-    # test BED import
     my $tempdir = tempdir();
+    dircopy( 'tests/data/MAKER', $tempdir );
+
     run_with (
         '--out' => $tempdir,
-        '--bed' => catfile('tests','data','foo.bed'),
-        '--compress',
-        '--key' => 'Fooish Bar Data',
-        '--trackLabel' => 'foo',
+	'--gff' => 'tests/data/MAKER/Group1.33_Amel_4.5.maker.gff',
+	'--arrowheadClass' => 'trellis-arrowhead',
+	'--getSubs',
+	'--subfeatureClasses' => '{"CDS": "ogsv3-CDS", "UTR": "ogsv3-UTR", "exon":"ogsv3-exon", "wholeCDS":null}',
+	'--cssClass' => 'refseq-transcript',
+	'--type' => 'mRNA',
+	'--trackLabel' => 'just_maker_singleton',
+	'--webApollo',
+	'--renderClassName' => 'ogsv3-transcript-render'
         );
-    my $read_json = sub { slurp( $tempdir, @_ ) };
-    my $trackdata = FileSlurping::slurp_tree( catdir( $tempdir, qw( tracks foo chr10 )));
-    is( scalar( grep @{$trackdata->{$_}} == 0,
-                grep /^lf/,
-                keys %$trackdata
-               ),
-        0,
-        'no empty chunks in trackdata'
-      ) or diag explain $trackdata;
 
-    is_deeply( $trackdata->{'trackData.jsonz'}{intervals}{classes}[0],
-               {
-                   'attributes' => [
-                       'Start',
-                       'End',
-                       'Strand',
-                       'Seq_id',
-                       'Name',
-                       'Score'
-                       ],
-                   'isArrayAttr' => {
-                       }
-                   }
-               ) or diag explain $trackdata->{'trackData.jsonz'};
+    my $read_json = sub { slurp( $tempdir, @_ ) };
+    my $track_data = $read_json->(qw( tracks just_maker_singleton Group1.33 trackData.json ));
+    my $track_list = $read_json->(qw( trackList.json ));
+
+    # make sure we got rid of CDS features
+    my @CDSfeat = grep {$_->[6] eq 'CDS' } @{$track_data->{'intervals'}->{'nclist'}->[0]->[10]};
+    ok(scalar @CDSfeat == 0, '--webApollo flag gets rid of CDS features');
+
+    # check wholeCDS
+    my @wholeCDSfeat = grep {$_->[6] eq 'wholeCDS' } @{$track_data->{'intervals'}->{'nclist'}->[0]->[10]};
+    ok(scalar @wholeCDSfeat == 1, '--webApollo flag causes wholeCDS feature to be created');
+    is_deeply( $wholeCDSfeat[0],  [ 1, 245759, 246815, 1, 'maker', 0, "wholeCDS", undef, '1:gnomon_566853_mRNA:cds', undef, [] ],
+               'got the right wholeCDS feature'
+               ) or diag explain $wholeCDSfeat[0];
+
+    my @utr_feats = grep {$_->[6] =~ '((five|three)_prime_)*UTR$' } @{$track_data->{'intervals'}->{'nclist'}->[0]->[10]};
+    ok( scalar @utr_feats == 0, '--webApollo flag gets rid of UTR and five|three_prime_UTR features');
+
+    # check for "renderClassName" : "ogsv3-transcript-render" keyval in mRNA feature
+    ok($track_list->{'tracks'}->[3]->{'style'}->{'renderClassName'} eq 'ogsv3-transcript-render', '--renderClassName ogsv3-transcript-render flag puts "renderClassName" : "ogsv3-transcript-render" into mRNA feature');
+
+    # check for "type" values are changed from "FeatureTrack" to "WebApollo/View/Track/DraggableHTMLFeatures" in mRNA feature
+    ok($track_list->{'tracks'}->[3]->{'type'} eq 'WebApollo/View/Track/DraggableHTMLFeatures','--webApollo flag changes type values to DraggableFeatureTrack in mRNA feature');
+
+}
+
+{   #diag "running on testWholeCDSCoords.gff with --webApollo flag, test for correct wholeCDS coordinates";
+
+    my $tempdir = tempdir();
+    dircopy( 'tests/data/MAKER', $tempdir );
+
+    run_with (
+        '--out' => $tempdir,
+	'--gff' => 'tests/data/MAKER/testWholeCDSCoords.gff',
+	'--arrowheadClass' => 'trellis-arrowhead',
+	'--getSubs',
+	'--subfeatureClasses' => '{"CDS": "ogsv3-CDS", "UTR": "ogsv3-UTR", "exon":"ogsv3-exon", "wholeCDS":null}',
+	'--cssClass' => 'refseq-transcript',
+	'--type' => 'mRNA',
+	'--trackLabel' => 'just_maker_singleton',
+	'--webApollo',
+	'--renderClassName' => 'ogsv3-transcript-render'
+        );
+
+    my $read_json = sub { slurp( $tempdir, @_ ) };
+    my $track_data = $read_json->(qw( tracks just_maker_singleton scf7180000670172 trackData.json ));
+    my $track_list = $read_json->(qw( trackList.json ));
+
+    # check wholeCDS
+    my @wholeCDSfeat = grep {$_->[6] eq 'wholeCDS' } @{$track_data->{'intervals'}->{'nclist'}->[0]->[10]};
+
+    ok( $wholeCDSfeat[0][1] == 395, 'wholeCDS has correct start coordinate');
+    ok( $wholeCDSfeat[0][2] == 1444, 'wholeCDS has correct end coordinate');
+    is_deeply( $wholeCDSfeat[0], [ 1, 395, 1444, '-1', 'maker', 0, 'wholeCDS', undef, 'maker-scf7180000670172-fgenesh-gene-0.6-mRNA-1:cds:3', undef, [] ],
+               'got the right wholeCDS feature'
+               ) or diag explain $wholeCDSfeat[0];
 
 }
 
