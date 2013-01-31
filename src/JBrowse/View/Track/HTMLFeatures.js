@@ -675,8 +675,12 @@ HTMLFeatures = declare( HTMLFeatures,
             var uniqueId = feature.id();
             if( ! this._featureIsRendered( uniqueId ) ) {
                 /* feature render, adding to block, centering refactored into addFeatureToBlock() */
+                var filter = this.browser.view.featureFilter;
+                if (!filter || filter(feature))  {
+
                 var featDiv = this.addFeatureToBlock( feature, uniqueId, block, scale, labelScale, descriptionScale,
                                                       containerStart, containerEnd );
+               }
             }
         });
 
