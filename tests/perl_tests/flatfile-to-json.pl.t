@@ -270,10 +270,37 @@ for my $testfile ( "tests/data/au9_scaffold_subset.gff3", "tests/data/au9_scaffo
                        ],
                    'isArrayAttr' => {
                        }
-                   }
+                   },
+	       "got right attributes"
                ) or diag explain $trackdata->{'trackData.jsonz'};
 
 }
 
+{
+    my $snv_tempdir = tempdir();
+
+    run_with (
+        '--out' => $snv_tempdir,
+        '--gff' => "tests/data/heterozygous_snv.gvf",
+        '--trackLabel' => 'testSNV',
+        '--key' => 'test SNV',
+        '--type' => 'SNV',
+        '--autocomplete' => 'all',
+        '--cssClass' => 'transcript',
+        );
+
+    my $read_json = sub { slurp( $snv_tempdir, @_ ) };
+    my $snv_trackdata = $read_json->(qw( tracks testSNV chr1 trackData.json ));
+
+    is( $snv_trackdata->{featureCount}, 1, 'got right feature count' ) or diag explain $snv_trackdata;    
+    is_deeply( $snv_trackdata->{'intervals'}->{'classes'}->[0]->{'attributes'}, 
+	       ['Start', 'End',  'Strand', 'Source', 'Variant_reads2', 'Variant_seq', 'Seq_id', 'Variant_reads', 'Score', 'Genotype', 'Variant_seq2', 'Total_reads', 'Reference_seq', 'Type', 'Id'],  
+	       'got right attributes in trackData.json for heterozygous SNV from GVF')  
+	or diag explain $snv_trackdata->{'intervals'}->{'classes'}->[0]->{'attributes'};
+    is_deeply( $snv_trackdata->{'intervals'}->{'nclist'}->[0],
+	[0,  15882,   15883,  1,  'SOAPsnp',   16,  'G',  'chr1',  17,  36.5,  'heterozygous',  'C',  33,  'C',  'SNV',  'chr1:SOAP:SNV:15883'],
+	"got right NClist for heterzygous SNV from GVF"
+	) or diag explain $snv_trackdata->{'intervals'}->{'nclist'}->[0];
+}
 
 done_testing;
