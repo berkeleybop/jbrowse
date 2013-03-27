@@ -32,6 +32,7 @@ sub option_definitions {
         "gff=s",
         "bed=s",
         "bam=s",
+        "vcf=s",
         "out=s",
         "trackLabel=s",
         "key=s",
@@ -60,8 +61,8 @@ sub run {
     my ( $self ) = @_;
 
     Pod::Usage::pod2usage( "Must provide a --trackLabel parameter." ) unless defined $self->opt('trackLabel');
-    unless( defined $self->opt('gff') || defined $self->opt('bed') || defined $self->opt('bam') ) {
-        Pod::Usage::pod2usage( "You must supply either a --gff or --bed parameter." )
+    unless( defined $self->opt('gff') || defined $self->opt('bed') || defined $self->opt('bam') || defined $self->opt('vcf') ) {
+        Pod::Usage::pod2usage( "You must supply either a --gff, --bed or --vcf parameter." )
     }
 
     $self->opt('bam') and die "BAM support has been moved to a separate program: bam-to-json.pl\n";
@@ -100,7 +101,8 @@ sub run {
 
     my $feature_stream = $self->opt('gff') ? $self->make_gff_stream :
                          $self->opt('bed') ? $self->make_bed_stream :
-                             die "Please specify --gff or --bed.\n";
+                         $self->opt('vcf') ? $self->make_vcf_stream :
+                             die "Please specify --gff, --bed or --vcf.\n";
 
     # build a filtering subroutine for the features
     my $types = $self->opt('type');
@@ -148,6 +150,22 @@ sub make_bed_stream {
         stream => sub { $io->next_feature },
         track_label => $self->opt('trackLabel'),
     );
+}
+
+sub make_vcf_stream {
+    my $self = shift;
+
+    require Vcf;
+    # require Bio::JBrowse::FeatureStream::GFF3_LowLevel;
+    require Bio::JBrowse::FeatureStream::VCF_LowLevel;
+
+    my $p = Vcf->new( file => $self->opt('vcf') );
+    $p->parse_header;
+
+    return Bio::JBrowse::FeatureStream::VCF_LowLevel->new(
+        parser => $p,
+        track_label => $self->opt('trackLabel')
+     );
 }
 
 sub make_feature_filter {
