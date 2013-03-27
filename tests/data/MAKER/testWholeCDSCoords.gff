@@ -1,0 +1,10 @@
+scf7180000670172	maker	gene	396	1444	.	-	.	ID=maker-scf7180000670172-fgenesh-gene-0.6;Name=maker-scf7180000670172-fgenesh-gene-0.6;
+scf7180000670172	maker	mRNA	396	1444	.	-	.	ID=maker-scf7180000670172-fgenesh-gene-0.6-mRNA-1;Parent=maker-scf7180000670172-fgenesh-gene-0.6;Name=maker-scf7180000670172-fgenesh-gene-0.6-mRNA-1;_AED=0.08;_eAED=0.17;_QI=0|1|0.75|1|1|1|4|0|231;
+scf7180000670172	maker	exon	396	575	25.47	-	.	ID=maker-scf7180000670172-fgenesh-gene-0.6-mRNA-1:exon:0;Parent=maker-scf7180000670172-fgenesh-gene-0.6-mRNA-1;
+scf7180000670172	maker	exon	736	968	25.17	-	.	ID=maker-scf7180000670172-fgenesh-gene-0.6-mRNA-1:exon:1;Parent=maker-scf7180000670172-fgenesh-gene-0.6-mRNA-1;
+scf7180000670172	maker	exon	1081	1299	29.01	-	.	ID=maker-scf7180000670172-fgenesh-gene-0.6-mRNA-1:exon:2;Parent=maker-scf7180000670172-fgenesh-gene-0.6-mRNA-1;
+scf7180000670172	maker	exon	1381	1444	14.97	-	.	ID=maker-scf7180000670172-fgenesh-gene-0.6-mRNA-1:exon:3;Parent=maker-scf7180000670172-fgenesh-gene-0.6-mRNA-1;
+scf7180000670172	maker	CDS	396	575	.	-	0	ID=maker-scf7180000670172-fgenesh-gene-0.6-mRNA-1:cds:3;Parent=maker-scf7180000670172-fgenesh-gene-0.6-mRNA-1;
+scf7180000670172	maker	CDS	736	968	.	-	2	ID=maker-scf7180000670172-fgenesh-gene-0.6-mRNA-1:cds:2;Parent=maker-scf7180000670172-fgenesh-gene-0.6-mRNA-1;
+scf7180000670172	maker	CDS	1081	1299	.	-	2	ID=maker-scf7180000670172-fgenesh-gene-0.6-mRNA-1:cds:1;Parent=maker-scf7180000670172-fgenesh-gene-0.6-mRNA-1;
+scf7180000670172	maker	CDS	1381	1444	.	-	0	ID=maker-scf7180000670172-fgenesh-gene-0.6-mRNA-1:cds:0;Parent=maker-scf7180000670172-fgenesh-gene-0.6-mRNA-1;
