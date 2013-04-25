@@ -433,6 +433,35 @@ var AnnotTrack = declare( DraggableFeatureTrack,
         var featDiv = this.inherited( arguments );
 
         if (featDiv && featDiv != null)  {
+            var label = track.getLabelComment(feature);
+            if (label && featDiv.labelDiv)  {
+                featDiv.labelDiv.innerHTML = '<div class="feature-name">'+label+'</div>';
+            }
+
+            var locked = track.featureLockedByOtherUser(feature);
+            if (locked)  {
+                dojo.addClass( featDiv, 'edit-locked');                
+                if (featDiv.labelDiv)  {
+                    dojo.addClass( featDiv.labelDiv, 'edit-locked-label'); 
+                    featDiv.labelDiv.title = "locked by: " + locked;
+                   // featDiv.labelDiv.innerHTML = '<div class="feature-name">'+feature.afeature.name+'</div>'+
+                   //  ' <div class="feature-description"> locked by user: '+locked+'</div>';
+//                    featDiv.labelDiv.innerHTML = 
+//                        '<div class="feature-name">'+feature.afeature.name+'<span class="edit-locked-label2"> locked by user: '+locked+'</span></div>';
+                }
+            }
+            else if (locked === null)  {  // locked by self
+                dojo.addClass( featDiv, 'edit-locked-self');                
+                if (featDiv.labelDiv)  {
+                    dojo.addClass( featDiv.labelDiv, 'edit-locked-label-self'); 
+                    featDiv.labelDiv.title = "locked by: " + track.username;
+                   // featDiv.labelDiv.innerHTML = '<div class="feature-name">'+feature.afeature.name+'</div>'+
+                   //  ' <div class="feature-description"> locked by user: '+locked+'</div>';
+                   // featDiv.labelDiv.innerHTML = 
+                   //     '<div class="feature-name edit-locked-label2-self">'+feature.afeature.name+'</div>';
+                }
+            }
+
             annot_context_menu.bindDomNode(featDiv);
             $(featDiv).droppable(  {
                 accept: ".selected-feature",   // only accept draggables that are selected feature divs
@@ -602,7 +631,14 @@ var AnnotTrack = declare( DraggableFeatureTrack,
                             console.log("right edge delta bases: " + rightDeltaBases);
                         }
                         var subfeat = ui.originalElement[0].subfeature;
-                        console.log(subfeat);
+                        // console.log(subfeat);
+                        var locked = track.featureLockedByOtherUser(subfeat);
+                        if (locked) {
+                            console.log("can't edge drag, annotation locked by: " + locked);
+                            track.openDialog("Editing Blocked", "Cannot edit annotation, locked by user: " + locked);
+                            track.changed();
+                            return;
+                        }
 
                         var fmin = subfeat.get('start') + leftDeltaBases;
                         var fmax = subfeat.get('end') + rightDeltaBases;
@@ -610,11 +646,11 @@ var AnnotTrack = declare( DraggableFeatureTrack,
                         // var fmax = subfeat[track.subFields["end"]] + rightDeltaBases;
                         var postData = '{ "track": "' + track.getUniqueTrackName() + '", "features": [ { "uniquename": ' + subfeat.id() + ', "location": { "fmin": ' + fmin + ', "fmax": ' + fmax + ' } } ], "operation": "set_exon_boundaries" }';
                         track.executeUpdateOperation(postData);
-                        console.log(subfeat);
+                        // console.log(subfeat);
                         // track.hideAll();   shouldn't need to call hideAll() before changed() anymore
                         track.changed();
                     }
-                } );
+                } );  // end resizable statement
             }
         }
         event.stopPropagation();
@@ -639,6 +675,13 @@ var AnnotTrack = declare( DraggableFeatureTrack,
     /* feature_records ==> { feature: the_feature, track: track_feature_is_from } */
     addToAnnotation: function(annot, feature_records)  {
         var target_track = this;
+        var locked = target_track.featureLockedByOtherUser(annot);
+        if (locked)  {
+            console.log("in addToAnnotation, locked by other user: " + locked);
+            target_track.openDialog("Editing Blocked", "Cannot edit annotation, locked by user: " + locked);
+            return;
+        }
+
 
                 var subfeats = [];
                 var allSameStrand = 1;
@@ -877,6 +920,52 @@ var AnnotTrack = declare( DraggableFeatureTrack,
             track.executeUpdateOperation(postData);
     },
 
+    getLabelComment: function(feature)  {
+        var track = this;
+        // get top level feature (transcript)
+        while (feature._parent)  {  feature = feature._parent; }
+        var afeature = feature.afeature;
+        var props = afeature.properties;
+        for (var k=0; k<props.length; k++)  {
+            // need to restrict to comments?
+            var comment = props[k].value;
+            // if "LOCKED BY" comment, return user who locked, or false if no lock
+            if (comment.substring(0, "LABEL:".length) === "LABEL:")  {
+                var label = comment.substring("LABEL:".length);
+                return label;
+            }
+        }
+        // if no "LOCKED BY" comment, return false
+        return false;
+    }, 
+    
+/* returns false if no lock
+   returns null if locked by self
+   returns username that set lock if locked by other
+*/
+    featureLockedByOtherUser: function(feature)  {
+        var track = this;
+        // get top level feature (transcript)
+        while (feature._parent)  {  feature = feature._parent; }
+        var afeature = feature.afeature;
+        var props = afeature.properties;
+        for (var k=0; k<props.length; k++)  {
+            // need to restrict to comments?
+            var comment = props[k].value;
+            // if "LOCKED BY" comment, return user who locked, or false if no lock
+            if (comment.substring(0, "LOCKED BY".length) === "LOCKED BY")  {
+                var lock_user = comment.substring("LOCKED BY".length+2);
+                if (lock_user === track.username) { 
+                    return null;  }
+                else  {
+                    return lock_user;
+                }
+            }
+        }
+        // if no "LOCKED BY" comment, return false
+        return false;
+    }, 
+
     /**
      *  If there are multiple AnnotTracks, each has a separate FeatureSelectionManager
      *    (contrasted with DraggableFeatureTracks, which all share the same selection and selection manager
@@ -894,6 +983,13 @@ var AnnotTrack = declare( DraggableFeatureTrack,
         for (var i in records)  {
 	    var record = records[i];
 	    var selfeat = record.feature;
+            var locked = track.featureLockedByOtherUser(selfeat);
+            if (locked)  {  
+                console.log("cannot delete, locked by other user: " + locked);
+                track.openDialog("Editing Blocked", "Cannot edit annotation, locked by user: " + locked);
+                return;
+            }
+
 	    var seltrack = record.track;
             var uniqueName = selfeat.id();
             // just checking to ensure that all features in selection are from this track --
@@ -901,7 +997,6 @@ var AnnotTrack = declare( DraggableFeatureTrack,
             if (seltrack === track)  {
                 var trackdiv = track.div;
                 var trackName = track.getUniqueTrackName();
-
                 if (i > 0) {
                     features += ',';
                 }
@@ -980,13 +1075,28 @@ var AnnotTrack = declare( DraggableFeatureTrack,
 
     splitAnnotations: function(annots, event) {
         // can only split on max two elements
+        
         if( annots.length > 2 ) {
             return;
         }
+
         var track = this;
         var sortedAnnots = track.sortAnnotationsByLocation(annots);
         var leftAnnot = sortedAnnots[0];
         var rightAnnot = sortedAnnots[sortedAnnots.length - 1];
+
+/*        var locked_left = track.featureLockedByOtherUser(leftAnnot);
+        var locked_right = track.featureLockedByOtherUser(rightAnnot);
+        if (locked_left)  { 
+            track.openDialog("Editing Blocked", "Cannot edit annotation, locked by user: " + locked_left);
+            return;
+        }
+        else if (locked_right)  { 
+            track.openDialog("Editing Blocked", "Cannot edit annotation, locked by user: " + locked_right); 
+            return;
+        }
+*/
+
         var trackName = track.getUniqueTrackName();
 
         /*
@@ -1166,6 +1276,7 @@ var AnnotTrack = declare( DraggableFeatureTrack,
             track.openDialog("Comments for " + annot.get('name'), content);
     },
 
+
     createEditCommentsPanelForFeature: function(uniqueName, trackName) {
     	var track = this;
     	var content = dojo.create("div");
@@ -1206,6 +1317,10 @@ var AnnotTrack = declare( DraggableFeatureTrack,
     	};
 
     	var addComment = function(comment) {
+            if (comment === "LOCK")  {
+                comment = "LOCKED BY: " + track.username;
+                console.log("attempting to lock transcript: " + comment);
+            }
     		var features = '"features": [ { "uniquename": "' + uniqueName + '", "comments": [ "' + comment + '" ] } ]';
     		var operation = "add_comments";
     		var postData = '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }';
@@ -1213,6 +1328,14 @@ var AnnotTrack = declare( DraggableFeatureTrack,
     	};
 
     	var deleteComment = function(comment) {
+            if (comment.substring(0, "LOCKED BY".length) === "LOCKED BY")  {
+                var lock_user = comment.substring("LOCKED BY".length+2);
+                console.log("attempting to delete lock by user: *" + lock_user + "*");
+                if (lock_user != track.username)  {
+                    console.log("cannot remove lock, can only be removed by user: " + lock_user);
+                    return;
+                }
+            }
     		var features = '"features": [ { "uniquename": "' + uniqueName + '", "comments": [ "' + comment + '" ] } ]';
     		var operation = "delete_comments";
     		var postData = '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }';
@@ -2115,6 +2238,7 @@ getAnnotationInformation: function()  {
     initLoginMenu: function() {
         var track = this;
 	var browser = this.gview.browser;
+        if (browser.user_logged_in) { return; }
         if (this.permission)  {   // permission only set if permission request succeeded
             browser.addGlobalMenuItem( 'user',
                     new dijitMenuItem(
@@ -2133,13 +2257,14 @@ getAnnotationInformation: function()  {
             var userMenu = browser.makeGlobalMenu('user');
             var loginButton = new dijitDropDownButton(
                 { className: 'user',
-                  innerHTML: '<span class="usericon"></span> UserName',
+                  innerHTML: '<span class="usericon"></span> ' + track.username,
                   title: 'user logged in: UserName',
                   dropDown: userMenu
                 });
             // if add 'menu' class, button will be placed on left side of menubar instead (because of 'float: left' 
             //     styling in CSS rule for 'menu' class
             // dojo.addClass( loginButton.domNode, 'menu' );
+            browser.user_logged_in = true;
         }
         else  { 
             var loginButton = new dijitButton(
@@ -2411,6 +2536,7 @@ makeTrackMenu: function()  {
 		load: function(response, ioArgs) { //
 		    var permission = response.permission;
 		    thisObj.permission = permission;
+                    thisObj.username = response.username;
 		    if (loadCallback)  { loadCallback(permission); };
 		},
 		error: function(response, ioArgs) { //
@@ -2457,6 +2583,7 @@ makeTrackMenu: function()  {
     },
 
     updateMenu: function() {
+        this.updateDeleteMenuItem();
         this.updateSetTranslationStartMenuItem();
         this.updateMergeMenuItem();
         this.updateSplitMenuItem();
@@ -2468,6 +2595,18 @@ makeTrackMenu: function()  {
         this.updateRedoMenuItem();
         this.updateZoomToBaseLevelMenuItem();
         this.updateDuplicateMenuItem();
+    },
+
+    updateDeleteMenuItem: function() {
+        var menuItem = this.getMenuItem("delete");
+        var selected = this.selectionManager.getSelection();
+        for (var i = 0; i < selected.length; ++i) {
+            if (this.featureLockedByOtherUser(selected[i].feature))  {
+                    menuItem.set("disabled", true);
+                    return;
+            }
+        }
+        menuItem.set("disabled", false);
     },
 
     updateSetTranslationStartMenuItem: function() {
@@ -2488,7 +2627,13 @@ makeTrackMenu: function()  {
         else {
             menuItem.set("label", "Set translation start");
         }
+        if (this.featureLockedByOtherUser(selectedFeat))  {
+            menuItem.set("disabled", true);
+            return;
+        }
+
     },
+
 
     updateMergeMenuItem: function() {
         var menuItem = this.getMenuItem("merge");
@@ -2510,6 +2655,13 @@ makeTrackMenu: function()  {
                     return;
             }
         }
+        for (i = 0; i < selected.length; ++i) {
+            if (this.featureLockedByOtherUser(selected[i].feature))  {
+                    menuItem.set("disabled", true);
+                    return;
+            }
+        }
+        
         menuItem.set("disabled", false);
     },
 
@@ -2527,6 +2679,14 @@ makeTrackMenu: function()  {
                 return;
             }
         }
+
+        for (i = 0; i < selected.length; ++i) {
+            if (this.featureLockedByOtherUser(selected[i].feature))  {
+                    menuItem.set("disabled", true);
+                    return;
+            }
+        }
+
         menuItem.set("disabled", false);
     },
 
@@ -2537,11 +2697,27 @@ makeTrackMenu: function()  {
             menuItem.set("disabled", true);
             return;
         }
+
+        for (var i = 0; i < selected.length; ++i) {
+            if (this.featureLockedByOtherUser(selected[i].feature))  {
+                    menuItem.set("disabled", true);
+                    return;
+            }
+        }
+
         menuItem.set("disabled", false);
     },
 
     updateFlipStrandMenuItem: function() {
         var menuItem = this.getMenuItem("flip_strand");
+        var selected = this.selectionManager.getSelection();
+        for (var i = 0; i < selected.length; ++i) {
+            if (this.featureLockedByOtherUser(selected[i].feature))  {
+                    menuItem.set("disabled", true);
+                    return;
+            }
+        }
+        menuItem.set("disabled", false);
     },
 
     updateEditCommentsMenuItem: function() {
@@ -2577,6 +2753,13 @@ makeTrackMenu: function()  {
             menuItem.set("disabled", true);
             return;
         }
+        for (var i = 0; i < selected.length; ++i) {
+            if (this.featureLockedByOtherUser(selected[i].feature))  {
+                    menuItem.set("disabled", true);
+                    return;
+            }
+        }
+
         menuItem.set("disabled", false);
     },
 
@@ -2586,6 +2769,12 @@ makeTrackMenu: function()  {
         if (selected.length > 1) {
             menuItem.set("disabled", true);
             return;
+        }
+        for (var i = 0; i < selected.length; ++i) {
+            if (this.featureLockedByOtherUser(selected[i].feature))  {
+                    menuItem.set("disabled", true);
+                    return;
+            }
         }
         menuItem.set("disabled", false);
     },
