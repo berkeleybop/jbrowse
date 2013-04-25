@@ -148,6 +148,7 @@ var AnnotTrack = declare( DraggableFeatureTrack,
 	thisConfig.menuTemplate = null;
 	thisConfig.noExport = true;  // turn off default "Save track data" "
 	thisConfig.style.centerChildrenVertically = false;
+//        thisConfig.style.showLabels = true;
 	return thisConfig;
 	/*  start of alternative to nulling out JBrowse feature contextual menu, instead attempt to merge in AnnotTrack-specific menu items
 	var superConfig = this.inherited(arguments);
@@ -430,6 +431,13 @@ var AnnotTrack = declare( DraggableFeatureTrack,
         //    feature.short_id = uniqueId;
         //  }
         var track = this;
+
+        // filter out private features that don't belong to current user
+        var isPrivate = track.featureIsPrivate(feature);
+        if (isPrivate && (track.featureOwner(feature) != track.username))  {
+            return null;
+        }
+
         var featDiv = this.inherited( arguments );
 
         if (featDiv && featDiv != null)  {
@@ -438,8 +446,20 @@ var AnnotTrack = declare( DraggableFeatureTrack,
                 featDiv.labelDiv.innerHTML = '<div class="feature-name">'+label+'</div>';
             }
 
-            var locked = track.featureLockedByOtherUser(feature);
+            var locked = track.featureLocked(feature);
             if (locked)  {
+                if (locked === track.username)  {  // locked by self
+                    dojo.addClass( featDiv, 'edit-locked-self');                
+                    if (featDiv.labelDiv)  {
+                        dojo.addClass( featDiv.labelDiv, 'edit-locked-label-self'); 
+                        featDiv.labelDiv.title = "locked by: " + track.username;
+                        // featDiv.labelDiv.innerHTML = '<div class="feature-name">'+feature.afeature.name+'</div>'+
+                        //  ' <div class="feature-description"> locked by user: '+locked+'</div>';
+                        // featDiv.labelDiv.innerHTML = 
+                        //     '<div class="feature-name edit-locked-label2-self">'+feature.afeature.name+'</div>';
+                    }
+                }
+                else  {
                 dojo.addClass( featDiv, 'edit-locked');                
                 if (featDiv.labelDiv)  {
                     dojo.addClass( featDiv.labelDiv, 'edit-locked-label'); 
@@ -450,17 +470,16 @@ var AnnotTrack = declare( DraggableFeatureTrack,
 //                        '<div class="feature-name">'+feature.afeature.name+'<span class="edit-locked-label2"> locked by user: '+locked+'</span></div>';
                 }
             }
-            else if (locked === null)  {  // locked by self
-                dojo.addClass( featDiv, 'edit-locked-self');                
+            }
+
+            if (isPrivate)  {
+                dojo.addClass( featDiv, 'annot-private');  
                 if (featDiv.labelDiv)  {
-                    dojo.addClass( featDiv.labelDiv, 'edit-locked-label-self'); 
-                    featDiv.labelDiv.title = "locked by: " + track.username;
-                   // featDiv.labelDiv.innerHTML = '<div class="feature-name">'+feature.afeature.name+'</div>'+
-                   //  ' <div class="feature-description"> locked by user: '+locked+'</div>';
-                   // featDiv.labelDiv.innerHTML = 
-                   //     '<div class="feature-name edit-locked-label2-self">'+feature.afeature.name+'</div>';
+                    dojo.addClass( featDiv.labelDiv, 'annot-private-label');               
+                    featDiv.labelDiv.title += " (Hidden) ";
                 }
             }
+
 
             annot_context_menu.bindDomNode(featDiv);
             $(featDiv).droppable(  {
@@ -923,7 +942,7 @@ var AnnotTrack = declare( DraggableFeatureTrack,
     getLabelComment: function(feature)  {
         var track = this;
         // get top level feature (transcript)
-        while (feature._parent)  {  feature = feature._parent; }
+        while (feature.parent())  {  feature = feature.parent(); }
         var afeature = feature.afeature;
         var props = afeature.properties;
         for (var k=0; k<props.length; k++)  {
@@ -939,11 +958,43 @@ var AnnotTrack = declare( DraggableFeatureTrack,
         return false;
     }, 
     
-/* returns false if no lock
-   returns null if locked by self
-   returns username that set lock if locked by other
+    featureIsPrivate: function(feature)  {
+        var track = this;
+        // get top level feature (transcript)
+        while (feature.parent())  {  feature = feature.parent(); }
+        var afeature = feature.afeature;
+        var props = afeature.properties;
+        for (var k=0; k<props.length; k++)  {
+            // need to restrict to comments?
+            var comment = props[k].value;
+            if (comment === "PRIVATE")  {
+                return true;
+            }
+        }
+        return false;        
+    }, 
+
+
+    featureOwner: function(feature)  {
+        var track = this;
+        // get top level feature (transcript)
+        while (feature.parent())  {  feature = feature.parent(); }
+        var afeature = feature.afeature;
+        var props = afeature.properties;
+        for (var k=0; k<props.length; k++)  {
+            var name = props[k].type.name;
+            if (name === "owner")  {
+                var owner = props[k].value;
+                return owner;
+            }
+        }
+        return false;       
+    }, 
+    
+    /* return false if no lock
+       return username that set lock if locked
 */
-    featureLockedByOtherUser: function(feature)  {
+    featureLocked: function(feature)  {
         var track = this;
         // get top level feature (transcript)
         while (feature._parent)  {  feature = feature._parent; }
@@ -955,15 +1006,75 @@ var AnnotTrack = declare( DraggableFeatureTrack,
             // if "LOCKED BY" comment, return user who locked, or false if no lock
             if (comment.substring(0, "LOCKED BY".length) === "LOCKED BY")  {
                 var lock_user = comment.substring("LOCKED BY".length+2);
-                if (lock_user === track.username) { 
-                    return null;  }
-                else  {
                     return lock_user;
+                // if (lock_user === track.username) { return null;  }
+                // else  { return lock_user; }
                 }
             }
-        }
         // if no "LOCKED BY" comment, return false
         return false;
+    }, 
+
+    /* return true only if lock exists and user who set lock is not same as current user */
+    featureLockedByOtherUser: function(feature)  {
+        var track = this;
+        var lock_user = track.featureLocked(feature);
+        if (lock_user && (track.username != lock_user))  { return true; }
+        else  { return false; }
+   }, 
+
+    toggleLockForSelected:  function()  {
+        var track = this;
+        var selected = this.selectionManager.getSelection();
+        for (var i=0; i<selected.length; i++) {
+            var record = selected[i];
+            var selfeat = record.feature;
+
+            while (selfeat.parent())  { selfeat = selfeat.parent(); }
+
+            var lock_user = track.featureLocked(selfeat);
+            if (lock_user)  {
+                if (lock_user === track.username)  {  // locked by current user, so unlock
+                    console.log("unsetting lock for: ");
+                    console.log(selfeat);
+                    track.deleteComment("LOCKED BY: " + track.username, selfeat);
+                }
+                else  {
+                    track.openDialog("Lock Not Permitted", "Cannot lock annotation, already locked by user: " + lock_user);
+                }
+            }
+            else  {  // no current lock, so set lock
+                console.log("setting lock for:");
+                console.log(selfeat);              
+                track.addComment("LOCKED BY: " + track.username, selfeat);
+            }
+        }
+    }, 
+
+    togglePrivacyForSelected: function()  {
+                var track = this;
+        var selected = this.selectionManager.getSelection();
+        for (var i=0; i<selected.length; i++) {
+            var record = selected[i];
+            var selfeat = record.feature;
+            while (selfeat.parent())  { selfeat = selfeat.parent(); }
+            var isPrivate = track.featureIsPrivate(selfeat);
+            var featureOwner = track.featureOwner(selfeat);
+            if (! (featureOwner === track.username))  {
+                track.openDialog("Privacy Change Not Permitted", "Privacy of annotation can only be changed by owner: " + featureOwner);
+                return;
+            }
+            if (isPrivate)  {
+                console.log("unsetting privacy for: ");
+                console.log(selfeat);
+                track.deleteComment("PRIVATE", selfeat);
+            }
+            else  {  
+                console.log("setting privacy for:");
+                console.log(selfeat);              
+                track.addComment("PRIVATE", selfeat);
+            }
+        }
     }, 
 
     /**
@@ -1085,7 +1196,8 @@ var AnnotTrack = declare( DraggableFeatureTrack,
         var leftAnnot = sortedAnnots[0];
         var rightAnnot = sortedAnnots[sortedAnnots.length - 1];
 
-/*        var locked_left = track.featureLockedByOtherUser(leftAnnot);
+/*      not needed -- split is disabled in pulldown menu if other user has lock  
+        var locked_left = track.featureLockedByOtherUser(leftAnnot);
         var locked_right = track.featureLockedByOtherUser(rightAnnot);
         if (locked_left)  { 
             track.openDialog("Editing Blocked", "Cannot edit annotation, locked by user: " + locked_left);
@@ -1096,7 +1208,6 @@ var AnnotTrack = declare( DraggableFeatureTrack,
             return;
         }
 */
-
         var trackName = track.getUniqueTrackName();
 
         /*
@@ -1249,6 +1360,53 @@ var AnnotTrack = declare( DraggableFeatureTrack,
         var postData = '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }';
         track.executeUpdateOperation(postData);
     },
+
+    // moved out from createEditCommentsPanelForFeature var
+    addComment: function(comment, feature) {
+        var track = this;
+        // get top level feature (transcript)
+        while (feature.parent())  {  feature = feature.parent(); }
+    	var features = '"features": [ { "uniquename": "' + feature.id() + '", "comments": [ "' + comment + '" ] } ]';
+    	var operation = "add_comments";
+    	var postData = '{ "track": "' + track.getUniqueTrackName() + '", ' + features + ', "operation": "' + operation + '" }';
+    	track.executeUpdateOperation(postData);
+
+        
+    }, 
+
+    // moved out from createEditCommentsPanelForFeature var
+    deleteComment: function(comment, feature) {
+        var track = this;
+        // get top level feature (transcript)
+        while (feature.parent())  {  feature = feature.parent(); }
+        if (comment.substring(0, "LOCKED BY".length) === "LOCKED BY")  {
+            var lock_user = comment.substring("LOCKED BY".length+2);
+            console.log("attempting to delete lock by user: *" + lock_user + "*");
+            if (lock_user != track.username)  {
+                console.log("cannot remove lock, can only be removed by user: " + lock_user);
+                return;
+            }
+        }
+    	var features = '"features": [ { "uniquename": "' + feature.id() + '", "comments": [ "' + comment + '" ] } ]';
+    	var operation = "delete_comments";
+    	var postData = '{ "track": "' + track.getUniqueTrackName() + '", ' + features + ', "operation": "' + operation + '" }';
+    	track.executeUpdateOperation(postData);
+    }, 
+
+    // moved out from createEditCommentsPanelForFeature var
+    updateComment: function(oldComment, newComment, feature) {
+        var track = this;
+        // get top level feature (transcript)
+        while (feature.parent())  {  feature = feature.parent(); }
+        if (oldComment == newComment) {
+            return;
+        }
+        var features = '"features": [ { "uniquename": "' + feature.id() + '", "old_comments": [ "' + oldComment + '" ], "new_comments": [ "' + newComment + '"] } ]';
+        var operation = "update_comments";
+        var postData = '{ "track": "' + track.getUniqueTrackName() + '", ' + features + ', "operation": "' + operation + '" }';
+        track.executeUpdateOperation(postData);
+
+    }, 
 
     editComments: function()  {
         var selected = this.selectionManager.getSelection();
@@ -2304,7 +2462,6 @@ getAnnotationInformation: function()  {
     	}
     } ));
     contextMenuItems["get_sequence"] = index++;
-
     annot_context_menu.addChild(new dijit.MenuItem( {
     	label: "Zoom to base level",
     	onClick: function(event) {
@@ -2415,6 +2572,23 @@ getAnnotationInformation: function()  {
     		}
     	} ));
     	contextMenuItems["edit_dbxrefs"] = index++;
+
+    	annot_context_menu.addChild(new dijit.MenuItem( {
+    		label: "Lock",
+    		onClick: function(event) {
+    			thisObj.toggleLockForSelected();
+    		}
+    	} ));
+    	contextMenuItems["toggle_lock"] = index++;
+
+    	annot_context_menu.addChild(new dijit.MenuItem( {
+    		label: "Make Private",
+    		onClick: function(event) {
+    			thisObj.togglePrivacyForSelected();
+    		}
+    	} ));
+    	contextMenuItems["toggle_privacy"] = index++;
+
     	annot_context_menu.addChild(new dijit.MenuSeparator());
     	index++;
     	annot_context_menu.addChild(new dijit.MenuItem( {
@@ -2595,6 +2769,8 @@ makeTrackMenu: function()  {
         this.updateRedoMenuItem();
         this.updateZoomToBaseLevelMenuItem();
         this.updateDuplicateMenuItem();
+        this.updateLockMenuItem();
+        this.updatePrivacyMenuItem();
     },
 
     updateDeleteMenuItem: function() {
@@ -2812,6 +2988,53 @@ makeTrackMenu: function()  {
         }
         menuItem.set("disabled", false);
     },
+
+    updateLockMenuItem: function()  {
+        var menuItem = this.getMenuItem("toggle_lock");
+        var selected = this.selectionManager.getSelection();
+        if (selected.length > 1) {
+            menuItem.set("disabled", true);
+            return;
+        }
+        menuItem.set("disabled", false);
+        var selectedFeat = selected[0].feature;
+        if (selectedFeat.parent()) {
+            selectedFeat = selectedFeat.parent();
+        }
+        if (this.featureLocked(selectedFeat))  {
+            menuItem.set("label", "Unlock");
+        }
+        else {
+            menuItem.set("label", "Lock");
+        }
+        if (this.featureLockedByOtherUser(selectedFeat))  {
+            menuItem.set("disabled", true);
+        }
+    }, 
+
+    updatePrivacyMenuItem: function()  {
+        var menuItem = this.getMenuItem("toggle_privacy");
+        var selected = this.selectionManager.getSelection();
+        if (selected.length > 1) {
+            menuItem.set("disabled", true);
+            return;
+        }
+        menuItem.set("disabled", false);
+        var selectedFeat = selected[0].feature;
+        if (selectedFeat.parent()) {
+            selectedFeat = selectedFeat.parent();
+        }
+        if (this.featureIsPrivate(selectedFeat))  {
+            menuItem.set("label", "Make Public");
+        }
+        else {
+            menuItem.set("label", "Make Private");
+        }
+        var featureOwner = this.featureOwner(selectedFeat);
+        if (! (featureOwner === this.username))  {
+            menuItem.set("disabled", true);
+        }
+    }, 
 
     getMenuItem: function(operation) {
         return annot_context_menu.getChildren()[contextMenuItems[operation]];
