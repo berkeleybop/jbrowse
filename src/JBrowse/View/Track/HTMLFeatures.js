@@ -715,9 +715,11 @@ HTMLFeatures = declare( HTMLFeatures,
                                  containerStart, containerEnd ) {
         var featDiv = this.renderFeature( feature, uniqueId, block, scale, labelScale, descriptionScale,
                                           containerStart, containerEnd );
-        block.appendChild( featDiv );
-        if( this.config.style.centerChildrenVertically )
-            this._centerChildrenVertically( featDiv );
+        if (featDiv) {
+            block.appendChild( featDiv );
+            if( this.config.style.centerChildrenVertically )
+                this._centerChildrenVertically( featDiv );
+        }
         return featDiv;
     },
 
