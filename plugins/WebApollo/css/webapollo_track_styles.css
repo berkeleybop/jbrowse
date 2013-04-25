@@ -8,7 +8,8 @@
     top: 10%;
 /* height: 12px */
 /*    margin-top: 2px;  */  /* relying on centering code instead */
-    background-color: #F58544;
+/*    background-color: #F58544; */
+    background-color: rgb(218, 170, 241);
     border-style: solid;
     border-color: #555;
     border-width: 1px;
@@ -20,7 +21,8 @@
 /*    height: 8px;  */
 /*    margin-top: 4px; */  /* relying on centering code instead */
 /*    z-index: 8; */
-    background-color: #AA5626;
+ /*   background-color: #AA5626; */
+    background-color: rgb(173, 92, 194);
 }
 
 .mRNA, 
@@ -363,9 +365,9 @@ div.basic-hist {
 .trellis-match-part, 
 .plus-trellis-match-part, 
 .minus-trellis-match-part  {
-    background-color: #1F3DDE;
     height: 60%;
-    top: 10%;
+    top: 20%;
+    background-color: rgb(50, 209, 69);
 }
 
 /* defaults for rendering aligned read from BAM files */
@@ -557,6 +559,37 @@ div.basic-hist {
 
 .cds-frame2 {
     background-color: #8080FF;
+}
+
+.edit-locked, 
+.edit-locked-self  {
+ /*   background-color: black; */
+}
+
+.edit-locked-label {
+    /*    background-color: black; */
+    /*    color: white; */
+    background-color: rgb(238, 157, 171);
+}
+
+.edit-locked-label-self  {
+    background-color: rgb(157, 238, 171);
+}
+
+.edit-locked-label2, 
+.edit-locked-label2-self  {
+/*    background-color: pink; */
+    background-color: rgb(238, 157, 171);
+/*    color: purple; */
+    color: black;
+}
+
+.annot-private  {
+}
+
+.annot-private-label  {
+    background-color: black;
+    color: white;
 }
 
 /**
