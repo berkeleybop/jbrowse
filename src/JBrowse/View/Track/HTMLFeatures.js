@@ -850,7 +850,7 @@ HTMLFeatures = declare( HTMLFeatures,
 
         // if the label extends beyond the feature, use the
         // label end position as the end position for layout
-        var name = feature.get('name') || feature.get('ID');
+        var name = feature.get('name'); // || feature.get('ID');
         var description = this.config.description && scale > feature._descriptionScale && ( feature.get('note') || feature.get('description') );
         if( description && description.length > this.config.style.maxDescriptionLength )
             description = description.substr(0, this.config.style.maxDescriptionLength+1 ).replace(/(\s+\S+|\s*)$/,'')+String.fromCharCode(8230);
