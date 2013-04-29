@@ -209,10 +209,6 @@ for my $testfile ( "tests/data/au9_scaffold_subset.gff3", "tests/data/au9_scaffo
     my $read_json = sub { slurp( $tempdir, @_ ) };
     my $cds_trackdata = $read_json->(qw( tracks au9_full1 Group1.33 trackData.json ));
     is( $cds_trackdata->{featureCount}, 28, 'got right feature count' ) or diag explain $cds_trackdata;
-    is( scalar @{$cds_trackdata->{intervals}{classes}}, 3, 'got the right number of classes' )
-        or diag explain $cds_trackdata->{intervals}{classes};
-
-    #system "find $tempdir";
 }
 
 {
