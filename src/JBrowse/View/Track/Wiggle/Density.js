@@ -32,10 +32,11 @@ return declare( WiggleBase,
             function() { // default color function uses conf variables
                 var posColor  = new Color( this.config.style.pos_color || '#00f' );
                 var negColor  = new Color( this.config.style.neg_color || '#f00' );
-                var white = new Color('white');
-                var black = new Color('black');
                 var backgroundColor = new Color( this.config.style.bg_color || 'rgba(230,230,230,0.6)' );
-                var clipColor = new Color( this.config.style.clip_marker_color );
+                var clipColor;
+                if (this.config.style.clip_marker_color)  {
+                    clipColor = new Color( this.config.style.clip_marker_color );
+                }
                 var disableClipMarkers = this.config.disable_clip_markers;
                 var normOrigin = normalize( dataScale.origin );
                 return function( feature ) {
@@ -43,7 +44,7 @@ return declare( WiggleBase,
                     var n = normalize( score );
                     return ( disableClipMarkers || n <= 1 && n >= 0 )
                                ? Color.blendColors( backgroundColor, n >= normOrigin ? posColor : negColor, Math.abs(n-normOrigin) )
-                               : clipColor || ( n > 1 ? white : black );
+                               : clipColor || ( n > 1 ? posColor : negColor );
                 };
             }.call(this);
 
