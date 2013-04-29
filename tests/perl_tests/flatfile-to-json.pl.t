@@ -259,11 +259,11 @@ for my $testfile ( "tests/data/au9_scaffold_subset.gff3", "tests/data/au9_scaffo
     my $track_list = $read_json->(qw( trackList.json ));
 
     # make sure we got rid of CDS features
-    my @CDSfeat = grep {$_->[6] eq 'CDS' } @{$track_data->{'intervals'}->{'nclist'}->[0]->[10]};
+    my @CDSfeat = grep {$_->[6] eq 'CDS' } @{$track_data->{'intervals'}->{'nclist'}->[0]->[12]};
     ok(scalar @CDSfeat == 0, '--webApollo flag gets rid of CDS features');
 
     # check wholeCDS
-    my @wholeCDSfeat = grep {$_->[6] eq 'wholeCDS' } @{$track_data->{'intervals'}->{'nclist'}->[0]->[10]};
+    my @wholeCDSfeat = grep {$_->[6] eq 'wholeCDS' } @{$track_data->{'intervals'}->{'nclist'}->[0]->[12]};
     ok(scalar @wholeCDSfeat == 1, '--webApollo flag causes wholeCDS feature to be created');
     is_deeply( $wholeCDSfeat[0],  [ 1, 245759, 246815, 1, 'maker', 0, "wholeCDS", undef, '1:gnomon_566853_mRNA:cds', undef, [] ],
                'got the right wholeCDS feature'
@@ -312,6 +312,5 @@ for my $testfile ( "tests/data/au9_scaffold_subset.gff3", "tests/data/au9_scaffo
                ) or diag explain $wholeCDSfeat[0];
 
 }
-
 
 done_testing;
