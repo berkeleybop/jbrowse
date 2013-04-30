@@ -240,14 +240,14 @@ for my $testfile ( "tests/data/au9_scaffold_subset.gff3", "tests/data/au9_scaffo
     run_with (
         '--out' => $tempdir,
 	'--gff' => 'tests/data/MAKER/Group1.33_Amel_4.5.maker.gff',
+	'--webApollo', # script is not liking this flag for some reason #&&&
+	'--renderClassName' => 'ogsv3-transcript-render',
 	'--arrowheadClass' => 'trellis-arrowhead',
 	'--getSubs',
 	'--subfeatureClasses' => '{"CDS": "ogsv3-CDS", "UTR": "ogsv3-UTR", "exon":"ogsv3-exon", "wholeCDS":null}',
 	'--cssClass' => 'refseq-transcript',
 	'--type' => 'mRNA',
 	'--trackLabel' => 'just_maker_singleton',
-	'--webApollo',
-	'--renderClassName' => 'ogsv3-transcript-render'
         );
 
     my $read_json = sub { slurp( $tempdir, @_ ) };
@@ -265,7 +265,7 @@ for my $testfile ( "tests/data/au9_scaffold_subset.gff3", "tests/data/au9_scaffo
                'got the right wholeCDS feature'
                ) or diag explain $wholeCDSfeat[0];
 
-    my @utr_feats = grep {$_->[6] =~ '((five|three)_prime_)*UTR$' } @{$track_data->{'intervals'}->{'nclist'}->[0]->[10]};
+    my @utr_feats = grep {$_->[6] =~ '((five|three)_prime_)*UTR$' } @{$track_data->{'intervals'}->{'nclist'}->[0]->[12]}; #&&&
     ok( scalar @utr_feats == 0, '--webApollo flag gets rid of UTR and five|three_prime_UTR features');
 
     # check for "renderClassName" : "ogsv3-transcript-render" keyval in mRNA feature
@@ -299,7 +299,7 @@ for my $testfile ( "tests/data/au9_scaffold_subset.gff3", "tests/data/au9_scaffo
     my $track_list = $read_json->(qw( trackList.json ));
 
     # check wholeCDS
-    my @wholeCDSfeat = grep {$_->[6] eq 'wholeCDS' } @{$track_data->{'intervals'}->{'nclist'}->[0]->[10]};
+    my @wholeCDSfeat = grep {$_->[6] eq 'wholeCDS' } @{$track_data->{'intervals'}->{'nclist'}->[0]->[12]}; 
 
     ok( $wholeCDSfeat[0][1] == 395, 'wholeCDS has correct start coordinate');
     ok( $wholeCDSfeat[0][2] == 1444, 'wholeCDS has correct end coordinate');
