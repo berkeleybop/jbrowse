@@ -1497,12 +1497,13 @@ Browser.prototype.makeHelpDialog = function () {
         ;
     this.container.appendChild( helpdiv );
 
-    var dialog = new InfoDialog({
+     var dialog = new InfoDialog({
         "class": 'help_dialog',
         refocus: false,
         draggable: false,
-        title: "JBrowse Help"
-    }, helpdiv );
+        title: "JBrowse Help", 
+        href: "short_help.html"
+    });
 
     // make a Help link that will show the dialog and set a handler on it
     var helpButton = new dijitButton(
