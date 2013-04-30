@@ -144,7 +144,7 @@ Browser.prototype._initialLocation = function() {
 };
 
 Browser.prototype.version = function() {
-    var BUILD_SYSTEM_JBROWSE_VERSION = "webapollo_1.0";
+    var BUILD_SYSTEM_JBROWSE_VERSION = "webapollo_1.1";
     return BUILD_SYSTEM_JBROWSE_VERSION || 'development';
 }.call();
 
@@ -435,7 +435,7 @@ Browser.prototype.initView = function() {
             menuBar.appendChild( this.makeFullViewLink() );
 
         if( this.config.show_nav )
-            menuBar.appendChild( this.makeHelpDialog()   );
+            menuBar.appendChild( this.makeHelpButton() );
 
         this.viewElem = document.createElement("div");
         this.viewElem.className = "dragWindow";
@@ -1439,31 +1439,16 @@ Browser.prototype.showTracks = function( trackNames ) {
     }));
 };
 
-Browser.prototype.makeHelpDialog = function () {
-
-     var dialog = new InfoDialog({
-        "class": 'help_dialog',
-        refocus: false,
-        draggable: false,
-        title: "JBrowse Help", 
-        href: "short_help.html"
-    });
-
-    // make a Help link that will show the dialog and set a handler on it
+Browser.prototype.makeHelpButton = function () {
+    // make a Help button that loads help HTML page in separate tab/window
+    var helpUrl = this.config.helpUrl || "short_help.html";  // if no helpUrl is set in config (or plugins), default to hardwired short_help.html
     var helpButton = new dijitButton(
         {
             className: 'help',
             title: 'Help',
             innerHTML: '<span class="icon"></span> Help',
-            onClick: function() { dialog.show(); }
+            onClick: function()  { window.open(helpUrl,'help_window').focus(); }
         });
-
-    this.setGlobalKeyboardShortcut( '?', dialog, 'show' );
-    dojo.connect( document.body, 'onkeydown', function(evt) {
-        if( evt.keyCode != dojo.keys.SHIFT && evt.keyCode != dojo.keys.CTRL && evt.keyCode != dojo.keys.ALT )
-            dialog.hide();
-    });
-
     return helpButton.domNode;
 };
 
