@@ -327,6 +327,7 @@ sub webApolloizeFeature {
     # 1) reset wholeCDS coordinates to the max and min coordinates of CDSs and 
     # 2) delete CDSs
     # 3) delete UTRs
+    # 4) delete Introns
     my @newChildren;
     my @sortedCDScoords = sort {$a <=> $b} map {$_->{start}, $_->{end}} @{getChildren( $feat, 'CDS' )};
     foreach my $thisChild ( @{getChildren( $feat )} ){
@@ -335,7 +336,8 @@ sub webApolloizeFeature {
 	$thisChild->{end} = $sortedCDScoords[-1];
       }
       unless ( $thisChild->{type} eq 'CDS' ||
-	       $thisChild->{type} =~ /((five|three)_prime_)*UTR$/
+	       $thisChild->{type} =~ /((five|three)_prime_)*UTR$/ ||
+	       $thisChild->{type} =~ /intron/
 	     ){
 	push @newChildren, $thisChild;
       }
