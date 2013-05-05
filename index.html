@@ -7,6 +7,7 @@
     <link rel="shortcut icon" type="image/x-icon" href="plugins/WebApollo/img/webapollo_favicon.ico">
     <link rel="stylesheet" type="text/css" href="genome.css">
     <script type="text/javascript" src="src/dojo/dojo.js" data-dojo-config="isDebug: 1, async: 1"></script>
+    <script type="text/javascript" src="plugins/WebApollo/jslib/pouchdb-2012-04-30.js"> </script>
 
     <script type="text/javascript">
         window.onerror=function(msg){
@@ -29,6 +30,7 @@
                                            include: [
                                              'jbrowse_conf.json',
                                              dataRoot + "/annotation_trackList.json",
+                                             dataRoot + "/annotation_local_trackList.json", 
                                              dataRoot + "/trackList.json"
                                            ],
                                            nameUrl: dataRoot + "/names/root.json",
