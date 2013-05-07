@@ -675,7 +675,8 @@ HTMLFeatures = declare( HTMLFeatures,
             var uniqueId = feature.id();
             if( ! this._featureIsRendered( uniqueId ) ) {
                 /* feature render, adding to block, centering refactored into addFeatureToBlock() */
-                var filter = this.browser.view.featureFilter;
+                // var filter = this.browser.view.featureFilter;
+                var filter = this.getFeatureFilter();
                 if (!filter || filter(feature))  {
 
                 var featDiv = this.addFeatureToBlock( feature, uniqueId, block, scale, labelScale, descriptionScale,
@@ -706,6 +707,16 @@ HTMLFeatures = declare( HTMLFeatures,
                                 }
                               );
     },
+
+    /**
+     *  individual tracks may ignore global featureFilter by setting ignoreFeatureFilter in configuration
+     */
+    getFeatureFilter: function() {
+        if (this.config.ignoreFeatureFilter) {
+            return null;
+        }
+        else return this.browser.view.featureFilter;
+    }, 
 
     /**
      *  Creates feature div, adds to block, and centers subfeatures.
