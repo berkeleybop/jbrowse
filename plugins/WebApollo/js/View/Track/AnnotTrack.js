@@ -44,12 +44,12 @@ define( [
 
 var creation_count = 0;
 
-var annot_context_menu;
-var contextMenuItems;
+// var annot_context_menu;
+// var contextMenuItems;
 
 var context_path = "..";
 
-var non_annot_context_menu;
+// var non_annot_context_menu;
 
 var AnnotTrack = declare( DraggableFeatureTrack,
 {
@@ -69,6 +69,8 @@ var AnnotTrack = declare( DraggableFeatureTrack,
         //                baseUrl: base URL for the URL in trackMeta
         this.has_custom_context_menu = true;
         this.exportAdapters = [];
+        this.annot_context_menu = null;
+        this.contextMenuItems = null;
 
 	this.selectionManager = this.setSelectionManager( this.webapollo.annotSelectionManager );
 
@@ -433,7 +435,7 @@ var AnnotTrack = declare( DraggableFeatureTrack,
         var featDiv = this.inherited( arguments );
 
         if (featDiv && featDiv != null)  {
-            annot_context_menu.bindDomNode(featDiv);
+            track.annot_context_menu.bindDomNode(featDiv);
             $(featDiv).droppable(  {
                 accept: ".selected-feature",   // only accept draggables that are selected feature divs
                 tolerance: "pointer",
@@ -1620,7 +1622,7 @@ var AnnotTrack = declare( DraggableFeatureTrack,
     			div.style.top = null;
     		}
     		if (div.style.visibility)  { div.style.visibility = null; }
-    		annot_context_menu.unBindDomNode(div);
+    		track.annot_context_menu.unBindDomNode(div);
     		$(div).unbind();
     		for (var i = 0; i < div.childNodes.length; ++i) {
     			cleanupDiv(div.childNodes[i]);
@@ -2161,8 +2163,11 @@ getAnnotationInformation: function()  {
     
   initAnnotContextMenu: function() {
     var thisObj = this;
-    contextMenuItems = new Array();
-    annot_context_menu = new dijit.Menu({});
+    thisObj.contextMenuItems = new Array();
+    thisObj.annot_context_menu = new dijit.Menu({});
+    var contextMenuItems = thisObj.contextMenuItems;
+    var annot_context_menu = thisObj.annot_context_menu;
+
     var permission = thisObj.permission;
     var index = 0;
     annot_context_menu.addChild(new dijit.MenuItem( {
@@ -2425,7 +2430,7 @@ makeTrackMenu: function()  {
 
     initPopupDialog: function() {
     	var track = this;
-    	var id = "popup_dialog";
+    	var id = "AnnotTrack_popup_dialog";
 
     	// deregister widget (needed if changing refseq without reloading page)
     	var widget = dijit.registry.byId(id);
@@ -2627,7 +2632,7 @@ makeTrackMenu: function()  {
     },
 
     getMenuItem: function(operation) {
-        return annot_context_menu.getChildren()[contextMenuItems[operation]];
+        return this.annot_context_menu.getChildren()[this.contextMenuItems[operation]];
     },
 
     sortAnnotationsByLocation: function(annots) {
