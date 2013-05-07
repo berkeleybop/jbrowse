@@ -40,18 +40,19 @@ define( [
 
 var creation_count = 0;
 
-var annot_context_menu;
-var contextMenuItems;
+// var annot_context_menu;
+// var contextMenuItems;
 
 var context_path = "..";
 
-var non_annot_context_menu;
+// var non_annot_context_menu;
 
 var LocalAnnotTrack = declare( DraggableFeatureTrack,
 {
     constructor: function( args ) {
                 //function AnnotTrack(trackMeta, url, refSeq, browserParams) {
-	this.isWebApolloAnnotTrack = true;
+	this.isWebApolloAnnotTrack = false;
+        this.isWebApolloLocalAnnotTrack = true;
         this.has_custom_context_menu = true;
         this.exportAdapters = [];
         this.permission = 15;
@@ -76,7 +77,7 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
 
         this.verbose_create = false;
         this.verbose_add = false;
-        this.verbose_delete = false;
+        this.verbose_delete = true;
         this.verbose_drop = false;
         this.verbose_click = false;
         this.verbose_resize = false;
@@ -112,16 +113,16 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
     },
     
     setViewInfo: function( genomeView, numBlocks, trackDiv, labelDiv, widthPct, widthPx, scale ) {
-                               
         this.inherited( arguments );
 	var track = this;
         var success = true;
 	// var success = this.getPermission( function()  { track.initAnnotContextMenu(); });
         // calling back to initAnnotContextMenu() once permissions are returned by server
         /* getPermission call is synchronous, so login initialization etc. can be called anytime after getPermission call */
-
+        track.initAnnotContextMenu();
 //        this.initSaveMenu();
         this.initPopupDialog();
+        if (success) {  track.initializePouch(); }
 
         if (success) {
             this.makeTrackDroppable();
@@ -129,11 +130,102 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
             this.show();
         }
         else {
-	    this.hide();
+            this.hide();
         }
     }, 
 
+    initializePouch: function()  {
+        console.log("initializing PouchDB");
+        var track = this;
+        Pouch.enableAllDbs = true;
+        Pouch.allDbs( function(err, response) {
+                          if (err) {
+                              console.log("Couldn't get list of databases");
+                          }
+                          else {
+                              console.log("List of databases:");
+                              console.log(response);
+                          }
+                      });
+        track.pouchDbName = "localdb_" + track.refSeq.name;
+        Pouch(track.pouchDbName, function(err, pouchdb) {
+                  if (err) {
+                      console.log("couln't open pouchdb database");
+                      console.log(err);
+                  }
+                  else  {
+                      track.localdb = pouchdb;               
+                      window.pouchdb = pouchdb;
+                      console.log("opened pouchdb: " );
+                      console.log(pouchdb);
+                      pouchdb.info(function(e,response) {
+                                       var last_change_seqnum = response.update_seq;
 
+                                       track.getLocalFeatures();  
+                                       // really want to make changeMonitor run _after_ getLocalFeatures initial run -- 
+                                       //     make it callback for getLocalFeatures()?
+                                       track.changeMonitor = pouchdb.changes({
+                                                                                 include_docs: true, 
+                                                                                 since: last_change_seqnum, 
+                                                                                 continuous: true,
+                                                                                 onChange: function(change){
+                                                                                     
+                                                                                     console.log("pouchdb changed:");
+                                                                                     console.log(change);
+                                                                                     track.getLocalFeatures();
+                                                                                 }
+                                                                             } );
+                                   });
+                  }
+              });
+
+    }, 
+
+    getLocalFeatures: function(success_callback, error_callback) {
+        var track = this;
+        this.success_callback = success_callback;
+        track.store.clear();
+
+        console.log("called LocalAnnotTrack.getLocalFeatures()"); 
+        track.localdb.allDocs({include_docs: true}, 
+            function(err, result){
+                if (err) {
+                    console.log("ERROR in LocalAnnotTrack.getLocalFeatures():");
+                    console.log(err);
+                }
+                else  {
+                    var out= "";
+                    for (var i=0; i<result.rows.length; i++) {
+                        var entry = result.rows[i];
+                        var afeat = entry.doc;
+                        console.log(afeat);
+                        var jfeat = JSONUtils.createJBrowseFeature( afeat );
+                        
+                        track.store.insert(jfeat);
+                        // console.log(jfeat);
+                    }
+                    track.changed();
+                    // track.createAnnotationChangeListener();
+                    if (success_callback) { success_callback(); }
+                }
+            });
+    }, 
+    
+    /* only to be used with JSON data structure annotation feature */
+    createUniqueIds: function(afeature) {
+        var track = this;
+         if (! afeature.uniquename)  {
+             afeature.uniquename = Math.uuid();
+             afeature._id = afeature.uniquename;
+         }
+        if (afeature.children) {
+            for (var i=0; i<afeature.children.length; i++){
+                var child = afeature.children[i];
+                track.createUniqueIds(child);
+            }
+
+        }
+    }, 
 
     /**
      *  overriding renderFeature to add event handling right-click context menu
@@ -143,14 +235,14 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
         //  if (uniqueId.length > 20)  {
         //    feature.short_id = uniqueId;
         //  }
-        console.log("LocalAnnotTrack.renderFeature() called on: ");
-        console.log(feature);
-        console.log(featDiv);
+        // console.log("LocalAnnotTrack.renderFeature() called on: ");
+        // console.log(feature);
+        // console.log(featDiv);
         var track = this;
         var featDiv = this.inherited( arguments );
 
         if (featDiv && featDiv != null)  {
-            annot_context_menu.bindDomNode(featDiv);
+            track.annot_context_menu.bindDomNode(featDiv);
             $(featDiv).droppable(  {
                 accept: ".selected-feature",   // only accept draggables that are selected feature divs
                 tolerance: "pointer",
@@ -491,12 +583,16 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
                     var featArray = parentFeatures[i];
                     if (featArray.isSubfeature) {
                     	var parentFeature = featArray[0].parent();
-                    	var fmin = undefined;
-                    	var fmax = undefined;
-                    	// var featureToAdd = $.extend({}, parentFeature);
+                    	// var fmin = undefined;
+                    	// var fmax = undefined;
                     	var featureToAdd = JSONUtils.makeSimpleFeature(parentFeature);
                     	featureToAdd.set('subfeatures', new Array());
-                    	for (var k = 0; k < featArray.length; ++k) {
+                   	for (var k = 0; k < featArray.length; ++k) {
+                    	    var dragfeat = JSONUtils.makeSimpleFeature(featArray[k]);
+                    	    featureToAdd.get("subfeatures").push( dragfeat );
+                        }
+                   /*	
+                       for (var k = 0; k < featArray.length; ++k) {
                     		// var dragfeat = featArray[k];
                     		var dragfeat = JSONUtils.makeSimpleFeature(featArray[k]);
                     		var childFmin = dragfeat.get('start');
@@ -511,6 +607,8 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
                     	}
                     	featureToAdd.set( "start", fmin );
                     	featureToAdd.set( "end",   fmax );
+                    */
+                        target_track.resizeFeatureParent(featureToAdd);  // set parent start/end to union of child starts/ends 
                     	var afeat = JSONUtils.createApolloFeature( featureToAdd, "transcript" );
                     	featuresToAdd.push(afeat);
                     }
@@ -526,9 +624,19 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
         
             // var postData = '{ "track": "' + target_track.getUniqueTrackName() + '", "features": ' + JSON.stringify(featuresToAdd) + ', "operation": "add_transcript" }';
             // target_track.executeUpdateOperation(postData);
-        console.log("createAnnotations not yet implemented in LocalAnnotTrack");
+        console.log("attempting to create annotation in LocalAnnotTrack");
         console.log(featuresToAdd);
 
+        for (i = 0; i<featuresToAdd.length; i++)  {
+            /* do the creation! */
+            var afeat = featuresToAdd[i];
+            target_track.createUniqueIds(afeat);  // need to assign children unique IDs for proper selection, edge-matching, etc.
+            console.log("adding feature data JSON:");
+            console.log(afeat);
+            // target_track.localdb.post(afeat);
+            // already assigned IDs (used Pouch.uuid() for both parent and child IDs) so using put() instead of post()
+            target_track.localdb.put(afeat);  
+        }
     }, 
 
  
@@ -546,36 +654,116 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
         var track = this;
         var features = '"features": [';
         var uniqueNames = [];
+        var afeats = [];
         for (var i in records)  {
 	    var record = records[i];
 	    var selfeat = record.feature;
 	    var seltrack = record.track;
+            var afeat = selfeat.afeature;
             var uniqueName = selfeat.id();
             // just checking to ensure that all features in selection are from this track --
             //   if not, then don't try and delete them
             if (seltrack === track)  {
                 var trackdiv = track.div;
                 var trackName = track.getUniqueTrackName();
+                
+                var ancestor = selfeat;
+                while (ancestor.parent()) { ancestor = ancestor.parent(); }
 
-                if (i > 0) {
-                    features += ',';
+                /* do the deletion! */                
+                if (ancestor == selfeat) {  // deleting a feature
+                    console.log("deleting top-level feature");
+                    console.log(afeat);
+                    track.localdb.remove(afeat, function(e,r) { console.log(e); console.log(r); });
                 }
-                features += ' { "uniquename": "' + uniqueName + '" } ';
-                uniqueNames.push(uniqueName);
+                else  { // deleting a subfeature
+                    console.log("deleting child feature");
+                    var parent = selfeat.parent();
+                    // var pannot = parent.afeature;
+//                    var pannot = $(parent.afeature).clone();
+                    var pannot = dojo.clone(parent.afeature);  // dojo is in global namespace?
+                    var old_subannots = pannot.children;
+                    var new_subannots = [];
+                    for (var k=0; k<old_subannots.length; k++) {
+                        var subannot = old_subannots[k];
+                        if (afeat._id === subannot._id)  {  // check by id, since afeat is from feature and subannot is from feature copy
+                            console.log("found afeat");
+                        }
+                        else  {
+                            new_subannots.push(subannot);
+                        }
+                    }
+                    pannot.children = new_subannots;
+                    if (pannot.children.length == 0)  {
+                        console.log("no children left, deleting parent");
+                        // if no children left then delete parent
+                        track.localdb.remove(pannot, function(e,r) { console.log(e); console.log(r); });
+                    }
+                    else {
+                        var bounds_changed = track.resizeAnnotParent(pannot); // returns true if parent bounds changed by resizeParent
+                        track.localdb.put(pannot, function(e,r) { console.log(e); console.log(r); });
+                    }
+                }
             }
-        }
-        features += ']';
-        if (this.verbose_delete)  {
-            console.log("annotations to delete:");
-            console.log(features);
         }
         // var postData = '{ "track": "' + trackName + '", ' + features + ', "operation": "delete_feature" }';
         // track.executeUpdateOperation(postData);
+    }, 
 
-        /* do the deletion! */
-        console.log("deleteAnnotations not yet implemented in LocalAnnotTrack"); 
-        console.log(features);
+    /*  feature is methodized JBrowse feature
+     *     (which basically means has set, get, children, parent methods)
+     *  sets feature start and end to exactly encompass all children
+     *  if no children, feature start and end are unchanged
+     *  returns true if feature bounds changed, false if bounds were unchanged
+     */
+    resizeFeatureParent: function(feature) {
+        // resize parent to children in case edge child was deleted
+        var min = Number.MAX_VALUE;
+        var max = Number.MIN_VALUE;
+        var subfeats = feature.children();
+        if (subfeats && (subfeats.length > 0))  {
+            for (var k=0; k<subfeats.length; k++) {
+                min = Math.min(min, subfeats[k].get('start'));
+                max = Math.max(max, subfeats[k].get('end'));
+            }
+            if ( min != feature.get('start') || max != feature.get('end') ) {
+                feature.set('start', min);
+                feature.set('end', max);
+                return true;  // children, and feature bounds changed
+            }
+            else return false;  // children, but feature bounds remains same
+        }
+        else  {
+            return false;  // no children, feature bounds remains same
+        }
+    }, 
 
+    /*  afeature is in format returned by AnnotationEditorService
+     *   (JAFeature.afeature for JAFeatures)
+     *  sets afeature fmin and fmax to exactly encompass all children
+     *  if no children, afeature fmin and fmax are unchanged
+     *  returns true if parent bounds changed, false if they were unchanged
+     */
+    resizeAnnotParent: function(afeature)  {
+        // resize parent to children in case edge child was deleted
+        var min = Number.MAX_VALUE;
+        var max = Number.MIN_VALUE;
+        var subfeats = afeature.children;
+        if (subfeats && (subfeats.length > 0))  {
+            for (var k=0; k<subfeats.length; k++) {
+                min = Math.min(min, subfeats[k].location.fmin);
+                max = Math.max(max, subfeats[k].location.fmax);
+            }
+            if ( min != afeature.location.fmin || max != afeature.location.fmax ) {
+                afeature.location.fmin = min;
+                afeature.location.fmax = max;
+                return true;  // children, and afeature bounds changed
+            }
+            else return false;  // children, but afeature bounds remains same
+        }
+        else  {
+            return false;  // no children, afeature bounds remains same
+        }
     }, 
 
   
@@ -587,7 +775,7 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
  
     scrollToNextEdge: function(event)  {
         //         var coordinate = this.getGenomeCoord(event);
-        var vregion = this.gview.visibleRegion();
+        var vregion = this.gview.bvisibleRegion();
         var coordinate = (vregion.start + vregion.end)/2;
         var selected = this.selectionManager.getSelection();
         if (selected && (selected.length > 0)) {
@@ -702,8 +890,11 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
     
   initAnnotContextMenu: function() {
     var thisObj = this;
-    contextMenuItems = new Array();
-    annot_context_menu = new dijit.Menu({});
+    thisObj.contextMenuItems = new Array();
+    thisObj.annot_context_menu = new dijit.Menu({});           
+    var contextMenuItems = thisObj.contextMenuItems;
+    var annot_context_menu = thisObj.annot_context_menu;
+      
     var permission = thisObj.permission;
     var index = 0;
     annot_context_menu.addChild(new dijit.MenuItem( {
@@ -802,7 +993,7 @@ makeTrackMenu: function()  {
 
     initPopupDialog: function() {
     	var track = this;
-    	var id = "popup_dialog";
+    	var id = "LocalAnnotTrack_popup_dialog";
 
     	// deregister widget (needed if changing refseq without reloading page)
     	var widget = dijit.registry.byId(id);
@@ -861,7 +1052,7 @@ makeTrackMenu: function()  {
     },
 
     getMenuItem: function(operation) {
-        return annot_context_menu.getChildren()[contextMenuItems[operation]];
+        return this.annot_context_menu.getChildren()[this.contextMenuItems[operation]];
     },
 
     sortAnnotationsByLocation: function(annots) {
