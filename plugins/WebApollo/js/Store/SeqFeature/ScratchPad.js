@@ -13,6 +13,12 @@ return declare( SeqFeatureStore,
         this._calculateStats();
     },
 
+    clear: function()  {         
+        this.features = {};
+        this.sorted_feats = [];
+        this._calculateStats();
+    }, 
+
     insert: function( feature ) {
         this.features[ feature.id() ] = feature;
 //	this._sort();
