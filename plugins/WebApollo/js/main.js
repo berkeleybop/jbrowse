@@ -29,7 +29,7 @@ return declare( JBPlugin,
 //    searchMenuInitialized: false,
 
     constructor: function( args ) {
-        var thisB = this;
+        var webapollo = this;
         this.colorCdsByFrame = false;
         this.searchMenuInitialized = false;
         var browser = this.browser;  // this.browser set in Plugin superclass constructor
@@ -53,6 +53,20 @@ return declare( JBPlugin,
 	FeatureEdgeMatchManager.addSelectionManager(this.featSelectionManager);
 	FeatureEdgeMatchManager.addSelectionManager(this.annotSelectionManager);
 
+        var flush_pouch_button = new dijitMenuItem(
+            {
+		label: "Reset PouchDB", 
+		onClick: function() {
+		    var loctrack = webapollo.getLocalAnnotTrack();
+                    Pouch.destroy(loctrack.pouchDbName, function(err, success)  {
+                                      loctrack.initializePouch();
+                                  } );
+                }
+            }
+        );
+
+        browser.addGlobalMenuItem( 'options', flush_pouch_button);
+
 
         // add a global menu option for setting CDS color
         var cds_frame_toggle = new dijitCheckedMenuItem(
@@ -60,7 +74,7 @@ return declare( JBPlugin,
                     label: "Color by CDS frame",
                     checked: false,
                     onClick: function(event) {
-                        thisB.colorCdsByFrame = cds_frame_toggle.checked;
+                        webapollo.colorCdsByFrame = cds_frame_toggle.checked;
                         browser.view.redrawTracks();
                     }
                 });
@@ -86,7 +100,7 @@ return declare( JBPlugin,
                             browser.view.featureFilter = browser.view.passNoneFilter;
                         }
                         // browser.view.redrawTracks();
-                        thisB.redoLayout();
+                        webapollo.redoLayout();
                     }
                 });
         browser.addGlobalMenuItem( 'options', plus_strand_toggle );
@@ -111,7 +125,7 @@ return declare( JBPlugin,
                             browser.view.featureFilter = browser.view.passNoneFilter;
                         }
                         // browser.view.redrawTracks();
-                        thisB.redoLayout();
+                        webapollo.redoLayout();
                     }
                 });
         browser.addGlobalMenuItem( 'options', minus_strand_toggle );
@@ -203,6 +217,20 @@ return declare( JBPlugin,
 	        // should be doing instanceof here, but class setup is not being cooperative
                 if (tracks[i].isWebApolloAnnotTrack)  {
                     console.log("annot track refseq: " + tracks[i].refSeq.name);
+                    return tracks[i];
+                }
+            }
+        }
+        return null;
+    },
+
+    getLocalAnnotTrack: function()  {
+        if (this.browser && this.browser.view && this.browser.view.tracks)  {
+            var tracks = this.browser.view.tracks;
+            for (var i = 0; i < tracks.length; i++)  {
+	        // should be doing instanceof here, but class setup is not being cooperative
+                if (tracks[i].isWebApolloLocalAnnotTrack)  {
+                    console.log("local annot track refseq: " + tracks[i].refSeq.name);
                     return tracks[i];
                 }
             }
