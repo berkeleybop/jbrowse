@@ -50,7 +50,7 @@ var JAFeature = declare( SimpleFeature, {
 	    this.data.type = "wholeCDS"; 
 	}
 
-        this._uniqueID = afeature.uniquename;
+        this._uniqueID = afeature.uniquename || afeature._id;
 
 	// this doesn't work, since can be multiple properties with same CV term (comments, for example)
 	//   could create arrray for each flattened cv-name for multiple values, but not sure what the point would be over 
