@@ -96,10 +96,8 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
         		}
         	}
         }));
-
         this.gview.browser.setGlobalKeyboardShortcut('[', track, 'scrollToPreviousEdge');
         this.gview.browser.setGlobalKeyboardShortcut(']', track, 'scrollToNextEdge');
-	
 
     },
 
@@ -109,6 +107,7 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
 	thisConfig.menuTemplate = null;
 	thisConfig.noExport = true;  // turn off default "Save track data" "
 	thisConfig.style.centerChildrenVertically = false;
+        thisConfig.couchDbRoot = "http://localhost:5984/";  // default to a local couchdb if no root specified in config
 	return thisConfig;
     },
     
@@ -147,37 +146,70 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
                               console.log(response);
                           }
                       });
-        track.pouchDbName = "localdb_" + track.refSeq.name;
-        Pouch(track.pouchDbName, function(err, pouchdb) {
-                  if (err) {
-                      console.log("couln't open pouchdb database");
-                      console.log(err);
-                  }
-                  else  {
-                      track.localdb = pouchdb;               
-                      window.pouchdb = pouchdb;
-                      console.log("opened pouchdb: " );
-                      console.log(pouchdb);
-                      pouchdb.info(function(e,response) {
-                                       var last_change_seqnum = response.update_seq;
+        // want to make compatible with CouchDB so can use same name for local PouchDB and remote CouchDB
+        // CouchDB database name syntax:
+        // Must begin with a lowercase letter, and then rest of name must be only:
+        //         lowercase characters (a-z), 
+        //         digits (0-9), 
+        //         any of the characters _, $, (, ), +, -, and / 
+        // For PouchDB, not totally clear on required database name syntax, but have already seen problems 
+        //      with including /   (at least when trying _all_Dbs)
+        //      therefore also avoiding /,  
+        // So for compatibility with CouchDB and PouchDB:
+        //      convert uppercase to lowercase
+        //      replace non-alphanumeric (including ".") with "-", EXCEPT for _, $, (, ), +, /
+        //      replace "/" with "_"  
+        //      using - to replace 
+        var pouchDbName = "localdb_" + track.refSeq.name;
+        pouchDbName = pouchDbName.toLowerCase();
+        pouchDbName = pouchDbName.replace(/[^0-9a-z_\$\(\)\+\/]/, "-");
+        var couchDbUrl = track.config.couchDbRoot + pouchDbName;
+        console.log(pouchDbName);
+        track.pouchDbName = pouchDbName;
+        track.couchDbUrl = couchDbUrl;
+        
+        Pouch(pouchDbName, function(err, pouchdb) {
+            if (err) {
+                console.log("couln't open pouchdb database");
+                console.log(err);
+            }
+            else  {
+                track.localdb = pouchdb;               
+                window.pouchdb = pouchdb;
+                console.log("opened pouchdb: " );
+                console.log(pouchdb);
+                pouchdb.info(function(e,response) {
+                    var last_change_seqnum = response.update_seq;
 
-                                       track.getLocalFeatures();  
-                                       // really want to make changeMonitor run _after_ getLocalFeatures initial run -- 
-                                       //     make it callback for getLocalFeatures()?
-                                       track.changeMonitor = pouchdb.changes({
-                                                                                 include_docs: true, 
-                                                                                 since: last_change_seqnum, 
-                                                                                 continuous: true,
-                                                                                 onChange: function(change){
-                                                                                     
-                                                                                     console.log("pouchdb changed:");
-                                                                                     console.log(change);
-                                                                                     track.getLocalFeatures();
-                                                                                 }
-                                                                             } );
-                                   });
-                  }
-              });
+                    track.getLocalFeatures();  
+                    // really want to make changeMonitor run _after_ getLocalFeatures initial run -- 
+                    //     make it callback for getLocalFeatures()?
+                    track.changeMonitor = pouchdb.changes({
+                        include_docs: true, 
+                        since: last_change_seqnum, 
+                        continuous: true,
+                        onChange: function(change){
+                            
+                            console.log("pouchdb changed:");
+                            console.log(change);
+                            track.getLocalFeatures();
+                        }
+                    } );
+                    // continuous replication from local pouchDB to remote couchDB
+                    Pouch.replicate(pouchDbName, couchDbUrl, {continuous: true}, 
+                                    function(err, result) {
+                                        console.log(err); console.log(result);
+                                    } );
+                    // continuous replication from remote couchDB to local pouchDB
+                    // changeMonitor set up above should catch any changes to pouchDB that 
+                    //      replication from couchDB triggers
+                    Pouch.replicate(couchDbUrl, pouchDbName, {continuous: true}, 
+                                    function(err, result) {
+                                        console.log(err); console.log(result);
+                                    } );
+                });
+            }
+        });
 
     }, 
 
