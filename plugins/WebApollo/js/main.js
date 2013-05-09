@@ -53,20 +53,7 @@ return declare( JBPlugin,
 	FeatureEdgeMatchManager.addSelectionManager(this.featSelectionManager);
 	FeatureEdgeMatchManager.addSelectionManager(this.annotSelectionManager);
 
-        var flush_pouch_button = new dijitMenuItem(
-            {
-		label: "Reset PouchDB", 
-		onClick: function() {
-		    var loctrack = webapollo.getLocalAnnotTrack();
-                    Pouch.destroy(loctrack.pouchDbName, function(err, success)  {
-                                      loctrack.initializePouch();
-                                  } );
-                }
-            }
-        );
-
-        browser.addGlobalMenuItem( 'options', flush_pouch_button);
-
+      // webapollo.initDevTools();
 
         // add a global menu option for setting CDS color
         var cds_frame_toggle = new dijitCheckedMenuItem(
@@ -156,9 +143,55 @@ return declare( JBPlugin,
         // put the WebApollo logo in the powered_by place in the main JBrowse bar
         browser.afterMilestone( 'initView', function() {
             browser.poweredByLink.innerHTML = '<img src=\"plugins/WebApollo/img/ApolloLogo_100x36.png\" height=\"25\" />';
+            webapollo.initDevTools();
         });
 
-    },
+    },  
+
+
+    initDevTools: function() {
+        var webapollo = this;
+        var browser = webapollo.browser;
+        if (! webapollo.devMenuInitialized) { 
+
+            /*   this.browser.addGlobalMenuItem( 'tools',
+                 new dijitMenuItem( {
+		 label: "Search sequence",
+		 onClick: function() {
+		 webapollo.getAnnotTrack().searchSequence();
+		 }
+                 }) );
+            */
+
+
+            var flush_pouch_button = new dijitMenuItem(
+                {
+		    label: "Reset PouchDB", 
+		    onClick: function() {
+		        var loctrack = webapollo.getLocalAnnotTrack();
+                        Pouch.destroy(loctrack.pouchDbName, function(err, success)  {
+                            loctrack.initializePouch();
+                        } );
+                    }
+                }
+            );
+            browser.addGlobalMenuItem( 'devtools', flush_pouch_button);
+            var devMenu = browser.makeGlobalMenu('devtools');
+
+            if( devMenu ) {
+                var devButton = new dijitDropDownButton(
+                    { className: 'file',
+                      innerHTML: 'DevTools',
+                      //title: '',
+                      dropDown: devMenu
+                    });
+                dojo.addClass( devButton.domNode, 'menu' );
+                browser.menuBar.appendChild( devButton.domNode );
+            }
+
+            webapollo.devMenuInitialized = true;
+        }
+    }, 
 
     // would rather call view.redrawTracks()
     //

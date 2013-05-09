@@ -138,14 +138,14 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
         var track = this;
         Pouch.enableAllDbs = true;
         Pouch.allDbs( function(err, response) {
-                          if (err) {
-                              console.log("Couldn't get list of databases");
-                          }
-                          else {
-                              console.log("List of databases:");
-                              console.log(response);
-                          }
-                      });
+            if (err) {
+                console.log("Couldn't get list of databases");
+            }
+            else {
+                console.log("List of databases:");
+                console.log(response);
+            }
+        });
         // want to make compatible with CouchDB so can use same name for local PouchDB and remote CouchDB
         // CouchDB database name syntax:
         // Must begin with a lowercase letter, and then rest of name must be only:
@@ -160,6 +160,7 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
         //      replace non-alphanumeric (including ".") with "-", EXCEPT for _, $, (, ), +, /
         //      replace "/" with "_"  
         //      using - to replace 
+
         var pouchDbName = "localdb_" + track.refSeq.name;
         pouchDbName = pouchDbName.toLowerCase();
         pouchDbName = pouchDbName.replace(/[^0-9a-z_\$\(\)\+\/]/, "-");
@@ -189,7 +190,6 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
                         since: last_change_seqnum, 
                         continuous: true,
                         onChange: function(change){
-                            
                             console.log("pouchdb changed:");
                             console.log(change);
                             track.getLocalFeatures();
@@ -198,14 +198,14 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
                     // continuous replication from local pouchDB to remote couchDB
                     Pouch.replicate(pouchDbName, couchDbUrl, {continuous: true}, 
                                     function(err, result) {
-                                        console.log(err); console.log(result);
+                                        console.log(err); console.log(result);console.log("set up PouchDB=>CouchDB");
                                     } );
                     // continuous replication from remote couchDB to local pouchDB
                     // changeMonitor set up above should catch any changes to pouchDB that 
                     //      replication from couchDB triggers
                     Pouch.replicate(couchDbUrl, pouchDbName, {continuous: true}, 
                                     function(err, result) {
-                                        console.log(err); console.log(result);
+                                        console.log(err); console.log(result);console.log("set up CouchdB=>PouchDB");
                                     } );
                 });
             }
