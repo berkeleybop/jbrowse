@@ -1570,6 +1570,10 @@ Browser.prototype.makeShareLink = function () {
                             data:   browser.config.queryParams.data
                         })
                 );
+                // update current URL without reloading
+                // commented out for now because bug in chrome that causes favicon flickering when doing this:
+                //    https://code.google.com/p/chromium/issues/detail?id=50298
+                // if (window.history && window.history.pushState) { window.history.pushState(null, null, shareURL); }
     });
     dojo.connect( this, "onCoarseMove",             updateShareURL );
     this.subscribe( '/jbrowse/v1/n/tracks/visibleChanged', updateShareURL );
