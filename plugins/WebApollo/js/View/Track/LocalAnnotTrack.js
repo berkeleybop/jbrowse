@@ -56,6 +56,7 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
         this.has_custom_context_menu = true;
         this.exportAdapters = [];
         this.permission = 15;
+        this.syncToCouchDB = true;
 
 	this.selectionManager = this.setSelectionManager( this.webapollo.annotSelectionManager );
 
@@ -98,7 +99,6 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
         }));
         this.gview.browser.setGlobalKeyboardShortcut('[', track, 'scrollToPreviousEdge');
         this.gview.browser.setGlobalKeyboardShortcut(']', track, 'scrollToNextEdge');
-
     },
 
     _defaultConfig: function() {
@@ -153,60 +153,137 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
         //         digits (0-9), 
         //         any of the characters _, $, (, ), +, -, and / 
         // For PouchDB, not totally clear on required database name syntax, but have already seen problems 
-        //      with including /   (at least when trying _all_Dbs)
-        //      therefore also avoiding /,  
+        //      with including "/"   (at least when trying _all_Dbs)
+        //      therefore also avoiding "/",  
         // So for compatibility with CouchDB and PouchDB:
         //      convert uppercase to lowercase
         //      replace non-alphanumeric (including ".") with "-", EXCEPT for _, $, (, ), +, /
-        //      replace "/" with "_"  
-        //      using - to replace 
 
-        var pouchDbName = "localdb_" + track.refSeq.name;
+        //      replace "/" with "_"  
+        //      using "-" to replace all other 
+
+        var pouchDbName = "webapollo8_" + track.refSeq.name;
         pouchDbName = pouchDbName.toLowerCase();
         pouchDbName = pouchDbName.replace(/[^0-9a-z_\$\(\)\+\/]/, "-");
+        pouchDbName = pouchDbName.replace(/\//, "_");  // replace "/" with "_" to avoid PouchDB issues with "/"
         var couchDbUrl = track.config.couchDbRoot + pouchDbName;
         console.log(pouchDbName);
         track.pouchDbName = pouchDbName;
-        track.couchDbUrl = couchDbUrl;
-        
+        if (track.syncToCouchDB) {
+            track.couchDbUrl = couchDbUrl;
+            var allcouch = (CouchDB.allDbs("http://localhost:5984"));
+            console.log("CouchB allDBS: ");
+            console.log(allcouch);
+            var couch_exists = $.inArray(pouchDbName, allcouch);
+            console.log("couch exists: " + couch_exists);
+            if ($.inArray(pouchDbName, allcouch) < 0)  {  
+                // remote database not found on CouchDB server, so creating one
+
+                console.log("COUCHDB database: " + pouchDbName + " not found, explicitly creating");
+
+                // create new couchdb database
+                var remoteCouch = new CouchDB("http://localhost:5984/" + pouchDbName);
+                // all CouchDB XHRs are _synchronous, so guaranteed wait till database created before proceeding
+                var couch_created = remoteCouch.createDb();
+                
+                console.log("couchdb.createDb() result: ");
+                console.log(couch_created);
+            }
+        }
+        track.connectPouch();
+
+    }, 
+
+
+    connectPouch: function()  {
+        console.log("called connectPouch");
+        var track = this;
+        var pouchDbName = track.pouchDbName;
+        var couchDbUrl = track.couchDbUrl;
+
         Pouch(pouchDbName, function(err, pouchdb) {
             if (err) {
-                console.log("couln't open pouchdb database");
+                console.log("couldn't open pouchdb database");
                 console.log(err);
             }
             else  {
-                track.localdb = pouchdb;               
+                track.localdb = pouchdb;
+                track.pouchdb = pouchdb;
                 window.pouchdb = pouchdb;
                 console.log("opened pouchdb: " );
                 console.log(pouchdb);
                 pouchdb.info(function(e,response) {
-                    var last_change_seqnum = response.update_seq;
+                    // update_seq SHOULD be seq num of last change, 
+                    //  but appears to be a bug where not modified when changes are result of replicating process 
+                    //     (when changes originate from remote database)
+                    var db_update_seq = response.update_seq;  
+                    
+                    console.log(response);
+                    console.log("db_update_seq: " + db_update_seq);
+                    var actual_last_change;
+                    //  hacking to make sure have actual last change, since change.seq seems to be more reliable than db_update_seq
+                    //     note that the way changeMonitor is currently set up, would still work if use db_update_seq, just would 
+                    //     potentially get onChange calls for redundant change events that are already reflected in initial 
+                    //     track.getLocalFeatures() call
+                    if (window.localStorage && window.localStorage.last_change_seq)  {
+                        var last_change_seq = window.localStorage.last_change_seq;
+                        actual_last_change = Math.max(db_update_seq, last_change_seq);
+                        if (last_change_seq != db_update_seq)  {
+                            console.log("last change.seq previously received: " + last_change_seq + 
+                                        ", differs from current info.update_seq: " + db_update_seq);
+                            if (last_change_seq > db_update_seq)  { console.log("switching to using last change.seq for 'since' arg"); }
+                        }
+                    }
+                    else { actual_last_change = db_update_seq; }
 
                     track.getLocalFeatures();  
                     // really want to make changeMonitor run _after_ getLocalFeatures initial run -- 
                     //     make it callback for getLocalFeatures()?
                     track.changeMonitor = pouchdb.changes({
                         include_docs: true, 
-                        since: last_change_seqnum, 
+                        since: actual_last_change, 
                         continuous: true,
                         onChange: function(change){
-                            console.log("pouchdb changed:");
+                            console.log("POUCHDB changed:");
                             console.log(change);
+                            if (window.localStorage)  { window.localStorage.last_change_seq = change.seq; }
                             track.getLocalFeatures();
                         }
                     } );
                     // continuous replication from local pouchDB to remote couchDB
-                    Pouch.replicate(pouchDbName, couchDbUrl, {continuous: true}, 
-                                    function(err, result) {
-                                        console.log(err); console.log(result);console.log("set up PouchDB=>CouchDB");
-                                    } );
-                    // continuous replication from remote couchDB to local pouchDB
-                    // changeMonitor set up above should catch any changes to pouchDB that 
-                    //      replication from couchDB triggers
-                    Pouch.replicate(couchDbUrl, pouchDbName, {continuous: true}, 
-                                    function(err, result) {
-                                        console.log(err); console.log(result);console.log("set up CouchdB=>PouchDB");
-                                    } );
+                    if (track.syncToCouchDB)  {
+                        track.toCouchReplicator = 
+                            Pouch.replicate(pouchDbName, couchDbUrl, {continuous: true}, 
+                                            function(err, result) {
+                                                console.log(err); 
+                                                console.log(result);
+                                                console.log("set up PouchDB=>CouchDB");
+                                            } );
+// equivalent to above:
+//                         pouchdb.replicate.to(couchDbUrl, {continuous: true},  
+//                            function(err, result) {
+//                                console.log(err); console.log(result); console.log("set up PouchDB=>CouchDB"); } );
+
+
+                        // continuous replication from remote couchDB to local pouchDB
+                        // changeMonitor set up above should catch any changes to pouchDB that 
+                        //      replication from couchDB triggers
+                        //      though may want to try replacing changeMonitor with 
+                        track.fromCouchReplicator = 
+                            Pouch.replicate(couchDbUrl, pouchDbName, {continuous: true
+                                                                     //, heartbeat: 10000
+                                                                     }, 
+                                            function(err, result) {
+                                                console.log(err); 
+                                                console.log(result);
+                                                console.log("set up CouchdB=>PouchDB");
+                                            } );
+// equivalent to above
+//                         pouchdb.replicate.from(couchDbUrl, {continuous: true},  
+//                            function(err, result) {
+//                                console.log(err); console.log(result); console.log("set up PouchDB=>CouchDB"); } );
+                        
+                    }   
                 });
             }
         });
@@ -217,6 +294,7 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
         var track = this;
         this.success_callback = success_callback;
         track.store.clear();
+//        track.changed();
 
         console.log("called LocalAnnotTrack.getLocalFeatures()"); 
         track.localdb.allDocs({include_docs: true}, 
@@ -227,10 +305,12 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
                 }
                 else  {
                     var out= "";
+                    console.log("   feature count: " + result.rows.length);
+                    console.log(result);
                     for (var i=0; i<result.rows.length; i++) {
                         var entry = result.rows[i];
                         var afeat = entry.doc;
-                        console.log(afeat);
+                        // console.log(afeat);
                         var jfeat = JSONUtils.createJBrowseFeature( afeat );
                         
                         track.store.insert(jfeat);
@@ -656,18 +736,26 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
         
             // var postData = '{ "track": "' + target_track.getUniqueTrackName() + '", "features": ' + JSON.stringify(featuresToAdd) + ', "operation": "add_transcript" }';
             // target_track.executeUpdateOperation(postData);
-        console.log("attempting to create annotation in LocalAnnotTrack");
+       //  console.log("attempting to create annotation in LocalAnnotTrack");
         console.log(featuresToAdd);
 
         for (i = 0; i<featuresToAdd.length; i++)  {
             /* do the creation! */
             var afeat = featuresToAdd[i];
             target_track.createUniqueIds(afeat);  // need to assign children unique IDs for proper selection, edge-matching, etc.
-            console.log("adding feature data JSON:");
-            console.log(afeat);
+            console.log("createAnnotation() called");
+            // console.log(afeat);
             // target_track.localdb.post(afeat);
             // already assigned IDs (used Pouch.uuid() for both parent and child IDs) so using put() instead of post()
-            target_track.localdb.put(afeat);  
+            target_track.localdb.put(afeat, function(error, response) {
+                                         console.log("localdb.put() returned");
+                                         console.log(response);
+                                         target_track.localdb.info( function(e,r)  {
+                                               console.log("localdb.info() after put(): ");
+                                               console.log(r);
+                                         } );
+
+                                         } );
         }
     }, 
 
@@ -733,7 +821,16 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
                     }
                     else {
                         var bounds_changed = track.resizeAnnotParent(pannot); // returns true if parent bounds changed by resizeParent
-                        track.localdb.put(pannot, function(e,r) { console.log(e); console.log(r); });
+                        if (track.delayAnnot) {
+                            console.log("Delaying annot");
+                            setTimeout( function() { 
+                                            console.log("DELAYED ANNOT");
+                                            track.localdb.put(pannot, function(e,r) { console.log(e); console.log(r); });
+                                            }, 30000 );
+                        }
+                        else {
+                            track.localdb.put(pannot, function(e,r) { console.log(e); console.log(r); });
+                        }
                     }
                 }
             }
