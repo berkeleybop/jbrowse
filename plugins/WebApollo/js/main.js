@@ -151,36 +151,60 @@ return declare( JBPlugin,
 
     initDevTools: function() {
         var webapollo = this;
-        window.latrack = webapollo.getLocalAnnotTrack();
-        window.atrack = webapollo.getAnnotTrack();
-        window.webapollo = this;  
+/*        var latrack = webapollo.getLocalAnnotTrack();
+        var atrack = webapollo.getAnnotTrack();
+        window.webapollo = webapollo;
+        window.latrack = latrack;
+        window.atrack = atrack;
+        console.log("TRACK: ");
+        console.log(latrack);
+*/
+
         window.pcb = function(e,r) { console.log(e); console.log(r); }  // standard logging function for pouchdb callbacks (pcb)
 
         var browser = webapollo.browser;
         if (! webapollo.devMenuInitialized) { 
+            
             var local_annot_delay = new dijitCheckedMenuItem(
                 {
                     label: "Delay Annot 30 seconds", 
                     checked: false,
                     onClick: function(event) {
-                        webapollo.getLocalAnnotTrack().delayAnnot = local_annot_delay.checked;
+                        var latrack = webapollo.getLocalAnnotTrack();
+                        latrack.delayAnnot = local_annot_delay.checked;
                         browser.view.redrawTracks();
                     }
                 });
 
             browser.addGlobalMenuItem( 'devtools', local_annot_delay);
 
-            var pouch_to_couch = new dijitCheckedMenuItem(
+            var sync_to_couch = new dijitCheckedMenuItem(
                 {
-                    label: "local => remote replication", 
+                    label: "Sync to CouchDB", 
                     checked: true,
                     onClick: function(event) {
-                        webapollo.getLocalAnnotTrack().delayAnnot = local_annot_delay.checked;
-                        browser.view.redrawTracks();
+                        var latrack = webapollo.getLocalAnnotTrack();
+                        console.log("latrack: " + latrack);
+                        var keepSynced = sync_to_couch.checked;
+                        if (keepSynced) {
+                            console.log("replicator already cancelled: " + latrack.toCouchReplicator.cancelled);
+                            console.log("restarting replication");
+                            latrack.toCouchReplicator = 
+                                Pouch.replicate(latrack.pouchDbName, latrack.couchDbUrl, {continuous: true}, 
+                                                function(err, result) { console.log("set up PouchDB=>CouchDB"); } );
+
+                            latrack.fromCouchReplicator = 
+                                Pouch.replicate(latrack.couchDbUrl, latrack.pouchDbName, {continuous: true }, 
+                                                function(err, result) { console.log("set up CouchDB=>PouchDB"); } );
+                        }
+                        else  {
+                            console.log("cancelling replication");
+                            latrack.toCouchReplicator.cancel();
+                            latrack.fromCouchReplicator.cancel();
+                        }
                     }
                 });
-            browser.addGlobalMenuItem( 'devtools', local_annot_delay);
-            
+            browser.addGlobalMenuItem( 'devtools', sync_to_couch);
 
             var delete_pouch_couch = new dijitMenuItem(
                 {
@@ -193,6 +217,12 @@ return declare( JBPlugin,
                         var remoteCouch = new CouchDB("http://localhost:5984/" + loctrack.pouchDbName);
                         window.couchdb = remoteCouch;
                         var couch_deleted = remoteCouch.deleteDb();
+
+                        if (window.localStorage && window.localStorage.last_change_seq)  {
+                            window.localStorage.removeItem("last_change_seq");
+                            console.log("clearing previous last_change_seq: " + window.localStorage.last_change_seq);
+                        }
+                        
                         console.log("couchdb.deleteDb() result: "); console.log(couch_deleted);
                         var pouch_deleted = 
                              Pouch.destroy(loctrack.pouchDbName, function(err, success)  {
