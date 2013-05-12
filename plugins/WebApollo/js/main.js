@@ -151,17 +151,62 @@ return declare( JBPlugin,
 
     initDevTools: function() {
         var webapollo = this;
+        window.latrack = webapollo.getLocalAnnotTrack();
+        window.atrack = webapollo.getAnnotTrack();
+        window.webapollo = this;  
+        window.pcb = function(e,r) { console.log(e); console.log(r); }  // standard logging function for pouchdb callbacks (pcb)
+
         var browser = webapollo.browser;
         if (! webapollo.devMenuInitialized) { 
+            var local_annot_delay = new dijitCheckedMenuItem(
+                {
+                    label: "Delay Annot 30 seconds", 
+                    checked: false,
+                    onClick: function(event) {
+                        webapollo.getLocalAnnotTrack().delayAnnot = local_annot_delay.checked;
+                        browser.view.redrawTracks();
+                    }
+                });
 
-            /*   this.browser.addGlobalMenuItem( 'tools',
-                 new dijitMenuItem( {
-		 label: "Search sequence",
-		 onClick: function() {
-		 webapollo.getAnnotTrack().searchSequence();
-		 }
-                 }) );
-            */
+            browser.addGlobalMenuItem( 'devtools', local_annot_delay);
+
+            var pouch_to_couch = new dijitCheckedMenuItem(
+                {
+                    label: "local => remote replication", 
+                    checked: true,
+                    onClick: function(event) {
+                        webapollo.getLocalAnnotTrack().delayAnnot = local_annot_delay.checked;
+                        browser.view.redrawTracks();
+                    }
+                });
+            browser.addGlobalMenuItem( 'devtools', local_annot_delay);
+            
+
+            var delete_pouch_couch = new dijitMenuItem(
+                {
+		    label: "Delete PouchDB & CouchDB", 
+		    onClick: function() {
+		        var loctrack = webapollo.getLocalAnnotTrack();
+                        // loctrack.changeMonitor.cancel();
+                        // loctrack.toCouchReplicator.cancel();
+                        // loctrack.fromCouchReplicator.cancel();
+                        var remoteCouch = new CouchDB("http://localhost:5984/" + loctrack.pouchDbName);
+                        window.couchdb = remoteCouch;
+                        var couch_deleted = remoteCouch.deleteDb();
+                        console.log("couchdb.deleteDb() result: "); console.log(couch_deleted);
+                        var pouch_deleted = 
+                             Pouch.destroy(loctrack.pouchDbName, function(err, success)  {
+                                          if (err) { console.log("Pouch.destroy() error: "); console.log(err); }
+                                          else  { console.log("Pouch.destroy() success: "); 
+                                                  console.log(success);
+                                                  // loctrack.initializePouch();
+                                          }
+                             } );
+                        
+                    }
+                }
+            );
+            browser.addGlobalMenuItem( 'devtools', delete_pouch_couch);
 
 
             var flush_pouch_button = new dijitMenuItem(
@@ -176,8 +221,9 @@ return declare( JBPlugin,
                 }
             );
             browser.addGlobalMenuItem( 'devtools', flush_pouch_button);
-            var devMenu = browser.makeGlobalMenu('devtools');
 
+            // this chunk MUST execute AFTER browser.addGlobalMenuItem() has been called ?!?!
+            var devMenu = browser.makeGlobalMenu('devtools');
             if( devMenu ) {
                 var devButton = new dijitDropDownButton(
                     { className: 'file',
@@ -188,7 +234,7 @@ return declare( JBPlugin,
                 dojo.addClass( devButton.domNode, 'menu' );
                 browser.menuBar.appendChild( devButton.domNode );
             }
-
+ 
             webapollo.devMenuInitialized = true;
         }
     }, 
@@ -250,6 +296,7 @@ return declare( JBPlugin,
 	        // should be doing instanceof here, but class setup is not being cooperative
                 if (tracks[i].isWebApolloAnnotTrack)  {
                     console.log("annot track refseq: " + tracks[i].refSeq.name);
+                    window.atrack = tracks[i];  // exporting for easy debugging access
                     return tracks[i];
                 }
             }
@@ -264,6 +311,7 @@ return declare( JBPlugin,
 	        // should be doing instanceof here, but class setup is not being cooperative
                 if (tracks[i].isWebApolloLocalAnnotTrack)  {
                     console.log("local annot track refseq: " + tracks[i].refSeq.name);
+                    window.latrack = tracks[i];  // exporting for easy debuggins access
                     return tracks[i];
                 }
             }
