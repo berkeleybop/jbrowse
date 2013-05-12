@@ -109,8 +109,8 @@ var Browser = function(params) {
     dojo.addOnLoad( function() {
         thisB.loadConfig().then( function() {
             thisB.loadNames();
-            thisB.loadUserCSS().then( function() {
-                thisB.initPlugins().then( function() {
+            thisB.initPlugins().then( function() {
+                thisB.loadUserCSS().then( function() {
                     thisB.initTrackMetadata();
                     thisB.loadRefSeqs().then( function() {
                        thisB.initView().then( function() {
