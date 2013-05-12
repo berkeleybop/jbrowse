@@ -136,16 +136,7 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
     initializePouch: function()  {
         console.log("initializing PouchDB");
         var track = this;
-        Pouch.enableAllDbs = true;
-        Pouch.allDbs( function(err, response) {
-            if (err) {
-                console.log("Couldn't get list of databases");
-            }
-            else {
-                console.log("List of databases:");
-                console.log(response);
-            }
-        });
+
         // want to make compatible with CouchDB so can use same name for local PouchDB and remote CouchDB
         // CouchDB database name syntax:
         // Must begin with a lowercase letter, and then rest of name must be only:
@@ -162,13 +153,14 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
         //      replace "/" with "_"  
         //      using "-" to replace all other 
 
-        var pouchDbName = "webapollo8_" + track.refSeq.name;
+        var pouchDbName = "webapollo17_" + track.refSeq.name;
         pouchDbName = pouchDbName.toLowerCase();
         pouchDbName = pouchDbName.replace(/[^0-9a-z_\$\(\)\+\/]/, "-");
         pouchDbName = pouchDbName.replace(/\//, "_");  // replace "/" with "_" to avoid PouchDB issues with "/"
         var couchDbUrl = track.config.couchDbRoot + pouchDbName;
         console.log(pouchDbName);
         track.pouchDbName = pouchDbName;
+        track.couchDbUrl = couchDbUrl;
         if (track.syncToCouchDB) {
             track.couchDbUrl = couchDbUrl;
             var allcouch = (CouchDB.allDbs("http://localhost:5984"));
@@ -181,6 +173,10 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
 
                 console.log("COUCHDB database: " + pouchDbName + " not found, explicitly creating");
 
+                if (window.localStorage && window.localStorage.last_change_seq)  {
+                    window.localStorage.removeItem("last_change_seq");
+                    console.log("clearing previous last_change_seq: " + window.localStorage.last_change_seq);
+                }
                 // create new couchdb database
                 var remoteCouch = new CouchDB("http://localhost:5984/" + pouchDbName);
                 // all CouchDB XHRs are _synchronous, so guaranteed wait till database created before proceeding
@@ -201,6 +197,31 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
         var pouchDbName = track.pouchDbName;
         var couchDbUrl = track.couchDbUrl;
 
+        Pouch.enableAllDbs = true;
+        Pouch.allDbs( function(err, response) {
+            if (err) {
+                console.log("Couldn't get list of databases");
+            }
+            else {
+                var allpouch = response;
+                console.log("List of databases:");
+                console.log(allpouch);
+                if ($.inArray(pouchDbName, allpouch) < 0)  {  
+                    console.log("PouchDB not found, will create new one");
+                    if (window.localStorage && window.localStorage.last_change_seq)  {
+                        window.localStorage.removeItem("last_change_seq");
+                        console.log("clearing previous last_change_seq: " + window.localStorage.last_change_seq);
+                    }
+                }
+                track.reallyConnectPouch();
+            }
+        });
+    }, 
+
+    reallyConnectPouch: function()  {
+        var track = this;
+        var pouchDbName = track.pouchDbName;
+        var couchDbUrl = track.couchDbUrl;
         Pouch(pouchDbName, function(err, pouchdb) {
             if (err) {
                 console.log("couldn't open pouchdb database");
@@ -235,6 +256,9 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
                         }
                     }
                     else { actual_last_change = db_update_seq; }
+                    console.log("actual_last_change: " + actual_last_change);
+
+//                    actual_last_change = db_update_seq;
 
                     track.getLocalFeatures();  
                     // really want to make changeMonitor run _after_ getLocalFeatures initial run -- 
@@ -252,12 +276,13 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
                     } );
                     // continuous replication from local pouchDB to remote couchDB
                     if (track.syncToCouchDB)  {
+                        console.log("setting up replication");
                         track.toCouchReplicator = 
                             Pouch.replicate(pouchDbName, couchDbUrl, {continuous: true}, 
                                             function(err, result) {
                                                 console.log(err); 
                                                 console.log(result);
-                                                console.log("set up PouchDB=>CouchDB");
+                                                console.log("SUCCESS: set up PouchDB=>CouchDB");
                                             } );
 // equivalent to above:
 //                         pouchdb.replicate.to(couchDbUrl, {continuous: true},  
@@ -276,7 +301,7 @@ var LocalAnnotTrack = declare( DraggableFeatureTrack,
                                             function(err, result) {
                                                 console.log(err); 
                                                 console.log(result);
-                                                console.log("set up CouchdB=>PouchDB");
+                                                console.log("SUCCESS: set up CouchdB=>PouchDB");
                                             } );
 // equivalent to above
 //                         pouchdb.replicate.from(couchDbUrl, {continuous: true},  
