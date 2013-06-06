@@ -276,6 +276,32 @@ for my $testfile ( "tests/data/au9_scaffold_subset.gff3", "tests/data/au9_scaffo
 
 }
 
+{
+    my $tempdir = tempdir();
+    dircopy( 'tests/data/MAKER', $tempdir );
+
+    run_with (
+        '--out' => $tempdir,
+	'--gff' => 'tests/data/MAKER/Group1.33_Amel_4.5.maker_WITH_INTRON.gff',
+	'--arrowheadClass' => 'trellis-arrowhead',
+	'--getSubs',
+	'--subfeatureClasses' => '{"CDS": "ogsv3-CDS", "UTR": "ogsv3-UTR", "exon":"ogsv3-exon", "wholeCDS":null}',
+	'--cssClass' => 'refseq-transcript',
+	'--type' => 'mRNA',
+	'--trackLabel' => 'just_maker_singleton',
+	'--webApollo',
+	'--renderClassName' => 'ogsv3-transcript-render'
+        );
+
+    my $read_json = sub { slurp( $tempdir, @_ ) };
+    my $track_data = $read_json->(qw( tracks just_maker_singleton Group1.33 trackData.json ));
+    my $track_list = $read_json->(qw( trackList.json ));
+
+    # make sure we got rid of CDS features
+    my @IntronFeat = grep {$_->[6] eq 'intron' } @{$track_data->{'intervals'}->{'nclist'}->[0]->[10]};
+    ok(scalar @IntronFeat == 0, '--webApollo flag gets rid of intron features');
+}
+
 {   #diag "running on testWholeCDSCoords.gff with --webApollo flag, test for correct wholeCDS coordinates";
 
     my $tempdir = tempdir();
@@ -309,30 +335,53 @@ for my $testfile ( "tests/data/au9_scaffold_subset.gff3", "tests/data/au9_scaffo
 
 }
 
+
 {
-    my $tempdir = tempdir();
-    dircopy( 'tests/data/MAKER', $tempdir );
+    my $snv_tempdir = tempdir();
 
     run_with (
-        '--out' => $tempdir,
-	'--gff' => 'tests/data/MAKER/Group1.33_Amel_4.5.maker_WITH_INTRON.gff',
-	'--arrowheadClass' => 'trellis-arrowhead',
-	'--getSubs',
-	'--subfeatureClasses' => '{"CDS": "ogsv3-CDS", "UTR": "ogsv3-UTR", "exon":"ogsv3-exon", "wholeCDS":null}',
-	'--cssClass' => 'refseq-transcript',
-	'--type' => 'mRNA',
-	'--trackLabel' => 'just_maker_singleton',
-	'--webApollo',
-	'--renderClassName' => 'ogsv3-transcript-render'
+        '--out' => $snv_tempdir,
+        '--gff' => "tests/data/heterozygous_snv.gvf",
+        '--trackLabel' => 'testSNV',
+        '--key' => 'test SNV',
+        '--type' => 'SNV',
+        '--autocomplete' => 'all',
+        '--cssClass' => 'transcript',
         );
 
-    my $read_json = sub { slurp( $tempdir, @_ ) };
-    my $track_data = $read_json->(qw( tracks just_maker_singleton Group1.33 trackData.json ));
-    my $track_list = $read_json->(qw( trackList.json ));
+    my $read_json = sub { slurp( $snv_tempdir, @_ ) };
+    my $snv_trackdata = $read_json->(qw( tracks testSNV chr1 trackData.json ));
 
-    # make sure we got rid of CDS features
-    my @IntronFeat = grep {$_->[6] eq 'intron' } @{$track_data->{'intervals'}->{'nclist'}->[0]->[10]};
-    ok(scalar @IntronFeat == 0, '--webApollo flag gets rid of intron features');
+    is( $snv_trackdata->{featureCount}, 1, 'got right feature count' ) or diag explain $snv_trackdata;    
+    is_deeply( $snv_trackdata->{'intervals'}->{'classes'}->[0]->{'attributes'}, 
+	       ['Start', 'End',  'Strand', 'Source', 'Variant_reads2', 'Variant_seq', 'Seq_id', 'Variant_reads', 'Score', 'Genotype', 'Variant_seq2', 'Total_reads', 'Reference_seq', 'Type', 'Id'],  
+	       'got right attributes in trackData.json for heterozygous SNV from GVF')  
+	or diag explain $snv_trackdata->{'intervals'}->{'classes'}->[0]->{'attributes'};
+    is_deeply( $snv_trackdata->{'intervals'}->{'nclist'}->[0],
+	[0,  15882,   15883,  1,  'SOAPsnp',   16,  'G',  'chr1',  17,  36.5,  'heterozygous',  'C',  33,  'C',  'SNV',  'chr1:SOAP:SNV:15883'],
+	"got right NClist for heterzygous SNV from GVF"
+	) or diag explain $snv_trackdata->{'intervals'}->{'nclist'}->[0];
 }
+
+{
+    my $snv_tempdir = tempdir();
+
+    run_with (
+        '--out' => $snv_tempdir,
+        '--vcf' => "tests/data/heterozygous_snv.vcf",
+        '--trackLabel' => 'testSNV',
+        '--key' => 'test SNV',
+        '--autocomplete' => 'all',
+        );
+
+    my $read_json = sub { slurp( $snv_tempdir, @_ ) };
+    my $snv_trackdata = $read_json->(qw( tracks testSNV chr1 trackData.json ));
+    is( $snv_trackdata->{intervals}->{nclist}->[0]->[1], 15882, 'start set correctly in json from VCF') or diag explain $snv_trackdata->{intervals}->{nclist}->[1];
+    is( $snv_trackdata->{intervals}->{nclist}->[0]->[2], 15883, 'end set correctly in json from VCF') or diag explain $snv_trackdata->{intervals}->{nclist}->[2];
+    is( $snv_trackdata->{intervals}->{minStart}, 15882, 'minStart set correctly in json from VCF') or diag explain $snv_trackdata->{intervals}->{minStart};
+    is( $snv_trackdata->{intervals}->{maxEnd}, 15883, 'maxEnd set correctly in json from VCF') or diag explain $snv_trackdata->{intervals}->{maxEnd};
+    is( $snv_trackdata->{intervals}->{nclist}->[0]->[10], "SNV", 'should set type as SNV in json from VCF') or diag explain $snv_trackdata->{nclist}->[0]->[10];
+}
+
 
 done_testing;
